@@ -4,12 +4,24 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	_ "file-converter/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title File Converter API
+// @version 1.0
+// @description Utility Microservice for converting files.
+// @host localhost:8080
+// @BasePath /
 func main() {
 	// Register our two conversion endpoints
 	http.HandleFunc("/convert/image", handleImageConvert)
 	http.HandleFunc("/convert/document", handleDocumentConvert)
+
+	// Register Swagger UI
+	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+
 
 	port := ":8080"
 	fmt.Println("==================================================")
@@ -18,6 +30,7 @@ func main() {
 	fmt.Println("Available endpoints:")
 	fmt.Println(" -> POST http://localhost:8080/convert/image    (JPG to PNG)")
 	fmt.Println(" -> POST http://localhost:8080/convert/document (CSV to PDF)")
+	fmt.Println(" -> GET  http://localhost:8080/swagger/         (Swagger UI)")
 	fmt.Println("==================================================")
 
 	// Start the HTTP server
@@ -26,7 +39,15 @@ func main() {
 	}
 }
 
-// handleImageConvert handles POST requests for JPG to PNG conversions.
+// @Summary Convert JPG to PNG
+// @Description Converts an uploaded JPG file to PNG format.
+// @Accept multipart/form-data
+// @Produce image/png
+// @Param file formData file true "JPG Image to convert"
+// @Success 200 {file} file "converted.png"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 405 {string} string "Method Not Allowed"
+// @Router /convert/image [post]
 func handleImageConvert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
@@ -58,7 +79,15 @@ func handleImageConvert(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handleDocumentConvert handles POST requests for CSV to PDF conversions.
+// @Summary Convert CSV to PDF
+// @Description Converts an uploaded CSV file to PDF format.
+// @Accept multipart/form-data
+// @Produce application/pdf
+// @Param file formData file true "CSV Document to convert"
+// @Success 200 {file} file "converted.pdf"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 405 {string} string "Method Not Allowed"
+// @Router /convert/document [post]
 func handleDocumentConvert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)

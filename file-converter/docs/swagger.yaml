@@ -1,0 +1,63 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Utility Microservice for converting files.
+  title: File Converter API
+  version: "1.0"
+paths:
+  /convert/document:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Converts an uploaded CSV file to PDF format.
+      parameters:
+      - description: CSV Document to convert
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: converted.pdf
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "405":
+          description: Method Not Allowed
+          schema:
+            type: string
+      summary: Convert CSV to PDF
+  /convert/image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Converts an uploaded JPG file to PNG format.
+      parameters:
+      - description: JPG Image to convert
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: converted.png
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "405":
+          description: Method Not Allowed
+          schema:
+            type: string
+      summary: Convert JPG to PNG
+swagger: "2.0"
