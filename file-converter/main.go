@@ -15,9 +15,8 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
-	// Register our two conversion endpoints
-	http.HandleFunc("/convert/image", handleImageConvert)
-	http.HandleFunc("/convert/document", handleDocumentConvert)
+	// Unified conversion endpoint
+	http.HandleFunc("/convert", handleConvert)
 
 	// Register Swagger UI
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
@@ -31,8 +30,7 @@ func main() {
 	fmt.Printf(" Utility Microservice starting on http://localhost%s\n", port)
 	fmt.Println("==================================================")
 	fmt.Println("Available endpoints:")
-	fmt.Println(" -> POST http://localhost:8080/convert/image    (JPG to PNG)")
-	fmt.Println(" -> POST http://localhost:8080/convert/document (CSV to PDF)")
+	fmt.Println(" -> POST http://localhost:8080/convert          (Dynamic Converter)")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/         (Swagger UI)")
 	fmt.Println("==================================================")
 
@@ -42,16 +40,7 @@ func main() {
 	}
 }
 
-// @Summary Convert JPG to PNG
-// @Description Converts an uploaded JPG file to PNG format.
-// @Accept multipart/form-data
-// @Produce image/png
-// @Param file formData file true "JPG Image to convert"
-// @Success 200 {file} file "converted.png"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 405 {string} string "Method Not Allowed"
-// @Router /convert/image [post]
-func handleImageConvert(w http.ResponseWriter, r *http.Request) {
+func handleConvert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
@@ -60,59 +49,71 @@ func handleImageConvert(w http.ResponseWriter, r *http.Request) {
 	// Limit upload size to 10 MB for safety
 	r.ParseMultipartForm(10 << 20)
 	
-	// Retrieve the uploaded file from the 'file' field
-	file, _, err := r.FormFile("file")
+	fromType := r.FormValue("fromType")
+	toType := r.FormValue("toType")
+
+	if fromType == "" || toType == "" {
+		http.Error(w, "Missing fromType or toType in form data", http.StatusBadRequest)
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Failed to get file from request. Ensure form-data key is 'file'", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// Set headers so the client knows a PNG file is being returned
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Disposition", "attachment; filename=\"converted.png\"")
+	// Default disposition
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"converted.%s\"", toType))
 
-	// Convert and stream directly to the HTTP response
-	err = ConvertJPGtoPNG(file, w)
-	if err != nil {
-		log.Printf("Image conversion error: %v", err)
-		// Note: if the header has already been written by an early successful write,
-		// changing the status code here won't work perfectly, but it's acceptable for an MVP.
+	conversionPath := fmt.Sprintf("%s-to-%s", fromType, toType)
+
+	switch conversionPath {
+	case "jpg-to-png":
+		w.Header().Set("Content-Type", "image/png")
+		err = ConvertJPGtoPNG(file, w)
+	case "csv-to-pdf":
+		w.Header().Set("Content-Type", "application/pdf")
+		err = ConvertCSVtoPDF(file, w)
+	case "csv-to-json":
+		w.Header().Set("Content-Type", "application/json")
+		err = ConvertCSVtoJSON(file, w)
+	case "json-to-csv":
+		w.Header().Set("Content-Type", "text/csv")
+		err = ConvertJSONtoCSV(file, w)
+	case "json-to-txt":
+		w.Header().Set("Content-Type", "text/plain")
+		err = ConvertJSONtoTXT(file, w)
+	case "txt-to-docx":
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		err = ConvertTXTtoDOCX(file, w)
+	case "pdf-to-txt":
+		w.Header().Set("Content-Type", "text/plain")
+		err = ConvertPDFtoTXT(file, fileHeader.Size, w)
+	case "txt-to-pdf":
+		w.Header().Set("Content-Type", "application/pdf")
+		err = ConvertTXTtoPDF(file, w)
+	case "png-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = ConvertPNGtoJPG(file, w)
+	case "csv-to-txt":
+		w.Header().Set("Content-Type", "text/plain")
+		err = ConvertCSVtoTXT(file, w)
+	case "docx-to-csv":
+		w.Header().Set("Content-Type", "text/csv")
+		err = ConvertDOCXtoCSV(file, w)
+	case "docx-to-txt":
+		// Same as docx to csv since it extracts text
+		w.Header().Set("Content-Type", "text/plain")
+		err = ConvertDOCXtoCSV(file, w)
+	default:
+		http.Error(w, fmt.Sprintf("Conversion from %s to %s is not yet supported. Please choose a different combination.", fromType, toType), http.StatusBadRequest)
 		return
 	}
-}
 
-// @Summary Convert CSV to PDF
-// @Description Converts an uploaded CSV file to PDF format.
-// @Accept multipart/form-data
-// @Produce application/pdf
-// @Param file formData file true "CSV Document to convert"
-// @Success 200 {file} file "converted.pdf"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 405 {string} string "Method Not Allowed"
-// @Router /convert/document [post]
-func handleDocumentConvert(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	r.ParseMultipartForm(10 << 20)
-	
-	file, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Failed to get file from request. Ensure form-data key is 'file'", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// Set headers so the client knows a PDF file is being returned
-	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", "attachment; filename=\"converted.pdf\"")
-
-	err = ConvertCSVtoPDF(file, w)
-	if err != nil {
-		log.Printf("Document conversion error: %v", err)
+		log.Printf("Conversion error (%s): %v", conversionPath, err)
 		return
 	}
 }
