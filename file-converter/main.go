@@ -22,6 +22,9 @@ func main() {
 	// Register Swagger UI
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
+	// Serve the compiled frontend
+	fs := http.FileServer(http.Dir("./frontend/dist"))
+	http.Handle("/", fs)
 
 	port := ":8080"
 	fmt.Println("==================================================")
