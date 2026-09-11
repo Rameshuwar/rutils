@@ -165,7 +165,7 @@ build_and_promote() {
         
         if [[ "${BUILD_CHOICE,,}" == "y" ]]; then
             prompt "Enter Docker Image Name" IMAGE_NAME "$base_dir"
-            prompt "Enter Container Port (e.g. 8080)" APP_PORT "8080"
+            prompt "Enter Container Port (e.g. 8080 or 3000,8080)" APP_PORT "8080"
             local target_tag="${IMAGE_NAME}:latest"
             
             log_info "Building image '${target_tag}' from directory '${dir}'..."

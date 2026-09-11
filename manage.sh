@@ -14,7 +14,11 @@ fi
 case "$ACTION" in
     start)
         echo "Starting container: $CONTAINER_NAME"
-        docker run -d --name "$CONTAINER_NAME" -p "$PORT":"$PORT" --restart unless-stopped "$IMAGE_NAME"
+        PORT_ARGS=""
+        for p in $(echo "$PORT" | tr "," " "); do
+            PORT_ARGS="$PORT_ARGS -p $p:$p"
+        done
+        docker run -d --name "$CONTAINER_NAME" $PORT_ARGS --restart unless-stopped "$IMAGE_NAME"
         ;;
     stop)
         echo "Stopping container: $CONTAINER_NAME"

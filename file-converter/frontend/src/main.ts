@@ -72,7 +72,12 @@ convertForm.addEventListener('submit', async (e) => {
   try {
     statusMessage.textContent = `Converting ${detectedFromType.toUpperCase()} to ${toType.toUpperCase()}...`;
     
-    const response = await fetch('http://localhost:8080/convert', {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal 
+      ? 'http://localhost:8080/convert' 
+      : 'https://utils.api.srilakshmiretail.in/convert';
+      
+    const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
     });
