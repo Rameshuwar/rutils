@@ -72,7 +72,7 @@ convertForm.addEventListener('submit', async (e) => {
   try {
     statusMessage.textContent = `Converting ${detectedFromType.toUpperCase()} to ${toType.toUpperCase()}...`;
     
-    const response = await fetch('/convert', {
+    const response = await fetch('http://localhost:8080/convert', {
       method: 'POST',
       body: formData,
     });
