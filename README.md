@@ -4,11 +4,17 @@ A simple Go microservice for converting files. Built as a Minimum Viable Product
 
 ## Getting Started
 
-1. Run the server from the repository root:
+1. Run the local development script (starts both Backend & Frontend):
    ```bash
-   go run ./cmd/server/main.go
+   ./dev.sh
    ```
-   *The server will start on http://localhost:8080 (API) and http://localhost:3000 (UI)*
+   * Or run backend only: `go run ./cmd/server/main.go`*
+   * Or run frontend only: `cd frontend && npm run dev`*
+
+2. Access the applications:
+   - **Frontend UI**: http://localhost:5173
+   - **Backend API**: http://localhost:8080
+   - **Swagger Docs**: http://localhost:8080/swagger/
 
 ## How to Test the API
 
