@@ -113,6 +113,9 @@ func handleConvert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		w.Header().Del("Content-Disposition")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		http.Error(w, fmt.Sprintf("Conversion failed: %v", err), http.StatusBadRequest)
 		log.Printf("Conversion error (%s): %v", conversionPath, err)
 		return
 	}

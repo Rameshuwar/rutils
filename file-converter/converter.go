@@ -84,15 +84,61 @@ func ConvertCSVtoJSON(in io.Reader, out io.Writer) error {
 	return encoder.Encode(result)
 }
 
-// ConvertJSONtoCSV converts a JSON array of objects to a CSV file.
-func ConvertJSONtoCSV(in io.Reader, out io.Writer) error {
-	var data []map[string]interface{}
-	decoder := json.NewDecoder(in)
-	if err := decoder.Decode(&data); err != nil {
-		return fmt.Errorf("failed to decode json (must be an array of objects): %w", err)
+// flattenJSON is a helper function that recursively flattens nested JSON structures.
+func flattenJSON(prefix string, v interface{}, result map[string]interface{}) {
+	switch child := v.(type) {
+	case map[string]interface{}:
+		for k, val := range child {
+			newKey := k
+			if prefix != "" {
+				newKey = prefix + "." + k
+			}
+			flattenJSON(newKey, val, result)
+		}
+	case []interface{}:
+		for i, val := range child {
+			newKey := fmt.Sprintf("%s.%d", prefix, i)
+			if prefix == "" {
+				newKey = fmt.Sprintf("%d", i)
+			}
+			flattenJSON(newKey, val, result)
+		}
+	default:
+		if prefix == "" {
+			result["value"] = child
+		} else {
+			result[prefix] = child
+		}
 	}
+}
+
+// ConvertJSONtoCSV converts any JSON structure to a CSV file.
+func ConvertJSONtoCSV(in io.Reader, out io.Writer) error {
+	var raw interface{}
+	decoder := json.NewDecoder(in)
+	if err := decoder.Decode(&raw); err != nil {
+		return fmt.Errorf("failed to decode json: %w", err)
+	}
+
+	var data []map[string]interface{}
+
+	switch v := raw.(type) {
+	case []interface{}:
+		// If it's an array, flatten each element as a separate row
+		for _, item := range v {
+			flat := make(map[string]interface{})
+			flattenJSON("", item, flat)
+			data = append(data, flat)
+		}
+	default:
+		// If it's a single object or primitive, flatten it as a single row
+		flat := make(map[string]interface{})
+		flattenJSON("", v, flat)
+		data = append(data, flat)
+	}
+
 	if len(data) == 0 {
-		return fmt.Errorf("empty json array")
+		return fmt.Errorf("empty json data")
 	}
 
 	headerMap := make(map[string]bool)
