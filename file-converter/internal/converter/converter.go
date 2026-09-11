@@ -1,4 +1,4 @@
-package main
+package converter
 
 import (
 	"archive/zip"
@@ -16,149 +16,7 @@ import (
 	"github.com/gingfrederik/docx"
 	"github.com/go-pdf/fpdf"
 	"github.com/ledongthuc/pdf"
-
-
-	"log"
-	"net/http"
-
-	_ "file-converter/docs"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
-
-// @title File Converter API
-// @version 1.0
-// @description Utility Microservice for converting files.
-// @host localhost:8080
-// @BasePath /
-func main() {
-	// API Server
-	apiMux := http.NewServeMux()
-	apiMux.HandleFunc("/convert", handleConvert)
-	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
-
-	// UI Server
-	uiMux := http.NewServeMux()
-	uiMux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
-
-	fmt.Println("==================================================")
-	fmt.Println(" Utility Microservice Starting...")
-	fmt.Println("==================================================")
-	fmt.Println("Backend API:")
-	fmt.Println(" -> POST http://localhost:8080/convert          (Dynamic Converter)")
-	fmt.Println(" -> GET  http://localhost:8080/swagger/         (Swagger UI)")
-	fmt.Println("Frontend UI:")
-	fmt.Println(" -> GET  http://localhost:3000/")
-	fmt.Println("==================================================")
-
-	// Start API server in background
-	go func() {
-		if err := http.ListenAndServe(":8080", enableCORS(apiMux)); err != nil {
-			log.Fatalf("API Server failed to start: %v", err)
-		}
-	}()
-
-	// Start UI server in foreground
-	if err := http.ListenAndServe(":3000", uiMux); err != nil {
-		log.Fatalf("UI Server failed to start: %v", err)
-	}
-}
-
-// enableCORS adds CORS headers to allow cross-origin requests
-func enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		
-		next.ServeHTTP(w, r)
-	})
-}
-
-func handleConvert(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Limit upload size to 10 MB for safety
-	r.ParseMultipartForm(10 << 20)
-
-	fromType := r.FormValue("fromType")
-	toType := r.FormValue("toType")
-
-	if fromType == "" || toType == "" {
-		http.Error(w, "Missing fromType or toType in form data", http.StatusBadRequest)
-		return
-	}
-
-	file, fileHeader, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Failed to get file from request. Ensure form-data key is 'file'", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// Default disposition
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"converted.%s\"", toType))
-
-	conversionPath := fmt.Sprintf("%s-to-%s", fromType, toType)
-
-	switch conversionPath {
-	case "jpg-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = ConvertJPGtoPNG(file, w)
-	case "csv-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = ConvertCSVtoPDF(file, w)
-	case "csv-to-json":
-		w.Header().Set("Content-Type", "application/json")
-		err = ConvertCSVtoJSON(file, w)
-	case "json-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = ConvertJSONtoCSV(file, w)
-	case "json-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = ConvertJSONtoTXT(file, w)
-	case "txt-to-docx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		err = ConvertTXTtoDOCX(file, w)
-	case "pdf-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = ConvertPDFtoTXT(file, fileHeader.Size, w)
-	case "txt-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = ConvertTXTtoPDF(file, w)
-	case "png-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = ConvertPNGtoJPG(file, w)
-	case "csv-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = ConvertCSVtoTXT(file, w)
-	case "docx-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = ConvertDOCXtoCSV(file, w)
-	case "docx-to-txt":
-		// Same as docx to csv since it extracts text
-		w.Header().Set("Content-Type", "text/plain")
-		err = ConvertDOCXtoCSV(file, w)
-	default:
-		http.Error(w, fmt.Sprintf("Conversion from %s to %s is not yet supported. Please choose a different combination.", fromType, toType), http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
-		w.Header().Del("Content-Disposition")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		http.Error(w, fmt.Sprintf("Conversion failed: %v", err), http.StatusBadRequest)
-		log.Printf("Conversion error (%s): %v", conversionPath, err)
-		return
-	}
-}
 
 // ConvertJPGtoPNG takes a JPEG from an io.Reader and writes a PNG to an io.Writer.
 func ConvertJPGtoPNG(in io.Reader, out io.Writer) error {
@@ -181,19 +39,19 @@ func ConvertCSVtoPDF(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("failed to read csv: %w", err)
 	}
 
-	pdf := fpdf.New("P", "mm", "A4", "")
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 12)
-	pdf.SetY(10.0)
+	pdfDoc := fpdf.New("P", "mm", "A4", "")
+	pdfDoc.AddPage()
+	pdfDoc.SetFont("Arial", "B", 12)
+	pdfDoc.SetY(10.0)
 
 	for _, row := range records {
 		for _, col := range row {
-			pdf.CellFormat(40, 10, col, "1", 0, "", false, 0, "")
+			pdfDoc.CellFormat(40, 10, col, "1", 0, "", false, 0, "")
 		}
-		pdf.Ln(-1)
+		pdfDoc.Ln(-1)
 	}
 
-	err = pdf.Output(out)
+	err = pdfDoc.Output(out)
 	if err != nil {
 		return fmt.Errorf("failed to output pdf: %w", err)
 	}
@@ -266,14 +124,12 @@ func ConvertJSONtoCSV(in io.Reader, out io.Writer) error {
 
 	switch v := raw.(type) {
 	case []interface{}:
-		// If it's an array, flatten each element as a separate row
 		for _, item := range v {
 			flat := make(map[string]interface{})
 			flattenJSON("", item, flat)
 			data = append(data, flat)
 		}
 	default:
-		// If it's a single object or primitive, flatten it as a single row
 		flat := make(map[string]interface{})
 		flattenJSON("", v, flat)
 		data = append(data, flat)
@@ -325,7 +181,6 @@ func ConvertJSONtoTXT(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("failed to decode json: %w", err)
 	}
 
-	// Pretty print JSON as plain text
 	prettyJSON, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to format json: %w", err)
@@ -350,20 +205,18 @@ func ConvertTXTtoDOCX(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("failed to read text file: %w", err)
 	}
 
-	// Save to a temporary file because gingfrederik/docx only supports writing to a file path
 	tmpFile, err := os.CreateTemp("", "out-*.docx")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpFilePath := tmpFile.Name()
-	tmpFile.Close() // Close so the library can write to it
+	tmpFile.Close() 
 	defer os.Remove(tmpFilePath)
 
 	if err := f.Save(tmpFilePath); err != nil {
 		return fmt.Errorf("failed to save docx: %w", err)
 	}
 
-	// Read from temp file and stream to response
 	savedFile, err := os.Open(tmpFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open generated docx: %w", err)
@@ -376,7 +229,6 @@ func ConvertTXTtoDOCX(in io.Reader, out io.Writer) error {
 
 // ConvertDOCXtoCSV extracts text paragraphs from a DOCX file and writes them to a CSV file.
 func ConvertDOCXtoCSV(in io.Reader, out io.Writer) error {
-	// Read full DOCX into memory (it's a zip archive)
 	b, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("failed to read docx: %w", err)
@@ -404,7 +256,7 @@ func ConvertDOCXtoCSV(in io.Reader, out io.Writer) error {
 	defer docXML.Close()
 
 	writer := csv.NewWriter(out)
-	writer.Write([]string{"Extracted Text"}) // Write header
+	writer.Write([]string{"Extracted Text"})
 
 	decoder := xml.NewDecoder(docXML)
 	for {
@@ -415,10 +267,9 @@ func ConvertDOCXtoCSV(in io.Reader, out io.Writer) error {
 
 		switch se := t.(type) {
 		case xml.StartElement:
-			if se.Name.Local == "t" { // <w:t> contains the actual text in DOCX
+			if se.Name.Local == "t" { 
 				var text string
 				if err := decoder.DecodeElement(&text, &se); err == nil {
-					// Write each text element as a new row in CSV
 					writer.Write([]string{text})
 				}
 			}
