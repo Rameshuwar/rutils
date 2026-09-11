@@ -1,0 +1,43 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Utility Microservice for converting files.
+  title: File Converter API
+  version: "1.0"
+paths:
+  /convert:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Converts any supported file type to another supported file type
+        dynamically.
+      parameters:
+      - description: Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+        in: formData
+        name: fromType
+        required: true
+        type: string
+      - description: Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+        in: formData
+        name: toType
+        required: true
+        type: string
+      - description: The file to convert
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: The converted file
+          schema:
+            type: file
+        "400":
+          description: Bad Request or unsupported combination
+          schema:
+            type: string
+      summary: Universal File Converter
+swagger: "2.0"

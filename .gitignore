@@ -1,0 +1,27 @@
+# Go binaries and executables
+server
+file-converter
+*.exe
+*.exe?
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Node / Frontend dependencies and builds
+frontend/node_modules/
+frontend/dist/
+.vite/
+
+# Patch and script artifacts
+*.patch
+*.orig
+*.rej
+fix.py
+patch_swagger.go
+
+# OS and IDE metadata
+.DS_Store
+.vscode/
+.idea/

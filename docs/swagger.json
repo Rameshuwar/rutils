@@ -1,0 +1,62 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Utility Microservice for converting files.",
+        "title": "File Converter API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/convert": {
+            "post": {
+                "description": "Converts any supported file type to another supported file type dynamically.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "summary": "Universal File Converter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "name": "fromType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "name": "toType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "The file to convert",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The converted file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request or unsupported combination",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
