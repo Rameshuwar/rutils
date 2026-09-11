@@ -12,6 +12,7 @@ import (
 	"image/png"
 	"io"
 	"os"
+	"os/exec"
 
 	"github.com/gingfrederik/docx"
 	"github.com/go-pdf/fpdf"
@@ -195,6 +196,8 @@ func ConvertTXTtoDOCX(in io.Reader, out io.Writer) error {
 	f := docx.NewFile()
 
 	scanner := bufio.NewScanner(in)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 	for scanner.Scan() {
 		text := scanner.Text()
 		p := f.AddParagraph()
@@ -290,7 +293,14 @@ func ConvertPDFtoTXT(in io.ReaderAt, size int64, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("failed to extract text from pdf: %w", err)
 	}
-	_, err = io.Copy(out, b)
+	textBytes, err := io.ReadAll(b)
+	if err != nil {
+		return err
+	}
+	if len(bytes.TrimSpace(textBytes)) == 0 {
+		return fmt.Errorf("no text found. Scanned PDFs or image-based PDFs are not supported")
+	}
+	_, err = io.Copy(out, bytes.NewReader(textBytes))
 	return err
 }
 
@@ -302,6 +312,8 @@ func ConvertTXTtoPDF(in io.Reader, out io.Writer) error {
 	pdfDoc.SetY(10.0)
 
 	scanner := bufio.NewScanner(in)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 	for scanner.Scan() {
 		pdfDoc.CellFormat(190, 10, scanner.Text(), "", 1, "", false, 0, "")
 	}
@@ -329,4 +341,325 @@ func ConvertPNGtoJPG(in io.Reader, out io.Writer) error {
 func ConvertCSVtoTXT(in io.Reader, out io.Writer) error {
 	_, err := io.Copy(out, in)
 	return err
+}
+
+// ConvertTXTtoJSON converts text lines into a JSON array of strings
+func ConvertTXTtoJSON(in io.Reader, out io.Writer) error {
+	scanner := bufio.NewScanner(in)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
+
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(map[string]interface{}{"lines": lines})
+}
+
+// ConvertCSVtoDOCX converts CSV data into a DOCX document
+func ConvertCSVtoDOCX(in io.Reader, out io.Writer) error {
+	reader := csv.NewReader(in)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return fmt.Errorf("failed to read csv: %w", err)
+	}
+
+	f := docx.NewFile()
+	for _, row := range records {
+		p := f.AddParagraph()
+		line := ""
+		for _, col := range row {
+			line += col + " | "
+		}
+		p.AddText(line)
+	}
+
+	tmpFile, err := os.CreateTemp("", "out-*.docx")
+	if err != nil {
+		return err
+	}
+	tmpFilePath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpFilePath)
+
+	if err := f.Save(tmpFilePath); err != nil {
+		return err
+	}
+
+	savedFile, err := os.Open(tmpFilePath)
+	if err != nil {
+		return err
+	}
+	defer savedFile.Close()
+
+	_, err = io.Copy(out, savedFile)
+	return err
+}
+
+// ConvertTXTtoCSV converts text lines into a single-column CSV
+func ConvertTXTtoCSV(in io.Reader, out io.Writer) error {
+	scanner := bufio.NewScanner(in)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
+
+	writer := csv.NewWriter(out)
+	writer.Write([]string{"Text"})
+
+	for scanner.Scan() {
+		writer.Write([]string{scanner.Text()})
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	writer.Flush()
+	return writer.Error()
+}
+
+// ConvertPDFtoDOCX extracts text from PDF and writes it to a DOCX
+func ConvertPDFtoDOCX(in io.ReaderAt, size int64, out io.Writer) error {
+	fpdf, err := pdf.NewReader(in, size)
+	if err != nil {
+		return err
+	}
+	b, err := fpdf.GetPlainText()
+	if err != nil {
+		return err
+	}
+
+	doc := docx.NewFile()
+	
+	scanner := bufio.NewScanner(b)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 10*1024*1024)
+	for scanner.Scan() {
+		p := doc.AddParagraph()
+		p.AddText(scanner.Text())
+	}
+
+	tmpFile, err := os.CreateTemp("", "out-*.docx")
+	if err != nil {
+		return err
+	}
+	tmpFilePath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpFilePath)
+
+	if err := doc.Save(tmpFilePath); err != nil {
+		return err
+	}
+
+	savedFile, err := os.Open(tmpFilePath)
+	if err != nil {
+		return err
+	}
+	defer savedFile.Close()
+
+	_, err = io.Copy(out, savedFile)
+	return err
+}
+
+// ConvertPDFtoCSV extracts text from PDF and writes it to a CSV
+func ConvertPDFtoCSV(in io.ReaderAt, size int64, out io.Writer) error {
+	fpdf, err := pdf.NewReader(in, size)
+	if err != nil {
+		return err
+	}
+	b, err := fpdf.GetPlainText()
+	if err != nil {
+		return err
+	}
+
+	return ConvertTXTtoCSV(b, out)
+}
+
+// ConvertPDFtoJSON extracts text from PDF and writes it to JSON
+func ConvertPDFtoJSON(in io.ReaderAt, size int64, out io.Writer) error {
+	fpdf, err := pdf.NewReader(in, size)
+	if err != nil {
+		return err
+	}
+	b, err := fpdf.GetPlainText()
+	if err != nil {
+		return err
+	}
+
+	return ConvertTXTtoJSON(b, out)
+}
+
+// ConvertJSONtoDOCX converts JSON to a DOCX document
+func ConvertJSONtoDOCX(in io.Reader, out io.Writer) error {
+	var data interface{}
+	if err := json.NewDecoder(in).Decode(&data); err != nil {
+		return fmt.Errorf("failed to decode json: %w", err)
+	}
+
+	prettyJSON, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return ConvertTXTtoDOCX(bytes.NewReader(prettyJSON), out)
+}
+
+// ConvertJSONtoPDF converts JSON to a PDF document
+func ConvertJSONtoPDF(in io.Reader, out io.Writer) error {
+	var data interface{}
+	if err := json.NewDecoder(in).Decode(&data); err != nil {
+		return fmt.Errorf("failed to decode json: %w", err)
+	}
+
+	prettyJSON, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return ConvertTXTtoPDF(bytes.NewReader(prettyJSON), out)
+}
+
+// ConvertDOCXtoJSON extracts text from DOCX and formats it as JSON
+func ConvertDOCXtoJSON(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertDOCXtoCSV(in, &buf); err != nil {
+		return err
+	}
+	return ConvertTXTtoJSON(&buf, out)
+}
+
+// ConvertDOCXtoPDF extracts text from DOCX and writes it to PDF
+func ConvertDOCXtoPDF(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertDOCXtoCSV(in, &buf); err != nil {
+		return err
+	}
+	return ConvertTXTtoPDF(&buf, out)
+}
+
+// ConvertPDFtoJPG renders the first page of a PDF to JPG
+func ConvertPDFtoJPG(in io.Reader, out io.Writer) error {
+	return convertPDFToImage(in, out, "-jpeg")
+}
+
+// ConvertPDFtoPNG renders the first page of a PDF to PNG
+func ConvertPDFtoPNG(in io.Reader, out io.Writer) error {
+	return convertPDFToImage(in, out, "-png")
+}
+
+func convertPDFToImage(in io.Reader, out io.Writer, formatFlag string) error {
+	tmpFile, err := os.CreateTemp("", "pdf-in-*.pdf")
+	if err != nil {
+		return err
+	}
+	tmpFilePath := tmpFile.Name()
+	defer os.Remove(tmpFilePath)
+	tmpFile.Close()
+
+	b, err := io.ReadAll(in)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(tmpFilePath, b, 0644); err != nil {
+		return err
+	}
+
+	outPrefix := tmpFilePath + "-out"
+	cmd := exec.Command("pdftocairo", formatFlag, "-singlefile", tmpFilePath, outPrefix)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("poppler rendering failed: %w", err)
+	}
+	
+	ext := ".jpg"
+	if formatFlag == "-png" {
+		ext = ".png"
+	}
+	
+	outFileName := outPrefix + ext
+	defer os.Remove(outFileName)
+
+	outFile, err := os.Open(outFileName)
+	if err != nil {
+		return fmt.Errorf("failed to read rendered image: %w", err)
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(out, outFile)
+	return err
+}
+
+// ConvertTXTtoJPG converts text to a JPG image
+func ConvertTXTtoJPG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertTXTtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoJPG(&buf, out)
+}
+
+// ConvertTXTtoPNG converts text to a PNG image
+func ConvertTXTtoPNG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertTXTtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoPNG(&buf, out)
+}
+
+// ConvertDOCXtoJPG converts DOCX to a JPG image
+func ConvertDOCXtoJPG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertDOCXtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoJPG(&buf, out)
+}
+
+// ConvertDOCXtoPNG converts DOCX to a PNG image
+func ConvertDOCXtoPNG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertDOCXtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoPNG(&buf, out)
+}
+
+// ConvertCSVtoJPG converts CSV to a JPG image
+func ConvertCSVtoJPG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertCSVtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoJPG(&buf, out)
+}
+
+// ConvertCSVtoPNG converts CSV to a PNG image
+func ConvertCSVtoPNG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertCSVtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoPNG(&buf, out)
+}
+
+// ConvertJSONtoJPG converts JSON to a JPG image
+func ConvertJSONtoJPG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertJSONtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoJPG(&buf, out)
+}
+
+// ConvertJSONtoPNG converts JSON to a PNG image
+func ConvertJSONtoPNG(in io.Reader, out io.Writer) error {
+	var buf bytes.Buffer
+	if err := ConvertJSONtoPDF(in, &buf); err != nil {
+		return err
+	}
+	return ConvertPDFtoPNG(&buf, out)
 }

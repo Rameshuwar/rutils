@@ -75,6 +75,63 @@ func HandleConvert(w http.ResponseWriter, r *http.Request) {
 	case "docx-to-txt":
 		w.Header().Set("Content-Type", "text/plain")
 		err = converter.ConvertDOCXtoCSV(file, w)
+	case "csv-to-docx":
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		err = converter.ConvertCSVtoDOCX(file, w)
+	case "txt-to-json":
+		w.Header().Set("Content-Type", "application/json")
+		err = converter.ConvertTXTtoJSON(file, w)
+	case "txt-to-csv":
+		w.Header().Set("Content-Type", "text/csv")
+		err = converter.ConvertTXTtoCSV(file, w)
+	case "pdf-to-docx":
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		err = converter.ConvertPDFtoDOCX(file, fileHeader.Size, w)
+	case "pdf-to-csv":
+		w.Header().Set("Content-Type", "text/csv")
+		err = converter.ConvertPDFtoCSV(file, fileHeader.Size, w)
+	case "pdf-to-json":
+		w.Header().Set("Content-Type", "application/json")
+		err = converter.ConvertPDFtoJSON(file, fileHeader.Size, w)
+	case "json-to-docx":
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		err = converter.ConvertJSONtoDOCX(file, w)
+	case "json-to-pdf":
+		w.Header().Set("Content-Type", "application/pdf")
+		err = converter.ConvertJSONtoPDF(file, w)
+	case "docx-to-json":
+		w.Header().Set("Content-Type", "application/json")
+		err = converter.ConvertDOCXtoJSON(file, w)
+	case "docx-to-pdf":
+		w.Header().Set("Content-Type", "application/pdf")
+		err = converter.ConvertDOCXtoPDF(file, w)
+	case "pdf-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = converter.ConvertPDFtoJPG(file, w)
+	case "txt-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = converter.ConvertTXTtoJPG(file, w)
+	case "txt-to-png":
+		w.Header().Set("Content-Type", "image/png")
+		err = converter.ConvertTXTtoPNG(file, w)
+	case "docx-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = converter.ConvertDOCXtoJPG(file, w)
+	case "docx-to-png":
+		w.Header().Set("Content-Type", "image/png")
+		err = converter.ConvertDOCXtoPNG(file, w)
+	case "csv-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = converter.ConvertCSVtoJPG(file, w)
+	case "csv-to-png":
+		w.Header().Set("Content-Type", "image/png")
+		err = converter.ConvertCSVtoPNG(file, w)
+	case "json-to-jpg":
+		w.Header().Set("Content-Type", "image/jpeg")
+		err = converter.ConvertJSONtoJPG(file, w)
+	case "json-to-png":
+		w.Header().Set("Content-Type", "image/png")
+		err = converter.ConvertJSONtoPNG(file, w)
 	default:
 		http.Error(w, fmt.Sprintf("Conversion from %s to %s is not yet supported. Please choose a different combination.", fromType, toType), http.StatusBadRequest)
 		return

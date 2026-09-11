@@ -19,6 +19,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server/main.go
 FROM alpine:latest
 WORKDIR /app
 
+# Install poppler-utils for PDF to Image conversion
+RUN apk add --no-cache poppler-utils
+
 # Copy backend binary
 COPY --from=backend-builder /app/server .
 
