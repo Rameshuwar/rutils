@@ -3,62 +3,137 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Universal File Converter</title>
+    <title>Universal Converter</title>
   </head>
-  <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden">
-      <header class="bg-indigo-600 text-white py-6 px-8">
-        <h1 class="text-3xl font-bold">Universal Converter</h1>
-        <p class="text-indigo-100 mt-2">Dynamically convert your files securely.</p>
-      </header>
+  <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex">
+    
+    <!-- Sidebar -->
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-10">
+      <div class="p-6 mb-4">
+        <h2 class="text-2xl font-bold">Universal</h2>
+        <p class="text-indigo-300 text-sm">Converters</p>
+      </div>
+      <nav class="flex-1 px-4 space-y-2">
+        <button id="btn-file-converter" class="w-full flex items-center gap-3 px-4 py-3 bg-indigo-800 rounded-lg text-left transition-colors font-medium">
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          File Converter
+        </button>
+        <button id="btn-measure-converter" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-800 rounded-lg text-left transition-colors text-indigo-200 hover:text-white font-medium">
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+          Measurements
+        </button>
+      </nav>
+    </aside>
 
-      <div class="p-8 space-y-6">
-        <form id="convert-form" class="space-y-6">
-          
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Source Format (Auto-detected display) -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Convert From</label>
-              <div id="detection-box" class="w-full bg-gray-100 border border-gray-200 rounded-lg py-2 px-3 flex items-center h-[42px] transition-colors">
-                <span id="detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected on upload</span>
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center p-8 bg-gray-50 overflow-y-auto">
+      
+      <!-- File Converter View -->
+      <div id="file-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden block transition-opacity duration-300">
+        <header class="bg-indigo-600 text-white py-6 px-8">
+          <h1 class="text-3xl font-bold">File Converter</h1>
+          <p class="text-indigo-100 mt-2">Dynamically convert your files securely.</p>
+        </header>
+
+        <div class="p-8 space-y-6">
+          <form id="convert-form" class="space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Convert From</label>
+                <div id="detection-box" class="w-full bg-gray-100 border border-gray-200 rounded-lg py-2 px-3 flex items-center h-[42px] transition-colors">
+                  <span id="detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected on upload</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Convert To</label>
+                <select id="to-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                  <option value="csv">CSV (Spreadsheet)</option>
+                  <option value="json">JSON (Data)</option>
+                  <option value="txt">TXT (Plain Text)</option>
+                  <option value="docx">DOCX (Word Document)</option>
+                  <option value="pdf">PDF (Document)</option>
+                  <option value="jpg">JPG (Image)</option>
+                  <option value="png">PNG (Image)</option>
+                </select>
               </div>
             </div>
+
+            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+              <label class="block text-sm font-medium text-indigo-900 mb-2">Upload File</label>
+              <input type="file" id="file-input" accept=".csv,.json,.txt,.docx,.pdf,.jpg,.png" class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-indigo-600 file:text-white
+                hover:file:bg-indigo-700 cursor-pointer" required />
+            </div>
+
+            <button type="submit" class="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+              Convert & Download
+            </button>
             
-            <!-- Convert To Dropdown -->
+            <p id="status-message" class="text-sm text-center hidden"></p>
+          </form>
+        </div>
+      </div>
+
+      <!-- Measurement Converter View -->
+      <div id="measure-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+        <header class="bg-teal-600 text-white py-6 px-8">
+          <h1 class="text-3xl font-bold">Measurement Converter</h1>
+          <p class="text-teal-100 mt-2">Accurately convert between units.</p>
+        </header>
+
+        <div class="p-8 space-y-6">
+          <form id="measure-form" class="space-y-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Convert To</label>
-              <select id="to-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-                <option value="csv">CSV (Spreadsheet)</option>
-                <option value="json">JSON (Data)</option>
-                <option value="txt">TXT (Plain Text)</option>
-                <option value="docx">DOCX (Word Document)</option>
-                <option value="pdf">PDF (Document)</option>
-                <option value="jpg">JPG (Image)</option>
-                <option value="png">PNG (Image)</option>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select id="measure-category" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="length">Length</option>
+                <option value="weight">Weight / Mass</option>
+                <option value="volume">Volume</option>
+                <option value="area">Area</option>
+                <option value="time">Time</option>
+                <option value="temperature">Temperature</option>
               </select>
             </div>
-          </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">From Unit</label>
+                <select id="measure-from" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">To Unit</label>
+                <select id="measure-to" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
 
-          <!-- File Upload -->
-          <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-            <label class="block text-sm font-medium text-indigo-900 mb-2">Upload File</label>
-            <input type="file" id="file-input" accept=".csv,.json,.txt,.docx,.pdf,.jpg,.png" class="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-full file:border-0
-              file:text-sm file:font-semibold
-              file:bg-indigo-600 file:text-white
-              hover:file:bg-indigo-700 cursor-pointer" required />
-          </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Value</label>
+              <input type="number" id="measure-value" step="any" placeholder="Enter value to convert" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+            </div>
 
-          <!-- Submit -->
-          <button type="submit" class="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-            Convert & Download
-          </button>
-          
-          <p id="status-message" class="text-sm text-center hidden"></p>
-        </form>
+            <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+              Convert Value
+            </button>
+            
+            <div id="measure-result-box" class="hidden mt-4 p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
+              <span class="text-sm text-teal-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
+              <span id="measure-result-text" class="text-3xl font-bold text-teal-900 break-all"></span>
+            </div>
+
+            <p id="measure-status-message" class="text-sm text-center hidden"></p>
+          </form>
+        </div>
       </div>
-    </div>
+
+    </main>
+    
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

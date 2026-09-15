@@ -1,4 +1,21 @@
 basePath: /
+definitions:
+  api.MeasurementRequest:
+    properties:
+      category:
+        type: string
+      fromUnit:
+        type: string
+      toUnit:
+        type: string
+      value:
+        type: number
+    type: object
+  api.MeasurementResponse:
+    properties:
+      result:
+        type: number
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -40,4 +57,29 @@ paths:
           schema:
             type: string
       summary: Universal File Converter
+  /convert-measurement:
+    post:
+      consumes:
+      - application/json
+      description: Converts measurements between different units (e.g., meters to
+        feet)
+      parameters:
+      - description: Conversion Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.MeasurementRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversion Result
+          schema:
+            $ref: '#/definitions/api.MeasurementResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Measurement Converter
 swagger: "2.0"

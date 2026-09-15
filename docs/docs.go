@@ -63,6 +63,70 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/convert-measurement": {
+            "post": {
+                "description": "Converts measurements between different units (e.g., meters to feet)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Measurement Converter",
+                "parameters": [
+                    {
+                        "description": "Conversion Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.MeasurementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion Result",
+                        "schema": {
+                            "$ref": "#/definitions/api.MeasurementResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.MeasurementRequest": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "fromUnit": {
+                    "type": "string"
+                },
+                "toUnit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.MeasurementResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "number"
+                }
+            }
         }
     }
 }`
