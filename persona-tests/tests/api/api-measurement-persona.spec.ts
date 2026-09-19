@@ -153,6 +153,35 @@ test.describe('Backend API Measurement Persona', () => {
     await test.step('Why it got this output: Time factors are strictly defined and correctly evaluated by the backend.', async () => {});
   });
 
+  test('Persona: Successful Conversion (Speed: kilometers_per_hour to meters_per_second)', async ({ request }) => {
+    await test.step('Why we use this test: We need to ensure the newly added speed category performs conversions accurately.', async () => {});
+    
+    let response;
+    
+    await test.step('What we use: We request the conversion of 100 kilometers_per_hour into meters_per_second.', async () => {
+      response = await request.post(`${API_URL}/convert-measurement`, {
+        data: {
+          category: 'speed',
+          fromUnit: 'kilometers_per_hour',
+          toUnit: 'meters_per_second',
+          value: 100
+        }
+      });
+    });
+
+    await test.step('What we expected: We expect a 200 OK status.', async () => {
+      expect(response.status()).toBe(200);
+    });
+
+    await test.step('What we get: We read the result in meters per second.', async () => {
+      const jsonResponse = await response.json();
+      // 100 km/h = ~27.7778 m/s
+      expect(jsonResponse.result).toBeCloseTo(27.7778, 3);
+    });
+
+    await test.step('Why it got this output: The speed factors (including 1000/3600 for km/h) were correctly evaluated by the backend.', async () => {});
+  });
+
   test('Persona: Special Category Conversion (Temperature: celsius to fahrenheit)', async ({ request }) => {
     await test.step('Why we use this test: Temperature conversions use complex offset logic instead of simple multiplication. We need to verify this special case works.', async () => {});
     
