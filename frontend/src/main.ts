@@ -6,16 +6,37 @@ import './style.css'
 const btnFileConverter = document.getElementById('btn-file-converter') as HTMLButtonElement;
 const btnMeasureConverter = document.getElementById('btn-measure-converter') as HTMLButtonElement;
 const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
+const btnRailwayConverter = document.getElementById('btn-railway-converter') as HTMLButtonElement;
+const btnTimeMenu = document.getElementById('btn-time-menu') as HTMLButtonElement;
+const timeMenuDropdown = document.getElementById('time-menu-dropdown') as HTMLDivElement;
+const timeMenuIcon = document.getElementById('time-menu-icon') as SVGSVGElement;
 
 const fileConverterView = document.getElementById('file-converter-view') as HTMLDivElement;
 const measureConverterView = document.getElementById('measure-converter-view') as HTMLDivElement;
 const timeConverterView = document.getElementById('time-converter-view') as HTMLDivElement;
+const railwayConverterView = document.getElementById('railway-converter-view') as HTMLDivElement;
 
-function setActiveView(view: 'file' | 'measure' | 'time') {
+let timeMenuOpen = false;
+
+btnTimeMenu.addEventListener('click', () => {
+  timeMenuOpen = !timeMenuOpen;
+  if (timeMenuOpen) {
+    timeMenuDropdown.classList.remove('hidden');
+    timeMenuDropdown.classList.add('flex');
+    timeMenuIcon.classList.add('rotate-180');
+  } else {
+    timeMenuDropdown.classList.add('hidden');
+    timeMenuDropdown.classList.remove('flex');
+    timeMenuIcon.classList.remove('rotate-180');
+  }
+});
+
+function setActiveView(view: 'file' | 'measure' | 'time' | 'railway') {
   // Hide all
   fileConverterView.classList.add('hidden');
   measureConverterView.classList.add('hidden');
   timeConverterView.classList.add('hidden');
+  railwayConverterView.classList.add('hidden');
   
   // Reset buttons
   btnFileConverter.classList.remove('bg-indigo-800', 'text-white');
@@ -26,6 +47,9 @@ function setActiveView(view: 'file' | 'measure' | 'time') {
   
   btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
   btnTimeConverter.classList.add('text-indigo-200');
+
+  btnRailwayConverter.classList.remove('bg-indigo-800', 'text-white');
+  btnRailwayConverter.classList.add('text-indigo-200');
 
   // Activate selected
   if (view === 'file') {
@@ -40,12 +64,17 @@ function setActiveView(view: 'file' | 'measure' | 'time') {
     timeConverterView.classList.remove('hidden');
     btnTimeConverter.classList.replace('text-indigo-200', 'text-white');
     btnTimeConverter.classList.add('bg-indigo-800');
+  } else if (view === 'railway') {
+    railwayConverterView.classList.remove('hidden');
+    btnRailwayConverter.classList.replace('text-indigo-200', 'text-white');
+    btnRailwayConverter.classList.add('bg-indigo-800');
   }
 }
 
 btnFileConverter.addEventListener('click', () => setActiveView('file'));
 btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
 btnTimeConverter.addEventListener('click', () => setActiveView('time'));
+btnRailwayConverter.addEventListener('click', () => setActiveView('railway'));
 
 // ----------------------------------------------------
 // FILE CONVERTER LOGIC
@@ -383,3 +412,122 @@ timeForm.addEventListener('submit', async (e) => {
     timeStatusMessage.classList.replace('text-gray-500', 'text-red-600');
   }
 });
+
+// ----------------------------------------------------
+// RAILWAY CONVERTER LOGIC
+// ----------------------------------------------------
+const rw12Hour = document.getElementById('railway-12-hour') as HTMLInputElement;
+const rw12Min = document.getElementById('railway-12-min') as HTMLInputElement;
+const rw12Ampm = document.getElementById('railway-12-ampm') as HTMLSelectElement;
+
+const rw24Hour = document.getElementById('railway-24-hour') as HTMLInputElement;
+const rw24Min = document.getElementById('railway-24-min') as HTMLInputElement;
+
+const railwayStatusMessage = document.getElementById('railway-status-message') as HTMLParagraphElement;
+
+let isUpdatingRailway = false;
+
+async function sync12to24() {
+  if (isUpdatingRailway) return;
+  
+  const h = parseInt(rw12Hour.value, 10);
+  const m = parseInt(rw12Min.value, 10);
+  if (isNaN(h) || isNaN(m)) return;
+  
+  isUpdatingRailway = true;
+  
+  const payload = {
+    direction: "12to24",
+    hour: h,
+    minute: m,
+    ampm: rw12Ampm.value
+  };
+
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal 
+      ? 'http://localhost:8080/convert-railway' 
+      : 'https://utils.api.srilakshmiretail.in/convert-railway';
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      rw24Hour.value = data.hour_24.toString().padStart(2, '0');
+      rw24Min.value = data.minute.toString().padStart(2, '0');
+      railwayStatusMessage.classList.add('hidden');
+    } else {
+      throw new Error(await res.text());
+    }
+  } catch (err) {
+    console.error("Railway convert error", err);
+    railwayStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown'}`;
+    railwayStatusMessage.classList.remove('hidden');
+  } finally {
+    isUpdatingRailway = false;
+  }
+}
+
+async function sync24to12() {
+  if (isUpdatingRailway) return;
+  
+  const h = parseInt(rw24Hour.value, 10);
+  const m = parseInt(rw24Min.value, 10);
+  if (isNaN(h) || isNaN(m)) return;
+  
+  isUpdatingRailway = true;
+  
+  const payload = {
+    direction: "24to12",
+    hour: h,
+    minute: m
+  };
+
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal 
+      ? 'http://localhost:8080/convert-railway' 
+      : 'https://utils.api.srilakshmiretail.in/convert-railway';
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      rw12Hour.value = data.hour_12.toString().padStart(2, '0');
+      rw12Min.value = data.minute.toString().padStart(2, '0');
+      rw12Ampm.value = data.ampm;
+      railwayStatusMessage.classList.add('hidden');
+    } else {
+       throw new Error(await res.text());
+    }
+  } catch (err) {
+    console.error("Railway convert error", err);
+    railwayStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown'}`;
+    railwayStatusMessage.classList.remove('hidden');
+  } finally {
+    isUpdatingRailway = false;
+  }
+}
+
+['input', 'change'].forEach(evt => {
+  rw12Hour.addEventListener(evt, sync12to24);
+  rw12Min.addEventListener(evt, sync12to24);
+  rw12Ampm.addEventListener(evt, sync12to24);
+  
+  rw24Hour.addEventListener(evt, sync24to12);
+  rw24Min.addEventListener(evt, sync24to12);
+});
+
+// Init
+rw12Hour.value = "12";
+rw12Min.value = "00";
+rw12Ampm.value = "PM";
+sync12to24();

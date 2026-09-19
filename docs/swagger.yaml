@@ -16,6 +16,102 @@ definitions:
       result:
         type: number
     type: object
+  converter.RailwayConversionRequest:
+    properties:
+      ampm:
+        description: '"AM" or "PM"'
+        type: string
+      direction:
+        description: '"12to24" or "24to12"'
+        type: string
+      hour:
+        type: integer
+      minute:
+        type: integer
+    type: object
+  converter.RailwayConversionResponse:
+    properties:
+      ampm:
+        type: string
+      hour_12:
+        type: integer
+      hour_24:
+        type: integer
+      minute:
+        type: integer
+    type: object
+  converter.TimeConversionRequest:
+    properties:
+      ambiguous_policy:
+        description: 'Policy for ambiguous times (fall back): "first" (default) or
+          "second"'
+        type: string
+      day:
+        type: integer
+      dest_tz:
+        description: e.g., "Asia/Tokyo"
+        type: string
+      hour:
+        type: integer
+      minute:
+        type: integer
+      month:
+        type: integer
+      non_existent_policy:
+        description: 'Policy for non-existent times (spring forward): "forward" (default,
+          shifts forward) or "error"'
+        type: string
+      second:
+        type: integer
+      source_tz:
+        description: e.g., "America/New_York"
+        type: string
+      year:
+        type: integer
+    type: object
+  converter.TimeConversionResponse:
+    properties:
+      dest_offset:
+        type: string
+      dest_time_local:
+        description: ISO 8601 with offset
+        type: string
+      dest_time_utc:
+        description: ISO 8601
+        type: string
+      dest_zone_name:
+        type: string
+      is_next_day:
+        type: boolean
+      is_prev_day:
+        type: boolean
+      resolution:
+        $ref: '#/definitions/converter.TimeResolution'
+      source_offset:
+        description: e.g. "-04:00"
+        type: string
+      source_time_local:
+        description: ISO 8601 with offset
+        type: string
+      source_time_utc:
+        description: ISO 8601
+        type: string
+      source_zone_name:
+        description: e.g. "EDT"
+        type: string
+      warning:
+        type: string
+    type: object
+  converter.TimeResolution:
+    enum:
+    - normal
+    - ambiguous
+    - non-existent
+    type: string
+    x-enum-varnames:
+    - ResolutionNormal
+    - ResolutionAmbiguous
+    - ResolutionNonExistent
 host: localhost:8080
 info:
   contact: {}
@@ -82,4 +178,54 @@ paths:
           schema:
             type: string
       summary: Measurement Converter
+  /convert-railway:
+    post:
+      consumes:
+      - application/json
+      description: Converts between 12-hour AM/PM and 24-hour Indian Railway time
+        format.
+      parameters:
+      - description: Railway Conversion Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/converter.RailwayConversionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversion Result
+          schema:
+            $ref: '#/definitions/converter.RailwayConversionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Railway Time Converter
+  /convert-time:
+    post:
+      consumes:
+      - application/json
+      description: Converts date and time from any location/time zone to any other
+        location/time zone accurately.
+      parameters:
+      - description: Time Conversion Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/converter.TimeConversionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversion Result
+          schema:
+            $ref: '#/definitions/converter.TimeConversionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Universal Time Converter
 swagger: "2.0"

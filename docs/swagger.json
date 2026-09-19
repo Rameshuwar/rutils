@@ -94,6 +94,80 @@
                     }
                 }
             }
+        },
+        "/convert-railway": {
+            "post": {
+                "description": "Converts between 12-hour AM/PM and 24-hour Indian Railway time format.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Railway Time Converter",
+                "parameters": [
+                    {
+                        "description": "Railway Conversion Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/converter.RailwayConversionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.RailwayConversionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/convert-time": {
+            "post": {
+                "description": "Converts date and time from any location/time zone to any other location/time zone accurately.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Universal Time Converter",
+                "parameters": [
+                    {
+                        "description": "Time Conversion Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/converter.TimeConversionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.TimeConversionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -121,6 +195,141 @@
                     "type": "number"
                 }
             }
+        },
+        "converter.RailwayConversionRequest": {
+            "type": "object",
+            "properties": {
+                "ampm": {
+                    "description": "\"AM\" or \"PM\"",
+                    "type": "string"
+                },
+                "direction": {
+                    "description": "\"12to24\" or \"24to12\"",
+                    "type": "string"
+                },
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                }
+            }
+        },
+        "converter.RailwayConversionResponse": {
+            "type": "object",
+            "properties": {
+                "ampm": {
+                    "type": "string"
+                },
+                "hour_12": {
+                    "type": "integer"
+                },
+                "hour_24": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                }
+            }
+        },
+        "converter.TimeConversionRequest": {
+            "type": "object",
+            "properties": {
+                "ambiguous_policy": {
+                    "description": "Policy for ambiguous times (fall back): \"first\" (default) or \"second\"",
+                    "type": "string"
+                },
+                "day": {
+                    "type": "integer"
+                },
+                "dest_tz": {
+                    "description": "e.g., \"Asia/Tokyo\"",
+                    "type": "string"
+                },
+                "hour": {
+                    "type": "integer"
+                },
+                "minute": {
+                    "type": "integer"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "non_existent_policy": {
+                    "description": "Policy for non-existent times (spring forward): \"forward\" (default, shifts forward) or \"error\"",
+                    "type": "string"
+                },
+                "second": {
+                    "type": "integer"
+                },
+                "source_tz": {
+                    "description": "e.g., \"America/New_York\"",
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "converter.TimeConversionResponse": {
+            "type": "object",
+            "properties": {
+                "dest_offset": {
+                    "type": "string"
+                },
+                "dest_time_local": {
+                    "description": "ISO 8601 with offset",
+                    "type": "string"
+                },
+                "dest_time_utc": {
+                    "description": "ISO 8601",
+                    "type": "string"
+                },
+                "dest_zone_name": {
+                    "type": "string"
+                },
+                "is_next_day": {
+                    "type": "boolean"
+                },
+                "is_prev_day": {
+                    "type": "boolean"
+                },
+                "resolution": {
+                    "$ref": "#/definitions/converter.TimeResolution"
+                },
+                "source_offset": {
+                    "description": "e.g. \"-04:00\"",
+                    "type": "string"
+                },
+                "source_time_local": {
+                    "description": "ISO 8601 with offset",
+                    "type": "string"
+                },
+                "source_time_utc": {
+                    "description": "ISO 8601",
+                    "type": "string"
+                },
+                "source_zone_name": {
+                    "description": "e.g. \"EDT\"",
+                    "type": "string"
+                },
+                "warning": {
+                    "type": "string"
+                }
+            }
+        },
+        "converter.TimeResolution": {
+            "type": "string",
+            "enum": [
+                "normal",
+                "ambiguous",
+                "non-existent"
+            ],
+            "x-enum-varnames": [
+                "ResolutionNormal",
+                "ResolutionAmbiguous",
+                "ResolutionNonExistent"
+            ]
         }
     }
 }
