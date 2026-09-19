@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"github.com/gingfrederik/docx"
 	"github.com/go-pdf/fpdf"
+	"log"
 )
 
 func main() {

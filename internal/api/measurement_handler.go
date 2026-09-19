@@ -53,7 +53,7 @@ func HandleMeasurementConvert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := MeasurementResponse{Result: result}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)

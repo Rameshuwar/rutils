@@ -22,6 +22,10 @@
           <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
           Measurements
         </button>
+        <button id="btn-time-converter" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-800 rounded-lg text-left transition-colors text-indigo-200 hover:text-white font-medium">
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Time standard unit
+        </button>
       </nav>
     </aside>
 
@@ -129,6 +133,64 @@
             </div>
 
             <p id="measure-status-message" class="text-sm text-center hidden"></p>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Time Converter View -->
+      <div id="time-converter-view" class="max-w-2xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+        <header class="bg-blue-600 text-white py-6 px-8">
+          <h1 class="text-3xl font-bold">Time Standard Unit</h1>
+          <p class="text-blue-100 mt-2">Accurately convert global time instantly.</p>
+        </header>
+
+        <div class="p-8 space-y-6">
+          <form id="time-form" class="space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Local Date & Time</label>
+                <div class="flex gap-2">
+                  <input type="date" id="time-date" class="flex-1 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                  <select id="time-hour" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required>
+                    <!-- Populated by JS -->
+                  </select>
+                  <span class="flex items-center font-bold text-gray-500">:</span>
+                  <select id="time-minute" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required>
+                    <!-- Populated by JS -->
+                  </select>
+                  <select id="time-ampm" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required>
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Source Timezone</label>
+                <select id="time-source-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Destination Timezone</label>
+                <select id="time-dest-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+              Convert Time
+            </button>
+            
+            <div id="time-result-box" class="hidden mt-4 p-6 bg-blue-50 rounded-lg border border-blue-100 text-center shadow-inner">
+              <span class="text-sm text-blue-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
+              <div class="flex flex-col space-y-2">
+                 <span id="time-result-local" class="text-2xl font-bold text-blue-900"></span>
+                 <span id="time-result-zone" class="text-sm text-blue-700 font-medium"></span>
+              </div>
+              <p id="time-warning" class="mt-3 text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 hidden"></p>
+            <p id="time-status-message" class="text-sm text-center hidden"></p>
           </form>
         </div>
       </div>

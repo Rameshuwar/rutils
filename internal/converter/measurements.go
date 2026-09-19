@@ -49,7 +49,7 @@ var ConversionFactors = map[string]map[string]float64{
 		"weeks":   604800.0,
 	},
 	"speed": {
-		"meters_per_second":   1.0, // base unit
+		"meters_per_second":   1.0,             // base unit
 		"kilometers_per_hour": 1000.0 / 3600.0, // ~0.277778
 		"miles_per_hour":      0.44704,
 		"feet_per_second":     0.3048,
@@ -79,7 +79,7 @@ func ConvertMeasurement(category, fromUnit, toUnit string, value float64) (float
 	if !fromOk {
 		return 0, fmt.Errorf("unsupported fromUnit: %s in category: %s", fromUnit, category)
 	}
-	
+
 	toFactor, toOk := factors[toUnit]
 	if !toOk {
 		return 0, fmt.Errorf("unsupported toUnit: %s in category: %s", toUnit, category)

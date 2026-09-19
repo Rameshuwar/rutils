@@ -213,7 +213,7 @@ func ConvertTXTtoDOCX(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpFilePath := tmpFile.Name()
-	tmpFile.Close() 
+	tmpFile.Close()
 	defer os.Remove(tmpFilePath)
 
 	if err := f.Save(tmpFilePath); err != nil {
@@ -270,7 +270,7 @@ func ConvertDOCXtoCSV(in io.Reader, out io.Writer) error {
 
 		switch se := t.(type) {
 		case xml.StartElement:
-			if se.Name.Local == "t" { 
+			if se.Name.Local == "t" {
 				var text string
 				if err := decoder.DecodeElement(&text, &se); err == nil {
 					writer.Write([]string{text})
@@ -434,7 +434,7 @@ func ConvertPDFtoDOCX(in io.ReaderAt, size int64, out io.Writer) error {
 	}
 
 	doc := docx.NewFile()
-	
+
 	scanner := bufio.NewScanner(b)
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
@@ -573,12 +573,12 @@ func convertPDFToImage(in io.Reader, out io.Writer, formatFlag string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("poppler rendering failed: %w", err)
 	}
-	
+
 	ext := ".jpg"
 	if formatFlag == "-png" {
 		ext = ".png"
 	}
-	
+
 	outFileName := outPrefix + ext
 	defer os.Remove(outFileName)
 

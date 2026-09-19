@@ -5,26 +5,47 @@ import './style.css'
 // ----------------------------------------------------
 const btnFileConverter = document.getElementById('btn-file-converter') as HTMLButtonElement;
 const btnMeasureConverter = document.getElementById('btn-measure-converter') as HTMLButtonElement;
+const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
+
 const fileConverterView = document.getElementById('file-converter-view') as HTMLDivElement;
 const measureConverterView = document.getElementById('measure-converter-view') as HTMLDivElement;
+const timeConverterView = document.getElementById('time-converter-view') as HTMLDivElement;
 
-btnFileConverter.addEventListener('click', () => {
-  fileConverterView.classList.remove('hidden');
-  measureConverterView.classList.add('hidden');
-  btnFileConverter.classList.replace('text-indigo-200', 'text-white');
-  btnFileConverter.classList.add('bg-indigo-800');
-  btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
-  btnMeasureConverter.classList.add('text-indigo-200');
-});
-
-btnMeasureConverter.addEventListener('click', () => {
-  measureConverterView.classList.remove('hidden');
+function setActiveView(view: 'file' | 'measure' | 'time') {
+  // Hide all
   fileConverterView.classList.add('hidden');
-  btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
-  btnMeasureConverter.classList.add('bg-indigo-800');
+  measureConverterView.classList.add('hidden');
+  timeConverterView.classList.add('hidden');
+  
+  // Reset buttons
   btnFileConverter.classList.remove('bg-indigo-800', 'text-white');
   btnFileConverter.classList.add('text-indigo-200');
-});
+  
+  btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
+  btnMeasureConverter.classList.add('text-indigo-200');
+  
+  btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
+  btnTimeConverter.classList.add('text-indigo-200');
+
+  // Activate selected
+  if (view === 'file') {
+    fileConverterView.classList.remove('hidden');
+    btnFileConverter.classList.replace('text-indigo-200', 'text-white');
+    btnFileConverter.classList.add('bg-indigo-800');
+  } else if (view === 'measure') {
+    measureConverterView.classList.remove('hidden');
+    btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
+    btnMeasureConverter.classList.add('bg-indigo-800');
+  } else if (view === 'time') {
+    timeConverterView.classList.remove('hidden');
+    btnTimeConverter.classList.replace('text-indigo-200', 'text-white');
+    btnTimeConverter.classList.add('bg-indigo-800');
+  }
+}
+
+btnFileConverter.addEventListener('click', () => setActiveView('file'));
+btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
+btnTimeConverter.addEventListener('click', () => setActiveView('time'));
 
 // ----------------------------------------------------
 // FILE CONVERTER LOGIC
@@ -225,5 +246,140 @@ measureForm.addEventListener('submit', async (e) => {
     console.error('Measurement conversion error:', error);
     measureStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
     measureStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+  }
+});
+
+// ----------------------------------------------------
+// TIME CONVERTER LOGIC
+// ----------------------------------------------------
+const timeForm = document.getElementById('time-form') as HTMLFormElement;
+const timeDateInput = document.getElementById('time-date') as HTMLInputElement;
+const timeHourInput = document.getElementById('time-hour') as HTMLSelectElement;
+const timeMinuteInput = document.getElementById('time-minute') as HTMLSelectElement;
+const timeAmpmInput = document.getElementById('time-ampm') as HTMLSelectElement;
+const timeSourceTzInput = document.getElementById('time-source-tz') as HTMLSelectElement;
+const timeDestTzInput = document.getElementById('time-dest-tz') as HTMLSelectElement;
+const timeResultBox = document.getElementById('time-result-box') as HTMLDivElement;
+const timeResultLocal = document.getElementById('time-result-local') as HTMLSpanElement;
+const timeResultZone = document.getElementById('time-result-zone') as HTMLSpanElement;
+const timeWarning = document.getElementById('time-warning') as HTMLParagraphElement;
+const timeStatusMessage = document.getElementById('time-status-message') as HTMLParagraphElement;
+
+const timezones = [
+  "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", 
+  "America/Phoenix", "America/Anchorage", "America/Honolulu", "America/Sao_Paulo", 
+  "America/Argentina/Buenos_Aires", "America/Bogota", "Europe/London", "Europe/Paris", 
+  "Europe/Berlin", "Europe/Rome", "Europe/Moscow", "Africa/Cairo", "Africa/Johannesburg", 
+  "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok", "Asia/Singapore", 
+  "Asia/Hong_Kong", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney", 
+  "Australia/Melbourne", "Australia/Brisbane", "Australia/Perth", "Pacific/Auckland", "Pacific/Fiji"
+];
+
+timezones.forEach(tz => {
+  timeSourceTzInput.add(new Option(tz, tz));
+  timeDestTzInput.add(new Option(tz, tz));
+});
+
+for (let h = 1; h <= 12; h++) {
+  const hr = h.toString().padStart(2, '0');
+  timeHourInput.add(new Option(hr, hr));
+}
+for (let m = 0; m <= 59; m++) {
+  const min = m.toString().padStart(2, '0');
+  timeMinuteInput.add(new Option(min, min));
+}
+
+timeSourceTzInput.value = "America/New_York";
+timeDestTzInput.value = "Asia/Tokyo";
+
+timeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  timeStatusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+  timeStatusMessage.classList.add('text-gray-500');
+  timeStatusMessage.textContent = 'Converting...';
+  timeResultBox.classList.add('hidden');
+  timeWarning.classList.add('hidden');
+
+  const dateValue = timeDateInput.value; // e.g. "2024-11-03"
+  if (!dateValue) return;
+
+  const dateParts = dateValue.split('-');
+  
+  let hour = parseInt(timeHourInput.value, 10);
+  const minute = parseInt(timeMinuteInput.value, 10);
+  const ampm = timeAmpmInput.value;
+  
+  // Convert to 24hr for the payload request internally
+  if (ampm === "PM" && hour !== 12) hour += 12;
+  if (ampm === "AM" && hour === 12) hour = 0;
+  
+  const payload = {
+    year: parseInt(dateParts[0], 10),
+    month: parseInt(dateParts[1], 10),
+    day: parseInt(dateParts[2], 10),
+    hour: hour,
+    minute: minute,
+    second: 0,
+    source_tz: timeSourceTzInput.value,
+    dest_tz: timeDestTzInput.value,
+    ambiguous_policy: "first",
+    non_existent_policy: "forward"
+  };
+
+  try {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal 
+      ? 'http://localhost:8080/convert-time' 
+      : 'https://utils.api.srilakshmiretail.in/convert-time';
+      
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || `Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Parse local time for 12-hour AM/PM format
+    const destLocalParts = data.dest_time_local.split('T');
+    const destDate = destLocalParts[0];
+    const timeWithOffset = destLocalParts[1];
+    
+    const [hourStr, minStr] = timeWithOffset.split(':');
+    let hour = parseInt(hourStr, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    
+    const destTime12 = `${hour.toString().padStart(2, '0')}:${minStr} ${ampm}`;
+    
+    timeResultLocal.textContent = `${destDate} ${destTime12}`;
+    
+    let zoneText = `${data.dest_zone_name} (UTC ${data.dest_offset})`;
+    if (data.is_next_day) zoneText += ' • Next Day';
+    if (data.is_prev_day) zoneText += ' • Previous Day';
+    
+    timeResultZone.textContent = zoneText;
+    
+    if (data.warning) {
+      timeWarning.textContent = data.warning;
+      timeWarning.classList.remove('hidden');
+    }
+
+    timeResultBox.classList.remove('hidden');
+    timeStatusMessage.classList.add('hidden');
+    
+  } catch (error) {
+    console.error('Time conversion error:', error);
+    timeStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+    timeStatusMessage.classList.replace('text-gray-500', 'text-red-600');
   }
 });
