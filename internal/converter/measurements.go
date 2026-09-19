@@ -48,6 +48,13 @@ var ConversionFactors = map[string]map[string]float64{
 		"days":    86400.0,
 		"weeks":   604800.0,
 	},
+	"speed": {
+		"meters_per_second":   1.0, // base unit
+		"kilometers_per_hour": 1000.0 / 3600.0, // ~0.277778
+		"miles_per_hour":      0.44704,
+		"feet_per_second":     0.3048,
+		"knots":               0.514444,
+	},
 }
 
 // ConvertMeasurement handles the conversion logic

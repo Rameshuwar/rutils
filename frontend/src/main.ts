@@ -138,7 +138,8 @@ const unitsData: Record<string, string[]> = {
   volume: ["liters", "milliliters", "gallons", "quarts", "pints", "fluid_ounces"],
   area: ["square_meters", "square_kilometers", "hectares", "acres", "square_feet", "square_miles"],
   time: ["seconds", "minutes", "hours", "days", "weeks"],
-  temperature: ["celsius", "fahrenheit", "kelvin"]
+  temperature: ["celsius", "fahrenheit", "kelvin"],
+  speed: ["meters_per_second", "kilometers_per_hour", "miles_per_hour", "feet_per_second", "knots"]
 };
 
 const measureCategory = document.getElementById('measure-category') as HTMLSelectElement;
