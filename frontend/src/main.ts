@@ -189,7 +189,9 @@ const unitsData: Record<string, string[]> = {
   area: ["square_meters", "square_kilometers", "hectares", "acres", "square_feet", "square_miles"],
   time: ["seconds", "minutes", "hours", "days", "weeks"],
   temperature: ["celsius", "fahrenheit", "kelvin"],
-  speed: ["meters_per_second", "kilometers_per_hour", "miles_per_hour", "feet_per_second", "knots"]
+  speed: ["meters_per_second", "kilometers_per_hour", "miles_per_hour", "feet_per_second", "knots"],
+  data: ["bytes", "kilobytes", "megabytes", "gigabytes", "terabytes", "petabytes", "bits"],
+  numeral: ["binary", "octal", "decimal", "hexadecimal"]
 };
 
 const measureCategory = document.getElementById('measure-category') as HTMLSelectElement;
@@ -218,6 +220,15 @@ function populateUnits(category: string) {
   if (units.length > 1) {
     measureTo.selectedIndex = 1;
   }
+
+  // Adjust input type for numeral systems (which allow text like '1A', '1011')
+  if (category === 'numeral') {
+    measureValue.type = 'text';
+    measureValue.placeholder = 'e.g., 1011 or FF';
+  } else {
+    measureValue.type = 'number';
+    measureValue.placeholder = 'Enter value to convert';
+  }
 }
 
 // Initial populate
@@ -236,18 +247,28 @@ measureForm.addEventListener('submit', async (e) => {
   measureStatusMessage.textContent = 'Converting...';
   measureResultBox.classList.add('hidden');
 
-  const payload = {
+  const isNumeral = measureCategory.value === 'numeral';
+
+  // Different payload structure for numerals vs regular measurements
+  const payload = isNumeral ? {
+    fromBase: measureFrom.value,
+    toBase: measureTo.value,
+    value: measureValue.value // string
+  } : {
     category: measureCategory.value,
     fromUnit: measureFrom.value,
     toUnit: measureTo.value,
-    value: parseFloat(measureValue.value)
+    value: parseFloat(measureValue.value) // number
   };
 
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    // Different API endpoint based on category
+    let apiPath = isNumeral ? '/convert-numeral' : '/convert-measurement';
     const apiUrl = isLocal 
-      ? 'http://localhost:8080/convert-measurement' 
-      : 'https://utils.api.srilakshmiretail.in/convert-measurement';
+      ? `http://localhost:8080${apiPath}` 
+      : `https://utils.api.srilakshmiretail.in${apiPath}`;
       
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -264,8 +285,13 @@ measureForm.addEventListener('submit', async (e) => {
 
     const data = await response.json();
     
-    // Format the number to remove unnecessary trailing decimals (e.g. 50.853015 -> maybe fix if needed)
-    const formattedResult = Number.isInteger(data.result) ? data.result : Number(data.result.toFixed(6));
+    let formattedResult;
+    if (isNumeral) {
+      formattedResult = data.result;
+    } else {
+      // Format the number to remove unnecessary trailing decimals
+      formattedResult = Number.isInteger(data.result) ? data.result : Number(data.result.toFixed(6));
+    }
     
     measureResultText.textContent = `${formattedResult}`;
     measureResultBox.classList.remove('hidden');

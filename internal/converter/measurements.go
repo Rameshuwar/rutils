@@ -55,6 +55,15 @@ var ConversionFactors = map[string]map[string]float64{
 		"feet_per_second":     0.3048,
 		"knots":               0.514444,
 	},
+	"data": {
+		"bytes":     1.0, // base unit
+		"kilobytes": 1024.0,
+		"megabytes": 1048576.0,          // 1024^2
+		"gigabytes": 1073741824.0,       // 1024^3
+		"terabytes": 1099511627776.0,    // 1024^4
+		"petabytes": 1125899906842624.0, // 1024^5
+		"bits":      0.125,              // 1 byte = 8 bits
+	},
 }
 
 // ConvertMeasurement handles the conversion logic

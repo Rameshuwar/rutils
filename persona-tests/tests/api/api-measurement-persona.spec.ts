@@ -182,6 +182,34 @@ test.describe('Backend API Measurement Persona', () => {
     await test.step('Why it got this output: The speed factors (including 1000/3600 for km/h) were correctly evaluated by the backend.', async () => {});
   });
 
+  test('Persona: Successful Conversion (Data: megabytes to kilobytes)', async ({ request }) => {
+    await test.step('Why we use this test: We need to ensure data conversions correctly handle base-2 (1024) multipliers.', async () => {});
+    
+    let response;
+    
+    await test.step('What we use: We request the conversion of 5 megabytes into kilobytes.', async () => {
+      response = await request.post(`${API_URL}/convert-measurement`, {
+        data: {
+          category: 'data',
+          fromUnit: 'megabytes',
+          toUnit: 'kilobytes',
+          value: 5
+        }
+      });
+    });
+
+    await test.step('What we expected: We expect a 200 OK status.', async () => {
+      expect(response.status()).toBe(200);
+    });
+
+    await test.step('What we get: We read the result in kilobytes.', async () => {
+      const jsonResponse = await response.json();
+      expect(jsonResponse.result).toBe(5120); // 5 MB = 5 * 1024 = 5120 KB
+    });
+
+    await test.step('Why it got this output: The backend uses 1024-based multipliers for data units, successfully computing 5 * 1024.', async () => {});
+  });
+
   test('Persona: Special Category Conversion (Temperature: celsius to fahrenheit)', async ({ request }) => {
     await test.step('Why we use this test: Temperature conversions use complex offset logic instead of simple multiplication. We need to verify this special case works.', async () => {});
     
