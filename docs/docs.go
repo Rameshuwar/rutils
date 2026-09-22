@@ -15,6 +15,43 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/calculate-bmi": {
+            "post": {
+                "description": "Calculates Body Mass Index (BMI) based on weight and height",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "BMI Calculator",
+                "parameters": [
+                    {
+                        "description": "BMI Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.BMIRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "BMI Result",
+                        "schema": {
+                            "$ref": "#/definitions/api.BMIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/convert": {
             "post": {
                 "description": "Converts any supported file type to another supported file type dynamically.",
@@ -90,6 +127,43 @@ const docTemplate = `{
                         "description": "Conversion Result",
                         "schema": {
                             "$ref": "#/definitions/api.MeasurementResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/convert-numeral": {
+            "post": {
+                "description": "Converts between numeral systems like binary, decimal, octal, hexadecimal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Numeral System Converter",
+                "parameters": [
+                    {
+                        "description": "Conversion Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.NumeralRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion Result",
+                        "schema": {
+                            "$ref": "#/definitions/api.NumeralResponse"
                         }
                     },
                     "400": {
@@ -177,6 +251,36 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.BMIRequest": {
+            "type": "object",
+            "properties": {
+                "height": {
+                    "type": "number"
+                },
+                "heightUnit": {
+                    "description": "e.g., \"meters\", \"centimeters\", \"feet\", \"inches\"",
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "number"
+                },
+                "weightUnit": {
+                    "description": "e.g., \"kilograms\", \"pounds\"",
+                    "type": "string"
+                }
+            }
+        },
+        "api.BMIResponse": {
+            "type": "object",
+            "properties": {
+                "bmi": {
+                    "type": "number"
+                },
+                "category": {
+                    "type": "string"
+                }
+            }
+        },
         "api.MeasurementRequest": {
             "type": "object",
             "properties": {
@@ -199,6 +303,28 @@ const docTemplate = `{
             "properties": {
                 "result": {
                     "type": "number"
+                }
+            }
+        },
+        "api.NumeralRequest": {
+            "type": "object",
+            "properties": {
+                "fromBase": {
+                    "type": "string"
+                },
+                "toBase": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.NumeralResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string"
                 }
             }
         },

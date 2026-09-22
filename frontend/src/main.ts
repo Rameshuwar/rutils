@@ -5,18 +5,26 @@ import './style.css'
 // ----------------------------------------------------
 const btnFileConverter = document.getElementById('btn-file-converter') as HTMLButtonElement;
 const btnMeasureConverter = document.getElementById('btn-measure-converter') as HTMLButtonElement;
+const btnHrCalculator = document.getElementById('btn-hr-calculator') as HTMLButtonElement;
 const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
 const btnRailwayConverter = document.getElementById('btn-railway-converter') as HTMLButtonElement;
+
 const btnTimeMenu = document.getElementById('btn-time-menu') as HTMLButtonElement;
 const timeMenuDropdown = document.getElementById('time-menu-dropdown') as HTMLDivElement;
 const timeMenuIcon = document.getElementById('time-menu-icon') as SVGSVGElement;
 
+const btnMeasureMenu = document.getElementById('btn-measure-menu') as HTMLButtonElement;
+const measureMenuDropdown = document.getElementById('measure-menu-dropdown') as HTMLDivElement;
+const measureMenuIcon = document.getElementById('measure-menu-icon') as SVGSVGElement;
+
 const fileConverterView = document.getElementById('file-converter-view') as HTMLDivElement;
 const measureConverterView = document.getElementById('measure-converter-view') as HTMLDivElement;
+const hrCalculatorView = document.getElementById('hr-calculator-view') as HTMLDivElement;
 const timeConverterView = document.getElementById('time-converter-view') as HTMLDivElement;
 const railwayConverterView = document.getElementById('railway-converter-view') as HTMLDivElement;
 
 let timeMenuOpen = false;
+let measureMenuOpen = false;
 
 btnTimeMenu.addEventListener('click', () => {
   timeMenuOpen = !timeMenuOpen;
@@ -31,10 +39,24 @@ btnTimeMenu.addEventListener('click', () => {
   }
 });
 
-function setActiveView(view: 'file' | 'measure' | 'time' | 'railway') {
+btnMeasureMenu.addEventListener('click', () => {
+  measureMenuOpen = !measureMenuOpen;
+  if (measureMenuOpen) {
+    measureMenuDropdown.classList.remove('hidden');
+    measureMenuDropdown.classList.add('flex');
+    measureMenuIcon.classList.add('rotate-180');
+  } else {
+    measureMenuDropdown.classList.add('hidden');
+    measureMenuDropdown.classList.remove('flex');
+    measureMenuIcon.classList.remove('rotate-180');
+  }
+});
+
+function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr') {
   // Hide all
   fileConverterView.classList.add('hidden');
   measureConverterView.classList.add('hidden');
+  hrCalculatorView.classList.add('hidden');
   timeConverterView.classList.add('hidden');
   railwayConverterView.classList.add('hidden');
   
@@ -44,6 +66,9 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway') {
   
   btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
   btnMeasureConverter.classList.add('text-indigo-200');
+
+  btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
+  btnHrCalculator.classList.add('text-indigo-200');
   
   btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
   btnTimeConverter.classList.add('text-indigo-200');
@@ -60,6 +85,10 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway') {
     measureConverterView.classList.remove('hidden');
     btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
     btnMeasureConverter.classList.add('bg-indigo-800');
+  } else if (view === 'hr') {
+    hrCalculatorView.classList.remove('hidden');
+    btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
+    btnHrCalculator.classList.add('bg-indigo-800');
   } else if (view === 'time') {
     timeConverterView.classList.remove('hidden');
     btnTimeConverter.classList.replace('text-indigo-200', 'text-white');
@@ -73,6 +102,7 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway') {
 
 btnFileConverter.addEventListener('click', () => setActiveView('file'));
 btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
+btnHrCalculator.addEventListener('click', () => setActiveView('hr'));
 btnTimeConverter.addEventListener('click', () => setActiveView('time'));
 btnRailwayConverter.addEventListener('click', () => setActiveView('railway'));
 
@@ -557,3 +587,75 @@ rw12Hour.value = "12";
 rw12Min.value = "00";
 rw12Ampm.value = "PM";
 sync12to24();
+
+// ----------------------------------------------------
+// BMI CALCULATOR LOGIC
+// ----------------------------------------------------
+const bmiForm = document.getElementById('bmi-form') as HTMLFormElement;
+const bmiWeight = document.getElementById('bmi-weight') as HTMLInputElement;
+const bmiWeightUnit = document.getElementById('bmi-weight-unit') as HTMLSelectElement;
+const bmiHeight = document.getElementById('bmi-height') as HTMLInputElement;
+const bmiHeightUnit = document.getElementById('bmi-height-unit') as HTMLSelectElement;
+const bmiResultSection = document.getElementById('bmi-result-section') as HTMLDivElement;
+const bmiResultValue = document.getElementById('bmi-result-value') as HTMLSpanElement;
+const bmiResultCategory = document.getElementById('bmi-result-category') as HTMLSpanElement;
+const bmiErrorMessage = document.getElementById('bmi-error-message') as HTMLDivElement;
+
+if (bmiForm) {
+  bmiForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    bmiResultSection.classList.add('hidden');
+    bmiErrorMessage.classList.add('hidden');
+    
+    const payload = {
+      weight: parseFloat(bmiWeight.value),
+      weightUnit: bmiWeightUnit.value,
+      height: parseFloat(bmiHeight.value),
+      heightUnit: bmiHeightUnit.value
+    };
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal 
+        ? 'http://localhost:8080/calculate-bmi' 
+        : 'https://utils.api.srilakshmiretail.in/calculate-bmi';
+        
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      bmiResultValue.textContent = data.bmi.toFixed(2);
+      bmiResultCategory.textContent = data.category;
+      
+      // Update color based on category
+      bmiResultValue.className = 'text-4xl font-extrabold'; // reset
+      if (data.category === 'Underweight') {
+        bmiResultValue.classList.add('text-blue-500');
+      } else if (data.category === 'Normal weight') {
+        bmiResultValue.classList.add('text-green-500');
+      } else if (data.category === 'Overweight') {
+        bmiResultValue.classList.add('text-yellow-500');
+      } else {
+        bmiResultValue.classList.add('text-red-500');
+      }
+      
+      bmiResultSection.classList.remove('hidden');
+    } catch (error) {
+      console.error('BMI calculation error:', error);
+      bmiErrorMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+      bmiErrorMessage.classList.remove('hidden');
+    }
+  });
+}
