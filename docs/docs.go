@@ -212,6 +212,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/convert-pdf-size": {
+            "post": {
+                "description": "Upload a PDF and convert it toward a requested target file size.\n\n**Ranges:**\n- Compression: target must be between **10 KB** and **400 MB**.\n- Expansion:   target must be between **10 KB** and **6000 KB**.\n- Uploaded file must not exceed **600 MB**.\n\n**Response headers:**\n- ` + "`" + `X-Conversion-Target-Met` + "`" + `: ` + "`" + `true` + "`" + ` if the target was reached, ` + "`" + `false` + "`" + ` if the smallest achievable size was returned.\n- ` + "`" + `X-Conversion-Target-Size` + "`" + `: the requested target in bytes.\n- ` + "`" + `X-Conversion-Actual-Size` + "`" + `: the actual output size in bytes.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "PDF Converter"
+                ],
+                "summary": "Compress or expand PDF",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF file (max 600 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "compression or expand",
+                        "name": "conversionType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "KB or MB",
+                        "name": "dataType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Target file size",
+                        "name": "targetSize",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Converted PDF",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/convert-railway": {
             "post": {
                 "description": "Converts between 12-hour AM/PM and 24-hour Indian Railway time format.",
