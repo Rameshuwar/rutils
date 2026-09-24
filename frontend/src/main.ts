@@ -9,6 +9,12 @@ const btnHrCalculator = document.getElementById('btn-hr-calculator') as HTMLButt
 const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
 const btnRailwayConverter = document.getElementById('btn-railway-converter') as HTMLButtonElement;
 
+// PDF dropdown elements
+const btnPdfMenu = document.getElementById('btn-pdf-menu') as HTMLButtonElement;
+const pdfMenuDropdown = document.getElementById('pdf-menu-dropdown') as HTMLDivElement;
+const pdfMenuIcon = document.getElementById('pdf-menu-icon') as SVGSVGElement;
+const btnPdfSizeWork = document.getElementById('btn-pdf-size-work') as HTMLButtonElement;
+
 const btnTimeMenu = document.getElementById('btn-time-menu') as HTMLButtonElement;
 const timeMenuDropdown = document.getElementById('time-menu-dropdown') as HTMLDivElement;
 const timeMenuIcon = document.getElementById('time-menu-icon') as SVGSVGElement;
@@ -26,11 +32,32 @@ const measureConverterView = document.getElementById('measure-converter-view') a
 const hrCalculatorView = document.getElementById('hr-calculator-view') as HTMLDivElement;
 const timeConverterView = document.getElementById('time-converter-view') as HTMLDivElement;
 const railwayConverterView = document.getElementById('railway-converter-view') as HTMLDivElement;
+const pdfConverterView = document.getElementById('pdf-converter-view') as HTMLDivElement;
 
 let timeMenuOpen = false;
 let measureMenuOpen = false;
 let hrMenuOpen = false;
+let pdfMenuOpen = false;
 
+// ----------------------------------------------------
+// PDF MENU TOGGLE
+// ----------------------------------------------------
+btnPdfMenu.addEventListener('click', () => {
+  pdfMenuOpen = !pdfMenuOpen;
+  if (pdfMenuOpen) {
+    pdfMenuDropdown.classList.remove('hidden');
+    pdfMenuDropdown.classList.add('flex');
+    pdfMenuIcon.classList.add('rotate-180');
+  } else {
+    pdfMenuDropdown.classList.add('hidden');
+    pdfMenuDropdown.classList.remove('flex');
+    pdfMenuIcon.classList.remove('rotate-180');
+  }
+});
+
+// ----------------------------------------------------
+// TIME MENU TOGGLE
+// ----------------------------------------------------
 btnTimeMenu.addEventListener('click', () => {
   timeMenuOpen = !timeMenuOpen;
   if (timeMenuOpen) {
@@ -44,6 +71,9 @@ btnTimeMenu.addEventListener('click', () => {
   }
 });
 
+// ----------------------------------------------------
+// MEASURE MENU TOGGLE
+// ----------------------------------------------------
 if (btnMeasureMenu && measureMenuDropdown && measureMenuIcon) {
   btnMeasureMenu.addEventListener('click', () => {
     measureMenuOpen = !measureMenuOpen;
@@ -59,6 +89,9 @@ if (btnMeasureMenu && measureMenuDropdown && measureMenuIcon) {
   });
 }
 
+// ----------------------------------------------------
+// HR MENU TOGGLE
+// ----------------------------------------------------
 if (btnHrMenu && hrMenuDropdown && hrMenuIcon) {
   btnHrMenu.addEventListener('click', () => {
     hrMenuOpen = !hrMenuOpen;
@@ -74,19 +107,26 @@ if (btnHrMenu && hrMenuDropdown && hrMenuIcon) {
   });
 }
 
-function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr' | 'age') {
-  // Hide all
-  // ageCalculatorPanel.classList.add('hidden'); // keep age panel visible
+// ----------------------------------------------------
+// VIEW SWITCHER
+// ----------------------------------------------------
+function setActiveView(view: 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'hr' | 'age') {
+  // Hide all views first
   fileConverterView.classList.add('hidden');
+  pdfConverterView.classList.add('hidden');
   measureConverterView.classList.add('hidden');
   hrCalculatorView.classList.add('hidden');
   timeConverterView.classList.add('hidden');
   railwayConverterView.classList.add('hidden');
-  
-  // Reset buttons
+  ageCalculatorPanel.classList.add('hidden');
+
+  // Reset all sidebar buttons
   btnFileConverter.classList.remove('bg-indigo-800', 'text-white');
   btnFileConverter.classList.add('text-indigo-200');
-  
+
+  btnPdfSizeWork.classList.remove('bg-indigo-800', 'text-white');
+  btnPdfSizeWork.classList.add('text-indigo-200');
+
   btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
   btnMeasureConverter.classList.add('text-indigo-200');
 
@@ -94,32 +134,39 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr' | 'a
     btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
     btnHrCalculator.classList.add('text-indigo-200');
   }
-  
+
   btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
   btnTimeConverter.classList.add('text-indigo-200');
 
   btnRailwayConverter.classList.remove('bg-indigo-800', 'text-white');
   btnRailwayConverter.classList.add('text-indigo-200');
 
-  // Activate selected
+  // Activate selected view
   if (view === 'file') {
     fileConverterView.classList.remove('hidden');
     btnFileConverter.classList.replace('text-indigo-200', 'text-white');
     btnFileConverter.classList.add('bg-indigo-800');
+  } else if (view === 'pdf') {
+    pdfConverterView.classList.remove('hidden');
+    btnPdfSizeWork.classList.replace('text-indigo-200', 'text-white');
+    btnPdfSizeWork.classList.add('bg-indigo-800');
+    // Keep PDF dropdown open so the active sub-item stays visible
+    pdfMenuDropdown.classList.remove('hidden');
+    pdfMenuDropdown.classList.add('flex');
+    pdfMenuIcon.classList.add('rotate-180');
+    pdfMenuOpen = true;
   } else if (view === 'measure') {
     measureConverterView.classList.remove('hidden');
     btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
     btnMeasureConverter.classList.add('bg-indigo-800');
-  } else if (view === 'age') {
-    // Show the dedicated Age calculator view and hide BMI view
-    ageCalculatorPanel.classList.remove('hidden');
-    hrCalculatorView.classList.add('hidden');
-    // Highlight HR button as inactive (optional)
-    if (btnHrCalculator) {
-      btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
-      btnHrCalculator.classList.add('text-indigo-200');
-    }
-  } else if (view === 'hr') {
+} else if (view === 'age') {
+  ageCalculatorPanel.classList.remove('hidden');
+  bmiCalculatorPanel.classList.add('hidden');
+  if (btnHrCalculator) {
+    btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
+    btnHrCalculator.classList.add('text-indigo-200');
+  }
+} else if (view === 'hr') {
     hrCalculatorView.classList.remove('hidden');
     if (btnHrCalculator) {
       btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
@@ -136,8 +183,13 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr' | 'a
   }
 }
 
+// ----------------------------------------------------
+// SIDEBAR CLICK LISTENERS
+// ----------------------------------------------------
 btnFileConverter.addEventListener('click', () => setActiveView('file'));
+btnPdfSizeWork.addEventListener('click', () => setActiveView('pdf'));
 btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
+
 if (btnHrCalculator) {
   const hrCalcDropdown = document.getElementById('hr-calc-dropdown') as HTMLDivElement | null;
   btnHrCalculator.addEventListener('click', () => {
@@ -152,26 +204,30 @@ if (btnHrCalculator) {
       }
     }
   });
+
   const btnBmi = document.getElementById('btn-bmi') as HTMLButtonElement | null;
   const btnAge = document.getElementById('btn-age') as HTMLButtonElement | null;
+
   btnBmi?.addEventListener('click', () => {
     setActiveView('hr');
     showHrPanel('bmi');
-    // Keep HR dropdown open for better UX
   });
+
   btnAge?.addEventListener('click', () => {
-  // Directly show the standalone Age calculator view
-  setActiveView('age');
-  // Hide the HR sub‑dropdown after selection
-  if (hrCalcDropdown) {
-    hrCalcDropdown.classList.add('hidden');
-    hrCalcDropdown.classList.remove('flex');
-  }
-});
+    setActiveView('age');
+    if (hrCalcDropdown) {
+      hrCalcDropdown.classList.add('hidden');
+      hrCalcDropdown.classList.remove('flex');
+    }
+  });
 }
+
 btnTimeConverter.addEventListener('click', () => setActiveView('time'));
 btnRailwayConverter.addEventListener('click', () => setActiveView('railway'));
 
+// ----------------------------------------------------
+// HR PANEL (BMI / AGE) INTERNAL SWITCHER
+// ----------------------------------------------------
 const hrModeButtons = document.querySelectorAll('[data-hr-mode]') as NodeListOf<HTMLButtonElement>;
 const hrToggleButtons = document.querySelectorAll('[data-hr-mode-toggle]') as NodeListOf<HTMLButtonElement>;
 const ageCalculatorPanel = document.getElementById('age-calculator-view') as HTMLDivElement;
@@ -217,7 +273,7 @@ hrToggleButtons.forEach((btn) => {
   });
 });
 
-showHrPanel('age');
+setActiveView('file'); // Default view on load
 
 // ----------------------------------------------------
 // FILE CONVERTER LOGIC
@@ -235,7 +291,7 @@ fileInput.addEventListener('change', () => {
   if (fileInput.files && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const ext = file.name.split('.').pop()?.toLowerCase();
-    
+
     if (ext) {
       detectedFromType = ext;
       detectedFormatText.textContent = ext.toUpperCase() + ' (Detected)';
@@ -260,7 +316,7 @@ function resetDetectionBox() {
 
 convertForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   statusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
   statusMessage.classList.add('text-gray-500');
 
@@ -286,12 +342,12 @@ convertForm.addEventListener('submit', async (e) => {
 
   try {
     statusMessage.textContent = `Converting ${detectedFromType.toUpperCase()} to ${toType.toUpperCase()}...`;
-    
+
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocal 
-      ? 'http://localhost:8080/convert' 
+    const apiUrl = isLocal
+      ? 'http://localhost:8080/convert'
       : 'https://utils.api.srilakshmiretail.in/convert';
-      
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
@@ -323,6 +379,80 @@ convertForm.addEventListener('submit', async (e) => {
 });
 
 // ----------------------------------------------------
+// PDF SIZE CONVERTER LOGIC
+// ----------------------------------------------------
+const pdfForm = document.getElementById('pdf-form') as HTMLFormElement;
+const pdfFileInput = document.getElementById('pdf-file-input') as HTMLInputElement;
+const pdfConversionType = document.getElementById('pdf-conversion-type') as HTMLSelectElement;
+const pdfTargetSize = document.getElementById('pdf-target-size') as HTMLInputElement;
+const pdfDataType = document.getElementById('pdf-data-type') as HTMLSelectElement;
+const pdfStatusMessage = document.getElementById('pdf-status-message') as HTMLParagraphElement;
+
+pdfForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  pdfStatusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+  pdfStatusMessage.classList.add('text-gray-500');
+
+  if (!pdfFileInput.files || pdfFileInput.files.length === 0) {
+    pdfStatusMessage.textContent = 'Please select a PDF file first.';
+    pdfStatusMessage.classList.add('text-red-600');
+    return;
+  }
+
+  const file = pdfFileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('conversionType', pdfConversionType.value);
+  formData.append('dataType', pdfDataType.value);
+  formData.append('targetSize', pdfTargetSize.value);
+
+  try {
+    pdfStatusMessage.textContent = `Converting PDF...`;
+
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const apiUrl = isLocal
+      ? 'http://localhost:8080/convert-pdf-size'
+      : 'https://utils.api.srilakshmiretail.in/convert-pdf-size';
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || `Server error: ${response.status}`);
+    }
+
+    // Try to get the filename from the Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = 'converted.pdf';
+    if (contentDisposition && contentDisposition.includes('filename=')) {
+      filename = contentDisposition.split('filename=')[1].replace(/"/g, '');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    pdfStatusMessage.textContent = `Success! PDF converted and downloading.`;
+    pdfStatusMessage.classList.replace('text-gray-500', 'text-green-600');
+  } catch (error) {
+    console.error('PDF Conversion error:', error);
+    pdfStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+    pdfStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+  }
+});
+
+// ----------------------------------------------------
 // MEASUREMENT CONVERTER LOGIC
 // ----------------------------------------------------
 const unitsData: Record<string, string[]> = {
@@ -349,22 +479,18 @@ const measureStatusMessage = document.getElementById('measure-status-message') a
 function populateUnits(category: string) {
   measureFrom.innerHTML = '';
   measureTo.innerHTML = '';
-  
+
   const units = unitsData[category] || [];
   units.forEach(unit => {
-    // format string (e.g., square_meters -> Square Meters)
     const label = unit.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    
     measureFrom.add(new Option(label, unit));
     measureTo.add(new Option(label, unit));
   });
 
-  // Default select the second option for "To" if available
   if (units.length > 1) {
     measureTo.selectedIndex = 1;
   }
 
-  // Adjust input type for numeral systems (which allow text like '1A', '1011')
   if (category === 'numeral') {
     measureValue.type = 'text';
     measureValue.placeholder = 'e.g., 1011 or FF';
@@ -374,7 +500,6 @@ function populateUnits(category: string) {
   }
 }
 
-// Initial populate
 populateUnits(measureCategory.value);
 
 measureCategory.addEventListener('change', () => {
@@ -384,7 +509,7 @@ measureCategory.addEventListener('change', () => {
 
 measureForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   measureStatusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
   measureStatusMessage.classList.add('text-gray-500');
   measureStatusMessage.textContent = 'Converting...';
@@ -392,27 +517,25 @@ measureForm.addEventListener('submit', async (e) => {
 
   const isNumeral = measureCategory.value === 'numeral';
 
-  // Different payload structure for numerals vs regular measurements
   const payload = isNumeral ? {
     fromBase: measureFrom.value,
     toBase: measureTo.value,
-    value: measureValue.value // string
+    value: measureValue.value
   } : {
     category: measureCategory.value,
     fromUnit: measureFrom.value,
     toUnit: measureTo.value,
-    value: parseFloat(measureValue.value) // number
+    value: parseFloat(measureValue.value)
   };
 
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    // Different API endpoint based on category
+
     let apiPath = isNumeral ? '/convert-numeral' : '/convert-measurement';
-    const apiUrl = isLocal 
-      ? `http://localhost:8080${apiPath}` 
+    const apiUrl = isLocal
+      ? `http://localhost:8080${apiPath}`
       : `https://utils.api.srilakshmiretail.in${apiPath}`;
-      
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -427,19 +550,18 @@ measureForm.addEventListener('submit', async (e) => {
     }
 
     const data = await response.json();
-    
+
     let formattedResult;
     if (isNumeral) {
       formattedResult = data.result;
     } else {
-      // Format the number to remove unnecessary trailing decimals
       formattedResult = Number.isInteger(data.result) ? data.result : Number(data.result.toFixed(6));
     }
-    
+
     measureResultText.textContent = `${formattedResult}`;
     measureResultBox.classList.remove('hidden');
     measureStatusMessage.classList.add('hidden');
-    
+
   } catch (error) {
     console.error('Measurement conversion error:', error);
     measureStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
@@ -464,12 +586,12 @@ const timeWarning = document.getElementById('time-warning') as HTMLParagraphElem
 const timeStatusMessage = document.getElementById('time-status-message') as HTMLParagraphElement;
 
 const timezones = [
-  "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", 
-  "America/Phoenix", "America/Anchorage", "America/Honolulu", "America/Sao_Paulo", 
-  "America/Argentina/Buenos_Aires", "America/Bogota", "Europe/London", "Europe/Paris", 
-  "Europe/Berlin", "Europe/Rome", "Europe/Moscow", "Africa/Cairo", "Africa/Johannesburg", 
-  "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok", "Asia/Singapore", 
-  "Asia/Hong_Kong", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney", 
+  "UTC", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Phoenix", "America/Anchorage", "America/Honolulu", "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires", "America/Bogota", "Europe/London", "Europe/Paris",
+  "Europe/Berlin", "Europe/Rome", "Europe/Moscow", "Africa/Cairo", "Africa/Johannesburg",
+  "Africa/Lagos", "Asia/Dubai", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok", "Asia/Singapore",
+  "Asia/Hong_Kong", "Asia/Shanghai", "Asia/Tokyo", "Asia/Seoul", "Australia/Sydney",
   "Australia/Melbourne", "Australia/Brisbane", "Australia/Perth", "Pacific/Auckland", "Pacific/Fiji"
 ];
 
@@ -492,26 +614,25 @@ timeDestTzInput.value = "Asia/Tokyo";
 
 timeForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   timeStatusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
   timeStatusMessage.classList.add('text-gray-500');
   timeStatusMessage.textContent = 'Converting...';
   timeResultBox.classList.add('hidden');
   timeWarning.classList.add('hidden');
 
-  const dateValue = timeDateInput.value; // e.g. "2024-11-03"
+  const dateValue = timeDateInput.value;
   if (!dateValue) return;
 
   const dateParts = dateValue.split('-');
-  
+
   let hour = parseInt(timeHourInput.value, 10);
   const minute = parseInt(timeMinuteInput.value, 10);
   const ampm = timeAmpmInput.value;
-  
-  // Convert to 24hr for the payload request internally
+
   if (ampm === "PM" && hour !== 12) hour += 12;
   if (ampm === "AM" && hour === 12) hour = 0;
-  
+
   const payload = {
     year: parseInt(dateParts[0], 10),
     month: parseInt(dateParts[1], 10),
@@ -527,10 +648,10 @@ timeForm.addEventListener('submit', async (e) => {
 
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocal 
-      ? 'http://localhost:8080/convert-time' 
+    const apiUrl = isLocal
+      ? 'http://localhost:8080/convert-time'
       : 'https://utils.api.srilakshmiretail.in/convert-time';
-      
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -545,28 +666,27 @@ timeForm.addEventListener('submit', async (e) => {
     }
 
     const data = await response.json();
-    
-    // Parse local time for 12-hour AM/PM format
+
     const destLocalParts = data.dest_time_local.split('T');
     const destDate = destLocalParts[0];
     const timeWithOffset = destLocalParts[1];
-    
+
     const [hourStr, minStr] = timeWithOffset.split(':');
     let hour = parseInt(hourStr, 10);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     hour = hour % 12;
     if (hour === 0) hour = 12;
-    
+
     const destTime12 = `${hour.toString().padStart(2, '0')}:${minStr} ${ampm}`;
-    
+
     timeResultLocal.textContent = `${destDate} ${destTime12}`;
-    
+
     let zoneText = `${data.dest_zone_name} (UTC ${data.dest_offset})`;
     if (data.is_next_day) zoneText += ' • Next Day';
     if (data.is_prev_day) zoneText += ' • Previous Day';
-    
+
     timeResultZone.textContent = zoneText;
-    
+
     if (data.warning) {
       timeWarning.textContent = data.warning;
       timeWarning.classList.remove('hidden');
@@ -574,7 +694,7 @@ timeForm.addEventListener('submit', async (e) => {
 
     timeResultBox.classList.remove('hidden');
     timeStatusMessage.classList.add('hidden');
-    
+
   } catch (error) {
     console.error('Time conversion error:', error);
     timeStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
@@ -598,13 +718,13 @@ let isUpdatingRailway = false;
 
 async function sync12to24() {
   if (isUpdatingRailway) return;
-  
+
   const h = parseInt(rw12Hour.value, 10);
   const m = parseInt(rw12Min.value, 10);
   if (isNaN(h) || isNaN(m)) return;
-  
+
   isUpdatingRailway = true;
-  
+
   const payload = {
     direction: "12to24",
     hour: h,
@@ -614,8 +734,8 @@ async function sync12to24() {
 
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocal 
-      ? 'http://localhost:8080/convert-railway' 
+    const apiUrl = isLocal
+      ? 'http://localhost:8080/convert-railway'
       : 'https://utils.api.srilakshmiretail.in/convert-railway';
 
     const res = await fetch(apiUrl, {
@@ -643,13 +763,13 @@ async function sync12to24() {
 
 async function sync24to12() {
   if (isUpdatingRailway) return;
-  
+
   const h = parseInt(rw24Hour.value, 10);
   const m = parseInt(rw24Min.value, 10);
   if (isNaN(h) || isNaN(m)) return;
-  
+
   isUpdatingRailway = true;
-  
+
   const payload = {
     direction: "24to12",
     hour: h,
@@ -658,8 +778,8 @@ async function sync24to12() {
 
   try {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const apiUrl = isLocal 
-      ? 'http://localhost:8080/convert-railway' 
+    const apiUrl = isLocal
+      ? 'http://localhost:8080/convert-railway'
       : 'https://utils.api.srilakshmiretail.in/convert-railway';
 
     const res = await fetch(apiUrl, {
@@ -675,7 +795,7 @@ async function sync24to12() {
       rw12Ampm.value = data.ampm;
       railwayStatusMessage.classList.add('hidden');
     } else {
-       throw new Error(await res.text());
+      throw new Error(await res.text());
     }
   } catch (err) {
     console.error("Railway convert error", err);
@@ -690,12 +810,11 @@ async function sync24to12() {
   rw12Hour.addEventListener(evt, sync12to24);
   rw12Min.addEventListener(evt, sync12to24);
   rw12Ampm.addEventListener(evt, sync12to24);
-  
+
   rw24Hour.addEventListener(evt, sync24to12);
   rw24Min.addEventListener(evt, sync24to12);
 });
 
-// Init
 rw12Hour.value = "12";
 rw12Min.value = "00";
 rw12Ampm.value = "PM";
@@ -788,10 +907,10 @@ const bmiErrorMessage = document.getElementById('bmi-error-message') as HTMLDivE
 if (bmiForm) {
   bmiForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     bmiResultSection.classList.add('hidden');
     bmiErrorMessage.classList.add('hidden');
-    
+
     const payload = {
       weight: parseFloat(bmiWeight.value),
       weightUnit: bmiWeightUnit.value,
@@ -801,10 +920,10 @@ if (bmiForm) {
 
     try {
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal 
-        ? 'http://localhost:8080/calculate-bmi' 
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-bmi'
         : 'https://utils.api.srilakshmiretail.in/calculate-bmi';
-        
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -819,10 +938,10 @@ if (bmiForm) {
       }
 
       const data = await response.json();
-      
+
       bmiResultValue.textContent = data.bmi.toFixed(2);
       bmiResultCategory.textContent = data.category;
-      
+
       bmiResultValue.className = 'text-4xl font-extrabold';
       if (data.category === 'Underweight') {
         bmiResultValue.classList.add('text-blue-500');
@@ -833,7 +952,7 @@ if (bmiForm) {
       } else {
         bmiResultValue.classList.add('text-red-500');
       }
-      
+
       bmiResultSection.classList.remove('hidden');
     } catch (error) {
       console.error('BMI calculation error:', error);
