@@ -5,7 +5,7 @@ import './style.css'
 // ----------------------------------------------------
 const btnFileConverter = document.getElementById('btn-file-converter') as HTMLButtonElement;
 const btnMeasureConverter = document.getElementById('btn-measure-converter') as HTMLButtonElement;
-const btnHrCalculator = document.getElementById('btn-hr-calculator') as HTMLButtonElement;
+const btnHrCalculator = document.getElementById('btn-hr-calculator') as HTMLButtonElement | null;
 const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
 const btnRailwayConverter = document.getElementById('btn-railway-converter') as HTMLButtonElement;
 
@@ -13,9 +13,13 @@ const btnTimeMenu = document.getElementById('btn-time-menu') as HTMLButtonElemen
 const timeMenuDropdown = document.getElementById('time-menu-dropdown') as HTMLDivElement;
 const timeMenuIcon = document.getElementById('time-menu-icon') as SVGSVGElement;
 
-const btnMeasureMenu = document.getElementById('btn-measure-menu') as HTMLButtonElement;
-const measureMenuDropdown = document.getElementById('measure-menu-dropdown') as HTMLDivElement;
-const measureMenuIcon = document.getElementById('measure-menu-icon') as SVGSVGElement;
+const btnMeasureMenu = document.getElementById('btn-measure-menu') as HTMLButtonElement | null;
+const measureMenuDropdown = document.getElementById('measure-menu-dropdown') as HTMLDivElement | null;
+const measureMenuIcon = document.getElementById('measure-menu-icon') as SVGSVGElement | null;
+
+const btnHrMenu = document.getElementById('btn-hr-menu') as HTMLButtonElement | null;
+const hrMenuDropdown = document.getElementById('hr-menu-dropdown') as HTMLDivElement | null;
+const hrMenuIcon = document.getElementById('hr-menu-icon') as SVGSVGElement | null;
 
 const fileConverterView = document.getElementById('file-converter-view') as HTMLDivElement;
 const measureConverterView = document.getElementById('measure-converter-view') as HTMLDivElement;
@@ -25,6 +29,7 @@ const railwayConverterView = document.getElementById('railway-converter-view') a
 
 let timeMenuOpen = false;
 let measureMenuOpen = false;
+let hrMenuOpen = false;
 
 btnTimeMenu.addEventListener('click', () => {
   timeMenuOpen = !timeMenuOpen;
@@ -39,21 +44,39 @@ btnTimeMenu.addEventListener('click', () => {
   }
 });
 
-btnMeasureMenu.addEventListener('click', () => {
-  measureMenuOpen = !measureMenuOpen;
-  if (measureMenuOpen) {
-    measureMenuDropdown.classList.remove('hidden');
-    measureMenuDropdown.classList.add('flex');
-    measureMenuIcon.classList.add('rotate-180');
-  } else {
-    measureMenuDropdown.classList.add('hidden');
-    measureMenuDropdown.classList.remove('flex');
-    measureMenuIcon.classList.remove('rotate-180');
-  }
-});
+if (btnMeasureMenu && measureMenuDropdown && measureMenuIcon) {
+  btnMeasureMenu.addEventListener('click', () => {
+    measureMenuOpen = !measureMenuOpen;
+    if (measureMenuOpen) {
+      measureMenuDropdown.classList.remove('hidden');
+      measureMenuDropdown.classList.add('flex');
+      measureMenuIcon.classList.add('rotate-180');
+    } else {
+      measureMenuDropdown.classList.add('hidden');
+      measureMenuDropdown.classList.remove('flex');
+      measureMenuIcon.classList.remove('rotate-180');
+    }
+  });
+}
 
-function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr') {
+if (btnHrMenu && hrMenuDropdown && hrMenuIcon) {
+  btnHrMenu.addEventListener('click', () => {
+    hrMenuOpen = !hrMenuOpen;
+    if (hrMenuOpen) {
+      hrMenuDropdown.classList.remove('hidden');
+      hrMenuDropdown.classList.add('flex');
+      hrMenuIcon.classList.add('rotate-180');
+    } else {
+      hrMenuDropdown.classList.add('hidden');
+      hrMenuDropdown.classList.remove('flex');
+      hrMenuIcon.classList.remove('rotate-180');
+    }
+  });
+}
+
+function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr' | 'age') {
   // Hide all
+  // ageCalculatorPanel.classList.add('hidden'); // keep age panel visible
   fileConverterView.classList.add('hidden');
   measureConverterView.classList.add('hidden');
   hrCalculatorView.classList.add('hidden');
@@ -67,8 +90,10 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr') {
   btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
   btnMeasureConverter.classList.add('text-indigo-200');
 
-  btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
-  btnHrCalculator.classList.add('text-indigo-200');
+  if (btnHrCalculator) {
+    btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
+    btnHrCalculator.classList.add('text-indigo-200');
+  }
   
   btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
   btnTimeConverter.classList.add('text-indigo-200');
@@ -85,10 +110,21 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr') {
     measureConverterView.classList.remove('hidden');
     btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
     btnMeasureConverter.classList.add('bg-indigo-800');
+  } else if (view === 'age') {
+    // Show the dedicated Age calculator view and hide BMI view
+    ageCalculatorPanel.classList.remove('hidden');
+    hrCalculatorView.classList.add('hidden');
+    // Highlight HR button as inactive (optional)
+    if (btnHrCalculator) {
+      btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
+      btnHrCalculator.classList.add('text-indigo-200');
+    }
   } else if (view === 'hr') {
     hrCalculatorView.classList.remove('hidden');
-    btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
-    btnHrCalculator.classList.add('bg-indigo-800');
+    if (btnHrCalculator) {
+      btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
+      btnHrCalculator.classList.add('bg-indigo-800');
+    }
   } else if (view === 'time') {
     timeConverterView.classList.remove('hidden');
     btnTimeConverter.classList.replace('text-indigo-200', 'text-white');
@@ -102,9 +138,86 @@ function setActiveView(view: 'file' | 'measure' | 'time' | 'railway' | 'hr') {
 
 btnFileConverter.addEventListener('click', () => setActiveView('file'));
 btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
-btnHrCalculator.addEventListener('click', () => setActiveView('hr'));
+if (btnHrCalculator) {
+  const hrCalcDropdown = document.getElementById('hr-calc-dropdown') as HTMLDivElement | null;
+  btnHrCalculator.addEventListener('click', () => {
+    if (hrCalcDropdown) {
+      const isHidden = hrCalcDropdown.classList.contains('hidden');
+      if (isHidden) {
+        hrCalcDropdown.classList.remove('hidden');
+        hrCalcDropdown.classList.add('flex');
+      } else {
+        hrCalcDropdown.classList.add('hidden');
+        hrCalcDropdown.classList.remove('flex');
+      }
+    }
+  });
+  const btnBmi = document.getElementById('btn-bmi') as HTMLButtonElement | null;
+  const btnAge = document.getElementById('btn-age') as HTMLButtonElement | null;
+  btnBmi?.addEventListener('click', () => {
+    setActiveView('hr');
+    showHrPanel('bmi');
+    // Keep HR dropdown open for better UX
+  });
+  btnAge?.addEventListener('click', () => {
+  // Directly show the standalone Age calculator view
+  setActiveView('age');
+  // Hide the HR sub‑dropdown after selection
+  if (hrCalcDropdown) {
+    hrCalcDropdown.classList.add('hidden');
+    hrCalcDropdown.classList.remove('flex');
+  }
+});
+}
 btnTimeConverter.addEventListener('click', () => setActiveView('time'));
 btnRailwayConverter.addEventListener('click', () => setActiveView('railway'));
+
+const hrModeButtons = document.querySelectorAll('[data-hr-mode]') as NodeListOf<HTMLButtonElement>;
+const hrToggleButtons = document.querySelectorAll('[data-hr-mode-toggle]') as NodeListOf<HTMLButtonElement>;
+const ageCalculatorPanel = document.getElementById('age-calculator-view') as HTMLDivElement;
+const bmiCalculatorPanel = document.getElementById('hr-calculator-view') as HTMLDivElement;
+
+function showHrPanel(mode: 'age' | 'bmi') {
+  const isAge = mode === 'age';
+  ageCalculatorPanel.classList.toggle('hidden', !isAge);
+  bmiCalculatorPanel.classList.toggle('hidden', isAge);
+
+  hrToggleButtons.forEach((btn) => {
+    const active = btn.dataset.hrModeToggle === mode;
+    btn.classList.toggle('bg-violet-600', active);
+    btn.classList.toggle('text-white', active);
+    btn.classList.toggle('bg-violet-100', !active);
+    btn.classList.toggle('text-violet-700', !active);
+  });
+
+  hrModeButtons.forEach((btn) => {
+    const active = btn.dataset.hrMode === mode;
+    btn.classList.toggle('bg-indigo-800', active);
+    btn.classList.toggle('text-white', active);
+    btn.classList.toggle('text-indigo-200', !active);
+  });
+}
+
+hrModeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    showHrPanel(btn.dataset.hrMode as 'age' | 'bmi');
+    setActiveView('hr');
+    if (hrMenuDropdown && hrMenuIcon) {
+      hrMenuDropdown.classList.add('hidden');
+      hrMenuDropdown.classList.remove('flex');
+      hrMenuIcon.classList.remove('rotate-180');
+    }
+    hrMenuOpen = false;
+  });
+});
+
+hrToggleButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    showHrPanel(btn.dataset.hrModeToggle as 'age' | 'bmi');
+  });
+});
+
+showHrPanel('age');
 
 // ----------------------------------------------------
 // FILE CONVERTER LOGIC
@@ -589,6 +702,77 @@ rw12Ampm.value = "PM";
 sync12to24();
 
 // ----------------------------------------------------
+// AGE CALCULATOR LOGIC
+// ----------------------------------------------------
+const ageForm = document.getElementById('age-form') as HTMLFormElement;
+const ageDob = document.getElementById('age-dob') as HTMLInputElement;
+const ageToday = document.getElementById('age-today') as HTMLInputElement;
+const ageResultBox = document.getElementById('age-result-box') as HTMLDivElement;
+const ageResultText = document.getElementById('age-result-text') as HTMLParagraphElement;
+const ageNextBirthday = document.getElementById('age-next-birthday') as HTMLParagraphElement;
+const ageSummaryText = document.getElementById('age-summary-text') as HTMLParagraphElement;
+const ageStatusMessage = document.getElementById('age-status-message') as HTMLParagraphElement;
+
+if (ageForm) {
+  const today = new Date();
+  const isoToday = today.toISOString().split('T')[0];
+  ageToday.value = isoToday;
+
+  ageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    ageResultBox.classList.add('hidden');
+    ageStatusMessage.classList.add('hidden');
+
+    const dob = ageDob.value;
+    const todayDate = ageToday.value;
+
+    if (!dob || !todayDate) {
+      ageStatusMessage.textContent = 'Please enter both dates.';
+      ageStatusMessage.classList.remove('hidden');
+      ageStatusMessage.classList.add('text-red-600');
+      return;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-age'
+        : 'https://utils.api.srilakshmiretail.in/calculate-age';
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ dob, today: todayDate })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const age = data.age;
+      const nextBirthday = data.nextBirthday;
+      const summary = data.summary;
+
+      ageResultText.textContent = `${age.years} Years, ${age.months} Months, ${age.days} Days`;
+      ageNextBirthday.textContent = `${nextBirthday.dayOfWeek} - ${nextBirthday.date} (${nextBirthday.month}/${nextBirthday.day})`;
+      ageSummaryText.textContent = `${summary.years}y, ${summary.months}m, ${summary.weeks}w, ${summary.days}d, ${summary.hours}h, ${summary.minutes}m`;
+
+      ageResultBox.classList.remove('hidden');
+    } catch (error) {
+      console.error('Age calculation error:', error);
+      ageStatusMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
+      ageStatusMessage.classList.remove('hidden');
+      ageStatusMessage.classList.add('text-red-600');
+    }
+  });
+}
+
+// ----------------------------------------------------
 // BMI CALCULATOR LOGIC
 // ----------------------------------------------------
 const bmiForm = document.getElementById('bmi-form') as HTMLFormElement;
@@ -639,8 +823,7 @@ if (bmiForm) {
       bmiResultValue.textContent = data.bmi.toFixed(2);
       bmiResultCategory.textContent = data.category;
       
-      // Update color based on category
-      bmiResultValue.className = 'text-4xl font-extrabold'; // reset
+      bmiResultValue.className = 'text-4xl font-extrabold';
       if (data.category === 'Underweight') {
         bmiResultValue.classList.add('text-blue-500');
       } else if (data.category === 'Normal weight') {

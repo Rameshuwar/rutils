@@ -1,5 +1,14 @@
 basePath: /
 definitions:
+  api.AgeRequest:
+    properties:
+      dob:
+        description: 'format: YYYY-MM-DD'
+        type: string
+      today:
+        description: 'format: YYYY-MM-DD'
+        type: string
+    type: object
   api.BMIRequest:
     properties:
       height:
@@ -50,6 +59,39 @@ definitions:
       result:
         type: string
     type: object
+  converter.AgeCalculationResponse:
+    properties:
+      age:
+        $ref: '#/definitions/converter.AgeResult'
+      nextBirthday:
+        $ref: '#/definitions/converter.NextBirthday'
+      summary:
+        $ref: '#/definitions/converter.Summary'
+    type: object
+  converter.AgeResult:
+    properties:
+      days:
+        type: integer
+      months:
+        type: integer
+      years:
+        type: integer
+    type: object
+  converter.NextBirthday:
+    properties:
+      date:
+        type: string
+      day:
+        type: integer
+      dayOfWeek:
+        type: string
+      daysRemaining:
+        type: integer
+      month:
+        type: integer
+      monthsRemaining:
+        type: integer
+    type: object
   converter.RailwayConversionRequest:
     properties:
       ampm:
@@ -72,6 +114,21 @@ definitions:
       hour_24:
         type: integer
       minute:
+        type: integer
+    type: object
+  converter.Summary:
+    properties:
+      days:
+        type: integer
+      hours:
+        type: integer
+      minutes:
+        type: integer
+      months:
+        type: integer
+      weeks:
+        type: integer
+      years:
         type: integer
     type: object
   converter.TimeConversionRequest:
@@ -153,6 +210,31 @@ info:
   title: File Converter API
   version: "1.0"
 paths:
+  /calculate-age:
+    post:
+      consumes:
+      - application/json
+      description: Calculates exact age, next birthday, and life summary based on
+        date of birth and a reference date.
+      parameters:
+      - description: Age Calculation Request (Dates in YYYY-MM-DD format)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.AgeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Age Result
+          schema:
+            $ref: '#/definitions/converter.AgeCalculationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Age Calculator
   /calculate-bmi:
     post:
       consumes:

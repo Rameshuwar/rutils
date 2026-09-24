@@ -15,6 +15,43 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/calculate-age": {
+            "post": {
+                "description": "Calculates exact age, next birthday, and life summary based on date of birth and a reference date.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Age Calculator",
+                "parameters": [
+                    {
+                        "description": "Age Calculation Request (Dates in YYYY-MM-DD format)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.AgeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Age Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.AgeCalculationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-bmi": {
             "post": {
                 "description": "Calculates Body Mass Index (BMI) based on weight and height",
@@ -251,6 +288,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.AgeRequest": {
+            "type": "object",
+            "properties": {
+                "dob": {
+                    "description": "format: YYYY-MM-DD",
+                    "type": "string"
+                },
+                "today": {
+                    "description": "format: YYYY-MM-DD",
+                    "type": "string"
+                }
+            }
+        },
         "api.BMIRequest": {
             "type": "object",
             "properties": {
@@ -328,6 +378,57 @@ const docTemplate = `{
                 }
             }
         },
+        "converter.AgeCalculationResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "$ref": "#/definitions/converter.AgeResult"
+                },
+                "nextBirthday": {
+                    "$ref": "#/definitions/converter.NextBirthday"
+                },
+                "summary": {
+                    "$ref": "#/definitions/converter.Summary"
+                }
+            }
+        },
+        "converter.AgeResult": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "months": {
+                    "type": "integer"
+                },
+                "years": {
+                    "type": "integer"
+                }
+            }
+        },
+        "converter.NextBirthday": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "day": {
+                    "type": "integer"
+                },
+                "dayOfWeek": {
+                    "type": "string"
+                },
+                "daysRemaining": {
+                    "type": "integer"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "monthsRemaining": {
+                    "type": "integer"
+                }
+            }
+        },
         "converter.RailwayConversionRequest": {
             "type": "object",
             "properties": {
@@ -360,6 +461,29 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "minute": {
+                    "type": "integer"
+                }
+            }
+        },
+        "converter.Summary": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer"
+                },
+                "hours": {
+                    "type": "integer"
+                },
+                "minutes": {
+                    "type": "integer"
+                },
+                "months": {
+                    "type": "integer"
+                },
+                "weeks": {
+                    "type": "integer"
+                },
+                "years": {
                     "type": "integer"
                 }
             }

@@ -35,6 +35,10 @@
             <button id="btn-hr-calculator" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
               H-R Calculating
             </button>
+<div id="hr-calc-dropdown" class="hidden flex-col pl-11 pr-4 space-y-1 mt-1">
+  <button id="btn-bmi" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">BMI</button>
+  <button id="btn-age" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">AGE</button>
+</div>
           </div>
         </div>
         
@@ -169,7 +173,36 @@
         </div>
       </div>
 
-      <!-- Measurement Converter View -->
+      <!-- Age Calculator View – matches BMI view styling -->
+<div id="age-calculator-view"
+     class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+  <header class="bg-teal-600 text-white py-6 px-8">
+    <h1 class="text-3xl font-bold">Age Calculator</h1>
+    <p class="text-teal-100 mt-2">Calculate age from dates.</p>
+  </header>
+  <div class="p-8 space-y-6">
+    <form id="age-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="age-dob">Date of Birth</label>
+        <input type="date" id="age-dob" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="age-today">Today's Date</label>
+        <input type="date" id="age-today" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
+      </div>
+      <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
+        Calculate Age
+      </button>
+    </form>
+    <p id="age-status-message" class="text-sm text-center hidden"></p>
+    <div id="age-result-box" class="hidden mt-4">
+      <p id="age-result-text" class="text-lg font-medium"></p>
+      <p id="age-next-birthday" class="text-sm text-gray-600"></p>
+      <p id="age-summary-text" class="text-sm text-gray-600"></p>
+    </div>
+  </div>
+</div>
+<!-- Measurement Converter View -->
       <div id="measure-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
         <header class="bg-teal-600 text-white py-6 px-8">
           <h1 class="text-3xl font-bold">Measurement Converter</h1>
