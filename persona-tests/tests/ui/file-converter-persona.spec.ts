@@ -35,8 +35,12 @@ test.describe('File Converter Persona', () => {
     await page.locator('#to-type').selectOption('json');
 
     // 4. The user clicks "Convert"
+    //    Note: the DOM contains multiple `button[type="submit"]` elements
+    //    (one per tool form: File / PDF / Measure / Time / BMI / Age).
+    //    Playwright's strict mode refuses ambiguous selectors, so we
+    //    scope the locator to the File Converter's form.
     const downloadPromise = page.waitForEvent('download');
-    await page.locator('button[type="submit"]').click();
+    await page.locator('#convert-form button[type="submit"]').click();
 
     // 5. The download should start and the success message should be shown
     const download = await downloadPromise;
@@ -48,7 +52,8 @@ test.describe('File Converter Persona', () => {
 
   test('Error Persona: User tries to convert without a file', async ({ page }) => {
     // The user immediately clicks convert without selecting a file
-    await page.locator('button[type="submit"]').click();
+    // (scoped to the File form to avoid strict-mode ambiguity)
+    await page.locator('#convert-form button[type="submit"]').click();
 
     // The UI uses HTML5 'required' attribute, so the browser prevents submission.
     // Check that the file input is flagged as invalid.
@@ -75,7 +80,8 @@ test.describe('File Converter Persona', () => {
     await page.locator('#to-type').selectOption('json');
 
     // 4. The user clicks Convert
-    await page.locator('button[type="submit"]').click();
+    // (scoped to the File form to avoid strict-mode ambiguity)
+    await page.locator('#convert-form button[type="submit"]').click();
 
     // 5. The UI should show an error message
     await expect(page.locator('#status-message')).toHaveText('Source and target formats cannot be the same.');
