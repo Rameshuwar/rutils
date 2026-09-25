@@ -25,3 +25,7 @@ patch_swagger.go
 .DS_Store
 .vscode/
 .idea/
+persona-tests/test-files/dummy.pdf
+# Playwright auto-generated artifacts
+persona-tests/playwright-report/
+persona-tests/test-results/
