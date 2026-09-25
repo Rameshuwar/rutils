@@ -7,7 +7,9 @@
   </head>
   <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col md:flex-row">
 
-    <!-- Mobile Top Bar (hamburger) -->
+    <!-- ============================================================ -->
+    <!-- Mobile Top Bar (hamburger)                                    -->
+    <!-- ============================================================ -->
     <header class="md:hidden bg-indigo-900 text-white flex items-center justify-between px-4 py-3 shadow-lg sticky top-0 z-30">
       <div class="flex items-center gap-2">
         <button id="mobile-menu-btn" class="p-2 rounded-lg hover:bg-indigo-800 transition-colors" aria-label="Open menu">
@@ -23,7 +25,9 @@
     <!-- Overlay (shown when mobile menu is open) -->
     <div id="mobile-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
 
-    <!-- Sidebar -->
+    <!-- ============================================================ -->
+    <!-- Sidebar — now only 2 top-level categories                     -->
+    <!-- ============================================================ -->
     <aside id="sidebar" class="w-64 bg-indigo-900 text-white flex flex-col shadow-2xl z-50 fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
       <div class="p-6 mb-4 flex items-center justify-between">
         <div>
@@ -35,368 +39,357 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
+
       <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
-        <button id="btn-file-converter" class="w-full flex items-center gap-3 px-4 py-3 bg-indigo-800 rounded-lg text-left transition-colors font-medium">
-          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-          File Converter
+        <!-- Category: Conversion -->
+        <button
+          id="btn-category-conversion"
+          data-category="conversion"
+          class="category-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors font-medium bg-indigo-800 text-white"
+        >
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+          </svg>
+          Conversion
         </button>
 
-        <!-- PDF Conversion Dropdown -->
-        <div class="space-y-1">
-          <button id="btn-pdf-menu" class="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-800 rounded-lg text-left transition-colors text-indigo-200 hover:text-white font-medium">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              PDF Conversions
-            </div>
-            <svg id="pdf-menu-icon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-
-          <div id="pdf-menu-dropdown" class="hidden flex-col pl-11 pr-4 space-y-1 mt-1">
-            <button id="btn-pdf-size-work" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
-              PDF Size Work
-            </button>
-          </div>
-        </div>
-
-        <!-- Measurement Dropdown -->
-        <div class="space-y-1">
-          <button id="btn-measure-menu" class="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-800 rounded-lg text-left transition-colors text-indigo-200 hover:text-white font-medium">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-              Measurements
-            </div>
-            <svg id="measure-menu-icon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-
-          <div id="measure-menu-dropdown" class="hidden flex-col pl-11 pr-4 space-y-1 mt-1">
-            <button id="btn-measure-converter" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
-              General Measurements
-            </button>
-            <button id="btn-hr-calculator" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
-              H-R Calculating
-            </button>
-            <div id="hr-calc-dropdown" class="hidden flex-col pl-11 pr-4 space-y-1 mt-1">
-              <button id="btn-bmi" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">BMI</button>
-              <button id="btn-age" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">AGE</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Time Standard Unit Dropdown -->
-        <div class="space-y-1">
-          <button id="btn-time-menu" class="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-800 rounded-lg text-left transition-colors text-indigo-200 hover:text-white font-medium">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Time standard unit
-            </div>
-            <svg id="time-menu-icon" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-
-          <div id="time-menu-dropdown" class="hidden flex-col pl-11 pr-4 space-y-1 mt-1">
-            <button id="btn-time-converter" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
-              Global Timezones
-            </button>
-            <button id="btn-railway-converter" class="w-full text-left px-3 py-2 text-sm rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800 transition-colors">
-              Indian-Railway-convertion
-            </button>
-          </div>
-        </div>
+        <!-- Category: Calculations -->
+        <button
+          id="btn-category-calculations"
+          data-category="calculations"
+          class="category-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors font-medium text-indigo-200 hover:bg-indigo-800 hover:text-white"
+        >
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m-6 4h6m-6 4h3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          Calculations
+        </button>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex items-start md:items-center justify-center p-4 md:p-8 bg-gray-50 overflow-y-auto">
+    <!-- ============================================================ -->
+    <!-- Main Content                                                  -->
+    <!-- ============================================================ -->
+    <main class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
 
-      <!-- File Converter View -->
-      <div id="file-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden block transition-opacity duration-300">
-        <header class="bg-indigo-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">File Converter</h1>
-          <p class="text-indigo-100 mt-2 text-sm md:text-base">Dynamically convert your files securely.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="convert-form" class="space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Convert From</label>
-                <div id="detection-box" class="w-full bg-gray-100 border border-gray-200 rounded-lg py-2 px-3 flex items-center h-[42px] transition-colors">
-                  <span id="detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected on upload</span>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Convert To</label>
-                <select id="to-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-                  <option value="csv">CSV (Spreadsheet)</option>
-                  <option value="json">JSON (Data)</option>
-                  <option value="txt">TXT (Plain Text)</option>
-                  <option value="docx">DOCX (Word Document)</option>
-                  <option value="pdf">PDF (Document)</option>
-                  <option value="jpg">JPG (Image)</option>
-                  <option value="png">PNG (Image)</option>
-                </select>
-              </div>
-            </div>
-            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-              <label class="block text-sm font-medium text-indigo-900 mb-2">Upload File</label>
-              <input type="file" id="file-input" accept=".csv,.json,.txt,.docx,.pdf,.jpg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer" required />
-            </div>
-            <button type="submit" class="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-              Convert & Download
-            </button>
-            <p id="status-message" class="text-sm text-center hidden"></p>
-          </form>
+      <!-- Category header + breadcrumb -->
+      <div class="bg-white border-b border-gray-200 px-4 md:px-8 pt-4 md:pt-6 pb-0 sticky top-0 md:top-0 z-20 shadow-sm">
+        <div class="max-w-5xl mx-auto w-full">
+          <h1 id="category-title" class="text-2xl md:text-3xl font-bold text-gray-800">Conversion</h1>
+          <nav id="breadcrumb" class="text-sm text-gray-500 mt-1 mb-3 flex items-center gap-1">
+            <span>Conversion</span>
+            <span class="text-gray-300">›</span>
+            <span id="breadcrumb-tool" class="text-indigo-600 font-medium">File</span>
+          </nav>
+
+          <!-- Tab strip (horizontal scroll on mobile) -->
+          <div id="tab-strip" class="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-thin">
+            <!-- Tabs injected by main.ts -->
+          </div>
         </div>
       </div>
 
-      <!-- PDF Converter View -->
-      <div id="pdf-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-purple-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">PDF Size Converter</h1>
-          <p class="text-purple-100 mt-2 text-sm md:text-base">Compress or expand your PDF files.</p>
-        </header>
+      <!-- Tool viewport (scrollable) -->
+      <div class="flex-1 overflow-y-auto p-4 md:p-8">
+        <div class="max-w-5xl mx-auto w-full">
 
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="pdf-form" class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
-              <input type="file" id="pdf-file-input" accept=".pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer" required />
+          <!-- ====================================================== -->
+          <!-- TOOL VIEWS — every existing form is preserved verbatim -->
+          <!-- ====================================================== -->
+
+          <!-- File Converter View -->
+          <div id="file-converter-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden block transition-opacity duration-300">
+            <header class="bg-indigo-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">File Converter</h2>
+              <p class="text-indigo-100 mt-2 text-sm md:text-base">Dynamically convert your files securely.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="convert-form" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Convert From</label>
+                    <div id="detection-box" class="w-full bg-gray-100 border border-gray-200 rounded-lg py-2 px-3 flex items-center h-[42px] transition-colors">
+                      <span id="detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected on upload</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Convert To</label>
+                    <select id="to-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                      <option value="csv">CSV (Spreadsheet)</option>
+                      <option value="json">JSON (Data)</option>
+                      <option value="txt">TXT (Plain Text)</option>
+                      <option value="docx">DOCX (Word Document)</option>
+                      <option value="pdf">PDF (Document)</option>
+                      <option value="jpg">JPG (Image)</option>
+                      <option value="png">PNG (Image)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-indigo-900 mb-2">Upload File</label>
+                  <input type="file" id="file-input" accept=".csv,.json,.txt,.docx,.pdf,.jpg,.png" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer" required />
+                </div>
+                <button type="submit" class="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Convert & Download
+                </button>
+                <p id="status-message" class="text-sm text-center hidden"></p>
+              </form>
             </div>
+          </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Conversion Type</label>
-                <select id="pdf-conversion-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  <option value="compression">Compression</option>
-                  <option value="expand">Expand</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Target Size</label>
-                <div class="flex gap-2">
-                  <input type="number" id="pdf-target-size" step="any" placeholder="e.g., 200" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                  <select id="pdf-data-type" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500 text-center">
-                    <option value="KB">KB</option>
-                    <option value="MB">MB</option>
+          <!-- PDF Converter View -->
+          <div id="pdf-converter-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-purple-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">PDF Size Converter</h2>
+              <p class="text-purple-100 mt-2 text-sm md:text-base">Compress or expand your PDF files.</p>
+            </header>
+
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="pdf-form" class="space-y-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
+                  <input type="file" id="pdf-file-input" accept=".pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer" required />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Conversion Type</label>
+                    <select id="pdf-conversion-type" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500">
+                      <option value="compression">Compression</option>
+                      <option value="expand">Expand</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Target Size</label>
+                    <div class="flex gap-2">
+                      <input type="number" id="pdf-target-size" step="any" placeholder="e.g., 200" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                      <select id="pdf-data-type" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-purple-500 text-center">
+                        <option value="KB">KB</option>
+                        <option value="MB">MB</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Convert & Download PDF
+                </button>
+
+                <p id="pdf-status-message" class="text-sm text-center hidden"></p>
+              </form>
+            </div>
+          </div>
+
+          <!-- Measurement Converter View -->
+          <div id="measure-converter-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Measurement Converter</h2>
+              <p class="text-teal-100 mt-2 text-sm md:text-base">Accurately convert between units.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="measure-form" class="space-y-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select id="measure-category" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="length">Length</option>
+                    <option value="weight">Weight / Mass</option>
+                    <option value="volume">Volume</option>
+                    <option value="area">Area</option>
+                    <option value="time">Time</option>
+                    <option value="temperature">Temperature</option>
+                    <option value="speed">Speed</option>
+                    <option value="data">Data</option>
+                    <option value="numeral">Numeral System</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            <button type="submit" class="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-              Convert & Download PDF
-            </button>
-
-            <p id="pdf-status-message" class="text-sm text-center hidden"></p>
-          </form>
-        </div>
-      </div>
-
-      <!-- H-R Calculator View (BMI) -->
-      <div id="hr-calculator-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-blue-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">H-R Calculating (BMI)</h1>
-          <p class="text-blue-100 mt-2 text-sm md:text-base">Calculate Body Mass Index.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="bmi-form" class="space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Weight</label>
-                <input type="number" id="bmi-weight" step="any" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border" placeholder="Enter weight">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                <select id="bmi-weight-unit" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border bg-white">
-                  <option value="kilograms">Kilograms (kg)</option>
-                  <option value="pounds">Pounds (lb)</option>
-                </select>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Height</label>
-                <input type="number" id="bmi-height" step="any" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border" placeholder="Enter height">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                <select id="bmi-height-unit" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border bg-white">
-                  <option value="meters">Meters (m)</option>
-                  <option value="centimeters">Centimeters (cm)</option>
-                  <option value="feet">Feet (ft)</option>
-                  <option value="inches">Inches (in)</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-              Calculate
-            </button>
-          </form>
-          <div id="bmi-result-section" class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-inner text-center">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Result</h3>
-            <div class="flex flex-col items-center justify-center gap-2">
-              <span id="bmi-result-value" class="text-4xl font-extrabold text-blue-600"></span>
-              <span id="bmi-result-category" class="text-lg font-medium text-gray-700"></span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">From Unit</label>
+                    <select id="measure-from" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">To Unit</label>
+                    <select id="measure-to" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Value</label>
+                  <input type="number" id="measure-value" step="any" placeholder="Enter value to convert" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                </div>
+                <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Convert Value
+                </button>
+                <div id="measure-result-box" class="hidden mt-4 p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
+                  <span class="text-sm text-teal-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
+                  <span id="measure-result-text" class="text-3xl font-bold text-teal-900 break-all"></span>
+                </div>
+                <p id="measure-status-message" class="text-sm text-center hidden"></p>
+              </form>
             </div>
           </div>
-          <div id="bmi-error-message" class="hidden mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700"></div>
-        </div>
-      </div>
 
-      <!-- Age Calculator View -->
-      <div id="age-calculator-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">Age Calculator</h1>
-          <p class="text-teal-100 mt-2 text-sm md:text-base">Calculate age from dates.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="age-form" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1" for="age-dob">Date of Birth</label>
-              <input type="date" id="age-dob" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
+          <!-- Time Converter View -->
+          <div id="time-converter-view" class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-blue-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Time Standard Unit</h2>
+              <p class="text-blue-100 mt-2 text-sm md:text-base">Accurately convert global time instantly.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="time-form" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Local Date & Time</label>
+                    <div class="flex flex-wrap gap-2">
+                      <input type="date" id="time-date" class="flex-1 min-w-[140px] bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                      <select id="time-hour" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required></select>
+                      <span class="flex items-center font-bold text-gray-500">:</span>
+                      <select id="time-minute" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required></select>
+                      <select id="time-ampm" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required>
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Source Timezone</label>
+                    <select id="time-source-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Destination Timezone</label>
+                    <select id="time-dest-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
+                  </div>
+                </div>
+                <button type="submit" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Convert Time
+                </button>
+                <div id="time-result-box" class="hidden mt-4 p-6 bg-blue-50 rounded-lg border border-blue-100 text-center shadow-inner">
+                  <span class="text-sm text-blue-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
+                  <div class="flex flex-col space-y-2">
+                    <span id="time-result-local" class="text-2xl font-bold text-blue-900"></span>
+                    <span id="time-result-zone" class="text-sm text-blue-700 font-medium"></span>
+                  </div>
+                  <p id="time-warning" class="mt-3 text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 hidden"></p>
+                </div>
+                <p id="time-status-message" class="text-sm text-center hidden"></p>
+              </form>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1" for="age-today">Today's Date</label>
-              <input type="date" id="age-today" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
-            </div>
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
-              Calculate Age
-            </button>
-          </form>
-          <p id="age-status-message" class="text-sm text-center hidden"></p>
-          <div id="age-result-box" class="hidden mt-4">
-            <p id="age-result-text" class="text-lg font-medium"></p>
-            <p id="age-next-birthday" class="text-sm text-gray-600"></p>
-            <p id="age-summary-text" class="text-sm text-gray-600"></p>
           </div>
-        </div>
-      </div>
 
-      <!-- Measurement Converter View -->
-      <div id="measure-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">Measurement Converter</h1>
-          <p class="text-teal-100 mt-2 text-sm md:text-base">Accurately convert between units.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="measure-form" class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select id="measure-category" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option value="length">Length</option>
-                <option value="weight">Weight / Mass</option>
-                <option value="volume">Volume</option>
-                <option value="area">Area</option>
-                <option value="time">Time</option>
-                <option value="temperature">Temperature</option>
-                <option value="speed">Speed</option>
-                <option value="data">Data</option>
-                <option value="numeral">Numeral System</option>
-              </select>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">From Unit</label>
-                <select id="measure-from" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">To Unit</label>
-                <select id="measure-to" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Value</label>
-              <input type="number" id="measure-value" step="any" placeholder="Enter value to convert" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-            </div>
-            <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-              Convert Value
-            </button>
-            <div id="measure-result-box" class="hidden mt-4 p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
-              <span class="text-sm text-teal-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
-              <span id="measure-result-text" class="text-3xl font-bold text-teal-900 break-all"></span>
-            </div>
-            <p id="measure-status-message" class="text-sm text-center hidden"></p>
-          </form>
-        </div>
-      </div>
-
-      <!-- Time Converter View -->
-      <div id="time-converter-view" class="max-w-2xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-blue-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">Time Standard Unit</h1>
-          <p class="text-blue-100 mt-2 text-sm md:text-base">Accurately convert global time instantly.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <form id="time-form" class="space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Local Date & Time</label>
-                <div class="flex flex-wrap gap-2">
-                  <input type="date" id="time-date" class="flex-1 min-w-[140px] bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                  <select id="time-hour" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required></select>
+          <!-- Indian Railway Converter View -->
+          <div id="railway-converter-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-cyan-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Indian Railway Conversion</h2>
+              <p class="text-cyan-100 mt-2 text-sm md:text-base">Convert between 12-hour and 24-hour railway time.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <div class="bg-cyan-50 border border-cyan-100 rounded-lg p-6">
+                <label class="block text-sm font-medium text-cyan-900 mb-4 text-center">12-Hour Format (AM/PM)</label>
+                <div class="flex flex-wrap gap-2 justify-center">
+                  <input type="number" id="railway-12-hour" min="1" max="12" placeholder="12" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
                   <span class="flex items-center font-bold text-gray-500">:</span>
-                  <select id="time-minute" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required></select>
-                  <select id="time-ampm" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" required>
+                  <input type="number" id="railway-12-min" min="0" max="59" placeholder="00" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
+                  <select id="railway-12-ampm" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
                     <option value="AM">AM</option>
                     <option value="PM">PM</option>
                   </select>
                 </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Source Timezone</label>
-                <select id="time-source-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
+              <div class="flex justify-center text-cyan-500">
+                <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Destination Timezone</label>
-                <select id="time-dest-tz" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-blue-500" required></select>
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <label class="block text-sm font-medium text-gray-700 mb-4 text-center">24-Hour Format (Railway Time)</label>
+                <div class="flex flex-wrap gap-2 justify-center">
+                  <input type="number" id="railway-24-hour" min="0" max="23" placeholder="13" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-gray-400 text-center">
+                  <span class="flex items-center font-bold text-gray-500">:</span>
+                  <input type="number" id="railway-24-min" min="0" max="59" placeholder="30" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-gray-400 text-center">
+                </div>
               </div>
+              <p id="railway-status-message" class="text-sm text-center text-red-600 hidden"></p>
             </div>
-            <button type="submit" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-              Convert Time
-            </button>
-            <div id="time-result-box" class="hidden mt-4 p-6 bg-blue-50 rounded-lg border border-blue-100 text-center shadow-inner">
-              <span class="text-sm text-blue-600 font-medium block mb-2 uppercase tracking-wide">Result</span>
-              <div class="flex flex-col space-y-2">
-                <span id="time-result-local" class="text-2xl font-bold text-blue-900"></span>
-                <span id="time-result-zone" class="text-sm text-blue-700 font-medium"></span>
-              </div>
-              <p id="time-warning" class="mt-3 text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 hidden"></p>
-            </div>
-            <p id="time-status-message" class="text-sm text-center hidden"></p>
-          </form>
-        </div>
-      </div>
+          </div>
 
-      <!-- Indian Railway Converter View -->
-      <div id="railway-converter-view" class="max-w-xl w-full bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
-        <header class="bg-cyan-600 text-white py-4 px-6 md:py-6 md:px-8">
-          <h1 class="text-2xl md:text-3xl font-bold">Indian Railway Conversion</h1>
-          <p class="text-cyan-100 mt-2 text-sm md:text-base">Convert between 12-hour and 24-hour railway time.</p>
-        </header>
-        <div class="p-6 md:p-8 space-y-6">
-          <div class="bg-cyan-50 border border-cyan-100 rounded-lg p-6">
-            <label class="block text-sm font-medium text-cyan-900 mb-4 text-center">12-Hour Format (AM/PM)</label>
-            <div class="flex flex-wrap gap-2 justify-center">
-              <input type="number" id="railway-12-hour" min="1" max="12" placeholder="12" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
-              <span class="flex items-center font-bold text-gray-500">:</span>
-              <input type="number" id="railway-12-min" min="0" max="59" placeholder="00" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
-              <select id="railway-12-ampm" class="w-24 bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center">
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
+          <!-- H-R Calculator View (BMI) -->
+          <div id="hr-calculator-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-blue-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">BMI Calculator</h2>
+              <p class="text-blue-100 mt-2 text-sm md:text-base">Calculate Body Mass Index.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="bmi-form" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Weight</label>
+                    <input type="number" id="bmi-weight" step="any" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border" placeholder="Enter weight">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                    <select id="bmi-weight-unit" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border bg-white">
+                      <option value="kilograms">Kilograms (kg)</option>
+                      <option value="pounds">Pounds (lb)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Height</label>
+                    <input type="number" id="bmi-height" step="any" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border" placeholder="Enter height">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                    <select id="bmi-height-unit" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 border bg-white">
+                      <option value="meters">Meters (m)</option>
+                      <option value="centimeters">Centimeters (cm)</option>
+                      <option value="feet">Feet (ft)</option>
+                      <option value="inches">Inches (in)</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  Calculate
+                </button>
+              </form>
+              <div id="bmi-result-section" class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-inner text-center">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Result</h3>
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <span id="bmi-result-value" class="text-4xl font-extrabold text-blue-600"></span>
+                  <span id="bmi-result-category" class="text-lg font-medium text-gray-700"></span>
+                </div>
+              </div>
+              <div id="bmi-error-message" class="hidden mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700"></div>
             </div>
           </div>
-          <div class="flex justify-center text-cyan-500">
-            <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
-          </div>
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <label class="block text-sm font-medium text-gray-700 mb-4 text-center">24-Hour Format (Railway Time)</label>
-            <div class="flex flex-wrap gap-2 justify-center">
-              <input type="number" id="railway-24-hour" min="0" max="23" placeholder="13" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-gray-400 text-center">
-              <span class="flex items-center font-bold text-gray-500">:</span>
-              <input type="number" id="railway-24-min" min="0" max="59" placeholder="30" class="w-20 bg-white border border-gray-300 rounded-lg py-2 px-2 h-[42px] focus:outline-none focus:ring-2 focus:ring-gray-400 text-center">
+
+          <!-- Age Calculator View -->
+          <div id="age-calculator-view" class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Age Calculator</h2>
+              <p class="text-teal-100 mt-2 text-sm md:text-base">Calculate age from dates.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="age-form" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1" for="age-dob">Date of Birth</label>
+                  <input type="date" id="age-dob" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1" for="age-today">Today's Date</label>
+                  <input type="date" id="age-today" class="w-full border-gray-300 rounded-lg py-2 px-3" required />
+                </div>
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
+                  Calculate Age
+                </button>
+              </form>
+              <p id="age-status-message" class="text-sm text-center hidden"></p>
+              <div id="age-result-box" class="hidden mt-4">
+                <p id="age-result-text" class="text-lg font-medium"></p>
+                <p id="age-next-birthday" class="text-sm text-gray-600"></p>
+                <p id="age-summary-text" class="text-sm text-gray-600"></p>
+              </div>
             </div>
           </div>
-          <p id="railway-status-message" class="text-sm text-center text-red-600 hidden"></p>
+
         </div>
       </div>
 

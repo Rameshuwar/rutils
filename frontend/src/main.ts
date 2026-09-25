@@ -1,52 +1,63 @@
 import './style.css'
 
-// ----------------------------------------------------
-// UI STATE & NAVIGATION
-// ----------------------------------------------------
-const btnFileConverter = document.getElementById('btn-file-converter') as HTMLButtonElement;
-const btnMeasureConverter = document.getElementById('btn-measure-converter') as HTMLButtonElement;
-const btnHrCalculator = document.getElementById('btn-hr-calculator') as HTMLButtonElement | null;
-const btnTimeConverter = document.getElementById('btn-time-converter') as HTMLButtonElement;
-const btnRailwayConverter = document.getElementById('btn-railway-converter') as HTMLButtonElement;
+// ============================================================
+// TOOL REGISTRY — single source of truth for navigation
+// ============================================================
+type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age';
+type CategoryId = 'conversion' | 'calculations';
 
-// PDF dropdown elements
-const btnPdfMenu = document.getElementById('btn-pdf-menu') as HTMLButtonElement;
-const pdfMenuDropdown = document.getElementById('pdf-menu-dropdown') as HTMLDivElement;
-const pdfMenuIcon = document.getElementById('pdf-menu-icon') as SVGSVGElement;
-const btnPdfSizeWork = document.getElementById('btn-pdf-size-work') as HTMLButtonElement;
+interface ToolDef {
+  id: ToolId;
+  label: string;
+  viewId: string;
+}
 
-const btnTimeMenu = document.getElementById('btn-time-menu') as HTMLButtonElement;
-const timeMenuDropdown = document.getElementById('time-menu-dropdown') as HTMLDivElement;
-const timeMenuIcon = document.getElementById('time-menu-icon') as SVGSVGElement;
+const TOOLS: Record<CategoryId, ToolDef[]> = {
+  conversion: [
+    { id: 'file',    label: 'File',         viewId: 'file-converter-view' },
+    { id: 'pdf',     label: 'PDF Size',     viewId: 'pdf-converter-view' },
+    { id: 'measure', label: 'Measurements', viewId: 'measure-converter-view' },
+    { id: 'time',    label: 'Time Zones',   viewId: 'time-converter-view' },
+    { id: 'railway', label: 'Railway',      viewId: 'railway-converter-view' },
+  ],
+  calculations: [
+    { id: 'bmi', label: 'BMI', viewId: 'hr-calculator-view' },
+    { id: 'age', label: 'Age', viewId: 'age-calculator-view' },
+  ],
+};
 
-const btnMeasureMenu = document.getElementById('btn-measure-menu') as HTMLButtonElement | null;
-const measureMenuDropdown = document.getElementById('measure-menu-dropdown') as HTMLDivElement | null;
-const measureMenuIcon = document.getElementById('measure-menu-icon') as SVGSVGElement | null;
+const CATEGORY_LABELS: Record<CategoryId, string> = {
+  conversion: 'Conversion',
+  calculations: 'Calculations',
+};
 
-const btnHrMenu = document.getElementById('btn-hr-menu') as HTMLButtonElement | null;
-const hrMenuDropdown = document.getElementById('hr-menu-dropdown') as HTMLDivElement | null;
-const hrMenuIcon = document.getElementById('hr-menu-icon') as SVGSVGElement | null;
+// ============================================================
+// DOM REFERENCES — navigation
+// ============================================================
+const sidebar             = document.getElementById('sidebar') as HTMLElement | null;
+const mobileMenuBtn       = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
+const mobileMenuClose     = document.getElementById('mobile-menu-close') as HTMLButtonElement | null;
+const mobileOverlay       = document.getElementById('mobile-overlay') as HTMLDivElement | null;
 
-const fileConverterView = document.getElementById('file-converter-view') as HTMLDivElement;
-const measureConverterView = document.getElementById('measure-converter-view') as HTMLDivElement;
-const hrCalculatorView = document.getElementById('hr-calculator-view') as HTMLDivElement;
-const timeConverterView = document.getElementById('time-converter-view') as HTMLDivElement;
-const railwayConverterView = document.getElementById('railway-converter-view') as HTMLDivElement;
-const pdfConverterView = document.getElementById('pdf-converter-view') as HTMLDivElement;
+const btnCategoryConversion   = document.getElementById('btn-category-conversion') as HTMLButtonElement;
+const btnCategoryCalculations = document.getElementById('btn-category-calculations') as HTMLButtonElement;
+const categoryTitle           = document.getElementById('category-title') as HTMLHeadingElement;
+const breadcrumbTool          = document.getElementById('breadcrumb-tool') as HTMLSpanElement;
+const tabStrip                = document.getElementById('tab-strip') as HTMLDivElement;
 
-let timeMenuOpen = false;
-let measureMenuOpen = false;
-let hrMenuOpen = false;
-let pdfMenuOpen = false;
+const allToolViews = Array.from(
+  document.querySelectorAll<HTMLDivElement>('.tool-view')
+);
 
-// ----------------------------------------------------
+// ============================================================
+// STATE
+// ============================================================
+let currentCategory: CategoryId = 'conversion';
+let currentTool: ToolId = 'file';
+
+// ============================================================
 // MOBILE SIDEBAR TOGGLE
-// ----------------------------------------------------
-const sidebar = document.getElementById('sidebar') as HTMLElement | null;
-const mobileMenuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
-const mobileMenuClose = document.getElementById('mobile-menu-close') as HTMLButtonElement | null;
-const mobileOverlay = document.getElementById('mobile-overlay') as HTMLDivElement | null;
-
+// ============================================================
 function openMobileMenu() {
   if (!sidebar) return;
   sidebar.classList.remove('-translate-x-full');
@@ -65,9 +76,8 @@ mobileMenuBtn?.addEventListener('click', openMobileMenu);
 mobileMenuClose?.addEventListener('click', closeMobileMenu);
 mobileOverlay?.addEventListener('click', closeMobileMenu);
 
-// Auto-close the mobile menu when a navigation button is clicked
-// so the panel is immediately visible on phones
-document.querySelectorAll('#sidebar nav button').forEach(btn => {
+// Auto-close mobile menu when a category button is clicked
+[btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
   btn.addEventListener('click', () => {
     if (window.innerWidth < 768) {
       setTimeout(closeMobileMenu, 150);
@@ -75,241 +85,146 @@ document.querySelectorAll('#sidebar nav button').forEach(btn => {
   });
 });
 
-// ----------------------------------------------------
-// PDF MENU TOGGLE
-// ----------------------------------------------------
-btnPdfMenu.addEventListener('click', () => {
-  pdfMenuOpen = !pdfMenuOpen;
-  if (pdfMenuOpen) {
-    pdfMenuDropdown.classList.remove('hidden');
-    pdfMenuDropdown.classList.add('flex');
-    pdfMenuIcon.classList.add('rotate-180');
-  } else {
-    pdfMenuDropdown.classList.add('hidden');
-    pdfMenuDropdown.classList.remove('flex');
-    pdfMenuIcon.classList.remove('rotate-180');
-  }
-});
+// ============================================================
+// NAVIGATION — categories & tabs
+// ============================================================
+function renderTabs(category: CategoryId) {
+  tabStrip.innerHTML = '';
+  const tools = TOOLS[category];
 
-// ----------------------------------------------------
-// TIME MENU TOGGLE
-// ----------------------------------------------------
-btnTimeMenu.addEventListener('click', () => {
-  timeMenuOpen = !timeMenuOpen;
-  if (timeMenuOpen) {
-    timeMenuDropdown.classList.remove('hidden');
-    timeMenuDropdown.classList.add('flex');
-    timeMenuIcon.classList.add('rotate-180');
-  } else {
-    timeMenuDropdown.classList.add('hidden');
-    timeMenuDropdown.classList.remove('flex');
-    timeMenuIcon.classList.remove('rotate-180');
-  }
-});
+  tools.forEach(tool => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.tool = tool.id;
+    btn.dataset.toolLabel = tool.label;
 
-// ----------------------------------------------------
-// MEASURE MENU TOGGLE
-// ----------------------------------------------------
-if (btnMeasureMenu && measureMenuDropdown && measureMenuIcon) {
-  btnMeasureMenu.addEventListener('click', () => {
-    measureMenuOpen = !measureMenuOpen;
-    if (measureMenuOpen) {
-      measureMenuDropdown.classList.remove('hidden');
-      measureMenuDropdown.classList.add('flex');
-      measureMenuIcon.classList.add('rotate-180');
+    const active = tool.id === currentTool;
+    btn.className = [
+      'whitespace-nowrap',
+      'px-4',
+      'py-2',
+      'rounded-full',
+      'text-sm',
+      'font-medium',
+      'transition-colors',
+      'border',
+      active
+        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+        : 'bg-white text-gray-600 border-gray-300 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300',
+    ].join(' ');
+
+    btn.textContent = tool.label;
+
+    btn.addEventListener('click', () => {
+      setTool(tool.id);
+    });
+
+    tabStrip.appendChild(btn);
+  });
+}
+
+function highlightCategoryButtons() {
+  const activeClasses = ['bg-indigo-800', 'text-white'];
+  const inactiveClasses = ['text-indigo-200', 'hover:bg-indigo-800', 'hover:text-white'];
+
+  [btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
+    const isActive =
+      (btn === btnCategoryConversion && currentCategory === 'conversion') ||
+      (btn === btnCategoryCalculations && currentCategory === 'calculations');
+
+    btn.classList.remove(...activeClasses, ...inactiveClasses);
+    if (isActive) {
+      btn.classList.add(...activeClasses);
     } else {
-      measureMenuDropdown.classList.add('hidden');
-      measureMenuDropdown.classList.remove('flex');
-      measureMenuIcon.classList.remove('rotate-180');
+      btn.classList.add(...inactiveClasses);
     }
   });
 }
 
-// ----------------------------------------------------
-// HR MENU TOGGLE
-// ----------------------------------------------------
-if (btnHrMenu && hrMenuDropdown && hrMenuIcon) {
-  btnHrMenu.addEventListener('click', () => {
-    hrMenuOpen = !hrMenuOpen;
-    if (hrMenuOpen) {
-      hrMenuDropdown.classList.remove('hidden');
-      hrMenuDropdown.classList.add('flex');
-      hrMenuIcon.classList.add('rotate-180');
-    } else {
-      hrMenuDropdown.classList.add('hidden');
-      hrMenuDropdown.classList.remove('flex');
-      hrMenuIcon.classList.remove('rotate-180');
-    }
-  });
-}
+function setTool(toolId: ToolId) {
+  // Ensure the tool belongs to the current category; if not, switch category.
+  const toolsInCategory = TOOLS[currentCategory];
+  const toolExists = toolsInCategory.some(t => t.id === toolId);
 
-// ----------------------------------------------------
-// VIEW SWITCHER
-// ----------------------------------------------------
-function setActiveView(view: 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'hr' | 'age') {
-  // Hide all views first
-  fileConverterView.classList.add('hidden');
-  pdfConverterView.classList.add('hidden');
-  measureConverterView.classList.add('hidden');
-  hrCalculatorView.classList.add('hidden');
-  timeConverterView.classList.add('hidden');
-  railwayConverterView.classList.add('hidden');
-  ageCalculatorPanel.classList.add('hidden');
-
-  // Reset all sidebar buttons
-  btnFileConverter.classList.remove('bg-indigo-800', 'text-white');
-  btnFileConverter.classList.add('text-indigo-200');
-
-  btnPdfSizeWork.classList.remove('bg-indigo-800', 'text-white');
-  btnPdfSizeWork.classList.add('text-indigo-200');
-
-  btnMeasureConverter.classList.remove('bg-indigo-800', 'text-white');
-  btnMeasureConverter.classList.add('text-indigo-200');
-
-  if (btnHrCalculator) {
-    btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
-    btnHrCalculator.classList.add('text-indigo-200');
-  }
-
-  btnTimeConverter.classList.remove('bg-indigo-800', 'text-white');
-  btnTimeConverter.classList.add('text-indigo-200');
-
-  btnRailwayConverter.classList.remove('bg-indigo-800', 'text-white');
-  btnRailwayConverter.classList.add('text-indigo-200');
-
-  // Activate selected view
-  if (view === 'file') {
-    fileConverterView.classList.remove('hidden');
-    btnFileConverter.classList.replace('text-indigo-200', 'text-white');
-    btnFileConverter.classList.add('bg-indigo-800');
-  } else if (view === 'pdf') {
-    pdfConverterView.classList.remove('hidden');
-    btnPdfSizeWork.classList.replace('text-indigo-200', 'text-white');
-    btnPdfSizeWork.classList.add('bg-indigo-800');
-    // Keep PDF dropdown open so the active sub-item stays visible
-    pdfMenuDropdown.classList.remove('hidden');
-    pdfMenuDropdown.classList.add('flex');
-    pdfMenuIcon.classList.add('rotate-180');
-    pdfMenuOpen = true;
-  } else if (view === 'measure') {
-    measureConverterView.classList.remove('hidden');
-    btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
-    btnMeasureConverter.classList.add('bg-indigo-800');
-  } else if (view === 'age') {
-    ageCalculatorPanel.classList.remove('hidden');
-    bmiCalculatorPanel.classList.add('hidden');
-    if (btnHrCalculator) {
-      btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
-      btnHrCalculator.classList.add('text-indigo-200');
-    }
-  } else if (view === 'hr') {
-    hrCalculatorView.classList.remove('hidden');
-    if (btnHrCalculator) {
-      btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
-      btnHrCalculator.classList.add('bg-indigo-800');
-    }
-  } else if (view === 'time') {
-    timeConverterView.classList.remove('hidden');
-    btnTimeConverter.classList.replace('text-indigo-200', 'text-white');
-    btnTimeConverter.classList.add('bg-indigo-800');
-  } else if (view === 'railway') {
-    railwayConverterView.classList.remove('hidden');
-    btnRailwayConverter.classList.replace('text-indigo-200', 'text-white');
-    btnRailwayConverter.classList.add('bg-indigo-800');
-  }
-}
-
-// ----------------------------------------------------
-// SIDEBAR CLICK LISTENERS
-// ----------------------------------------------------
-btnFileConverter.addEventListener('click', () => setActiveView('file'));
-btnPdfSizeWork.addEventListener('click', () => setActiveView('pdf'));
-btnMeasureConverter.addEventListener('click', () => setActiveView('measure'));
-
-if (btnHrCalculator) {
-  const hrCalcDropdown = document.getElementById('hr-calc-dropdown') as HTMLDivElement | null;
-  btnHrCalculator.addEventListener('click', () => {
-    if (hrCalcDropdown) {
-      const isHidden = hrCalcDropdown.classList.contains('hidden');
-      if (isHidden) {
-        hrCalcDropdown.classList.remove('hidden');
-        hrCalcDropdown.classList.add('flex');
-      } else {
-        hrCalcDropdown.classList.add('hidden');
-        hrCalcDropdown.classList.remove('flex');
+  if (!toolExists) {
+    // Find which category contains this tool, and switch to it.
+    for (const cat of Object.keys(TOOLS) as CategoryId[]) {
+      if (TOOLS[cat].some(t => t.id === toolId)) {
+        currentCategory = cat;
+        break;
       }
     }
-  });
+  }
 
-  const btnBmi = document.getElementById('btn-bmi') as HTMLButtonElement | null;
-  const btnAge = document.getElementById('btn-age') as HTMLButtonElement | null;
+  currentTool = toolId;
 
-  btnBmi?.addEventListener('click', () => {
-    setActiveView('hr');
-    showHrPanel('bmi');
-  });
+  // Update header + breadcrumb
+  categoryTitle.textContent = CATEGORY_LABELS[currentCategory];
+  const toolDef = TOOLS[currentCategory].find(t => t.id === currentTool)!;
+  breadcrumbTool.textContent = toolDef.label;
 
-  btnAge?.addEventListener('click', () => {
-    setActiveView('age');
-    if (hrCalcDropdown) {
-      hrCalcDropdown.classList.add('hidden');
-      hrCalcDropdown.classList.remove('flex');
+  // Render tabs (needed when category changed) and refresh active styles
+  renderTabs(currentCategory);
+
+  // Show only the selected tool view
+  allToolViews.forEach(view => {
+    if (view.id === toolDef.viewId) {
+      view.classList.remove('hidden');
+    } else {
+      view.classList.add('hidden');
     }
   });
+
+  highlightCategoryButtons();
+
+  // Scroll the active tab into view (useful on mobile with horizontal scroll)
+  const activeTab = tabStrip.querySelector<HTMLButtonElement>(
+    `button[data-tool="${currentTool}"]`
+  );
+  activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+  // Scroll main content area back to top so users see the form header
+  const viewport = document.querySelector('main > .flex-1.overflow-y-auto');
+  viewport?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-btnTimeConverter.addEventListener('click', () => setActiveView('time'));
-btnRailwayConverter.addEventListener('click', () => setActiveView('railway'));
+function setCategory(category: CategoryId, preserveTool = true) {
+  currentCategory = category;
 
-// ----------------------------------------------------
-// HR PANEL (BMI / AGE) INTERNAL SWITCHER
-// ----------------------------------------------------
-const hrModeButtons = document.querySelectorAll('[data-hr-mode]') as NodeListOf<HTMLButtonElement>;
-const hrToggleButtons = document.querySelectorAll('[data-hr-mode-toggle]') as NodeListOf<HTMLButtonElement>;
-const ageCalculatorPanel = document.getElementById('age-calculator-view') as HTMLDivElement;
-const bmiCalculatorPanel = document.getElementById('hr-calculator-view') as HTMLDivElement;
+  // Decide which tool to land on
+  const tools = TOOLS[category];
+  let landingTool: ToolId;
 
-function showHrPanel(mode: 'age' | 'bmi') {
-  const isAge = mode === 'age';
-  ageCalculatorPanel.classList.toggle('hidden', !isAge);
-  bmiCalculatorPanel.classList.toggle('hidden', isAge);
+  if (preserveTool && tools.some(t => t.id === currentTool)) {
+    landingTool = currentTool;
+  } else {
+    landingTool = tools[0].id;
+  }
 
-  hrToggleButtons.forEach((btn) => {
-    const active = btn.dataset.hrModeToggle === mode;
-    btn.classList.toggle('bg-violet-600', active);
-    btn.classList.toggle('text-white', active);
-    btn.classList.toggle('bg-violet-100', !active);
-    btn.classList.toggle('text-violet-700', !active);
-  });
-
-  hrModeButtons.forEach((btn) => {
-    const active = btn.dataset.hrMode === mode;
-    btn.classList.toggle('bg-indigo-800', active);
-    btn.classList.toggle('text-white', active);
-    btn.classList.toggle('text-indigo-200', !active);
-  });
+  setTool(landingTool);
 }
 
-hrModeButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    showHrPanel(btn.dataset.hrMode as 'age' | 'bmi');
-    setActiveView('hr');
-    if (hrMenuDropdown && hrMenuIcon) {
-      hrMenuDropdown.classList.add('hidden');
-      hrMenuDropdown.classList.remove('flex');
-      hrMenuIcon.classList.remove('rotate-180');
-    }
-    hrMenuOpen = false;
-  });
+// ============================================================
+// CATEGORY BUTTON LISTENERS
+// ============================================================
+btnCategoryConversion.addEventListener('click', () => setCategory('conversion'));
+btnCategoryCalculations.addEventListener('click', () => setCategory('calculations'));
+
+// Breadcrumb: clicking the category name keeps the current tab (per design decision)
+document.querySelector('#breadcrumb > span:first-child')?.addEventListener('click', () => {
+  setCategory(currentCategory, true);
 });
 
-hrToggleButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    showHrPanel(btn.dataset.hrModeToggle as 'age' | 'bmi');
-  });
-});
+// ============================================================
+// INITIAL RENDER
+// ============================================================
+setCategory('conversion', false);
 
-setActiveView('file'); // Default view on load
+// ============================================================
+// ------------------------------------------------------------
+// EVERYTHING BELOW IS EXISTING CONVERTER LOGIC — UNCHANGED.
+// ------------------------------------------------------------
+// ============================================================
 
 // ----------------------------------------------------
 // FILE CONVERTER LOGIC
@@ -461,7 +376,6 @@ pdfForm.addEventListener('submit', async (e) => {
       throw new Error(errText || `Server error: ${response.status}`);
     }
 
-    // Try to get the filename from the Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition');
     let filename = 'converted.pdf';
     if (contentDisposition && contentDisposition.includes('filename=')) {
@@ -708,12 +622,12 @@ timeForm.addEventListener('submit', async (e) => {
     const timeWithOffset = destLocalParts[1];
 
     const [hourStr, minStr] = timeWithOffset.split(':');
-    let hour = parseInt(hourStr, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    hour = hour % 12;
-    if (hour === 0) hour = 12;
+    let hour12 = parseInt(hourStr, 10);
+    const ampmOut = hour12 >= 12 ? 'PM' : 'AM';
+    hour12 = hour12 % 12;
+    if (hour12 === 0) hour12 = 12;
 
-    const destTime12 = `${hour.toString().padStart(2, '0')}:${minStr} ${ampm}`;
+    const destTime12 = `${hour12.toString().padStart(2, '0')}:${minStr} ${ampmOut}`;
 
     timeResultLocal.textContent = `${destDate} ${destTime12}`;
 
