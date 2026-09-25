@@ -40,6 +40,42 @@ let hrMenuOpen = false;
 let pdfMenuOpen = false;
 
 // ----------------------------------------------------
+// MOBILE SIDEBAR TOGGLE
+// ----------------------------------------------------
+const sidebar = document.getElementById('sidebar') as HTMLElement | null;
+const mobileMenuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
+const mobileMenuClose = document.getElementById('mobile-menu-close') as HTMLButtonElement | null;
+const mobileOverlay = document.getElementById('mobile-overlay') as HTMLDivElement | null;
+
+function openMobileMenu() {
+  if (!sidebar) return;
+  sidebar.classList.remove('-translate-x-full');
+  sidebar.classList.add('translate-x-0');
+  mobileOverlay?.classList.remove('hidden');
+}
+
+function closeMobileMenu() {
+  if (!sidebar) return;
+  sidebar.classList.add('-translate-x-full');
+  sidebar.classList.remove('translate-x-0');
+  mobileOverlay?.classList.add('hidden');
+}
+
+mobileMenuBtn?.addEventListener('click', openMobileMenu);
+mobileMenuClose?.addEventListener('click', closeMobileMenu);
+mobileOverlay?.addEventListener('click', closeMobileMenu);
+
+// Auto-close the mobile menu when a navigation button is clicked
+// so the panel is immediately visible on phones
+document.querySelectorAll('#sidebar nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (window.innerWidth < 768) {
+      setTimeout(closeMobileMenu, 150);
+    }
+  });
+});
+
+// ----------------------------------------------------
 // PDF MENU TOGGLE
 // ----------------------------------------------------
 btnPdfMenu.addEventListener('click', () => {
@@ -159,14 +195,14 @@ function setActiveView(view: 'file' | 'pdf' | 'measure' | 'time' | 'railway' | '
     measureConverterView.classList.remove('hidden');
     btnMeasureConverter.classList.replace('text-indigo-200', 'text-white');
     btnMeasureConverter.classList.add('bg-indigo-800');
-} else if (view === 'age') {
-  ageCalculatorPanel.classList.remove('hidden');
-  bmiCalculatorPanel.classList.add('hidden');
-  if (btnHrCalculator) {
-    btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
-    btnHrCalculator.classList.add('text-indigo-200');
-  }
-} else if (view === 'hr') {
+  } else if (view === 'age') {
+    ageCalculatorPanel.classList.remove('hidden');
+    bmiCalculatorPanel.classList.add('hidden');
+    if (btnHrCalculator) {
+      btnHrCalculator.classList.remove('bg-indigo-800', 'text-white');
+      btnHrCalculator.classList.add('text-indigo-200');
+    }
+  } else if (view === 'hr') {
     hrCalculatorView.classList.remove('hidden');
     if (btnHrCalculator) {
       btnHrCalculator.classList.replace('text-indigo-200', 'text-white');
