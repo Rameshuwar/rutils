@@ -390,6 +390,111 @@
             </div>
           </div>
 
+          <!-- Percentage Calculator View -->
+          <div id="percentage-calculator-view" class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Percentage Calculator</h2>
+              <p class="text-teal-100 mt-2 text-sm md:text-base">All forms of percentage math in one place.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="percentage-form" class="space-y-5">
+
+                <!-- Operation picker (grouped) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Operation</label>
+                  <select id="percentage-operation" class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                    <optgroup label="Basic">
+                      <option value="percent_of" selected>X% of Y</option>
+                      <option value="what_percent">X is what % of Y</option>
+                      <option value="is_percent_of_what">X is Y% of what number</option>
+                    </optgroup>
+                    <optgroup label="Change">
+                      <option value="percent_change">Percentage change (old → new)</option>
+                      <option value="percent_increase">Increase a number by X%</option>
+                      <option value="percent_decrease">Decrease a number by X%</option>
+                      <option value="reverse_percent">Reverse percentage</option>
+                      <option value="percent_difference">Percentage difference</option>
+                    </optgroup>
+                    <optgroup label="Points">
+                      <option value="add_percent_points">Add percentage points</option>
+                      <option value="subtract_percent_points">Subtract percentage points</option>
+                    </optgroup>
+                    <optgroup label="Business">
+                      <option value="discount">Discount</option>
+                      <option value="markup">Markup</option>
+                      <option value="profit_loss">Profit / Loss %</option>
+                    </optgroup>
+                    <optgroup label="Convert">
+                      <option value="percent_to_fraction">Percent → Fraction</option>
+                      <option value="fraction_to_percent">Fraction → Percent</option>
+                      <option value="decimal_to_percent">Decimal → Percent</option>
+                    </optgroup>
+                    <optgroup label="Advanced">
+                      <option value="compound_percent">Compound percentage</option>
+                      <option value="marks_percentage">Marks percentage</option>
+                      <option value="cgpa_to_percent">CGPA → Percent</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <!-- Dynamic input fields -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  <div id="pct-field1-wrap">
+                    <label id="pct-field1-label" class="block text-sm font-medium text-gray-700 mb-2">Percent (%)</label>
+                    <input type="number" step="any" id="pct-field1"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Enter value" required>
+                  </div>
+
+                  <div id="pct-field2-wrap">
+                    <label id="pct-field2-label" class="block text-sm font-medium text-gray-700 mb-2">Of number</label>
+                    <input type="number" step="any" id="pct-field2"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Enter value" required>
+                  </div>
+
+                  <div id="pct-field3-wrap" class="hidden">
+                    <label id="pct-field3-label" class="block text-sm font-medium text-gray-700 mb-2">Number of periods</label>
+                    <input type="number" step="any" id="pct-field3"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Enter periods">
+                  </div>
+
+                </div>
+
+                <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Calculate
+                </button>
+
+                <p id="percentage-status-message" class="text-sm text-center hidden"></p>
+
+                <!-- Result box -->
+                <div id="percentage-result-box" class="hidden mt-4 p-6 bg-teal-50 rounded-lg border border-teal-100 shadow-inner">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide">Result</span>
+                    <button type="button" id="percentage-copy-btn"
+                      class="text-xs font-medium text-teal-700 bg-white border border-teal-200 rounded-md px-2 py-1 hover:bg-teal-100 transition-colors">
+                      Copy
+                    </button>
+                  </div>
+
+                  <div class="text-center mb-4">
+                    <span id="percentage-result-formatted" class="text-4xl font-extrabold text-teal-900 break-all"></span>
+                  </div>
+
+                  <div id="percentage-extra-chips" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+
+                  <div id="percentage-steps-box" class="hidden mt-4 pt-4 border-t border-teal-200">
+                    <p class="text-xs text-teal-700 font-semibold uppercase tracking-wide mb-2">Steps</p>
+                    <ul id="percentage-steps-list" class="space-y-1 text-sm text-teal-800 font-mono"></ul>
+                  </div>
+                </div>
+
+              </form>
+            </div>
+          </div>
+
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import './style.css'
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
-type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age';
+type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age' | 'percentage';
 type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
@@ -21,8 +21,9 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'railway', label: 'Railway',      viewId: 'railway-converter-view' },
   ],
   calculations: [
-    { id: 'bmi', label: 'BMI', viewId: 'hr-calculator-view' },
-    { id: 'age', label: 'Age', viewId: 'age-calculator-view' },
+    { id: 'bmi',        label: 'BMI',        viewId: 'hr-calculator-view' },
+    { id: 'age',        label: 'Age',        viewId: 'age-calculator-view' },
+    { id: 'percentage', label: 'Percentage', viewId: 'percentage-calculator-view' },
   ],
 };
 
@@ -908,6 +909,298 @@ if (bmiForm) {
       console.error('BMI calculation error:', error);
       bmiErrorMessage.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
       bmiErrorMessage.classList.remove('hidden');
+    }
+  });
+}
+
+// ----------------------------------------------------
+// PERCENTAGE CALCULATOR LOGIC
+// ----------------------------------------------------
+
+// Field config per operation: what to show in each input box.
+// Each entry has up to 3 fields; fields not listed are hidden.
+interface PctFieldConfig {
+  label: string;
+  placeholder: string;
+}
+
+interface PctOpConfig {
+  field1: PctFieldConfig;
+  field2?: PctFieldConfig;
+  field3?: PctFieldConfig;
+}
+
+const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
+  // Basic
+  percent_of: {
+    field1: { label: 'Percent (%)',  placeholder: 'e.g. 15' },
+    field2: { label: 'Of number',    placeholder: 'e.g. 200' },
+  },
+  what_percent: {
+    field1: { label: 'Part',         placeholder: 'e.g. 30' },
+    field2: { label: 'Whole',        placeholder: 'e.g. 200' },
+  },
+  is_percent_of_what: {
+    field1: { label: 'Part',         placeholder: 'e.g. 30' },
+    field2: { label: 'Percent (%)',  placeholder: 'e.g. 15' },
+  },
+
+  // Change
+  percent_change: {
+    field1: { label: 'Old value',    placeholder: 'e.g. 100' },
+    field2: { label: 'New value',    placeholder: 'e.g. 150' },
+  },
+  percent_increase: {
+    field1: { label: 'Number',       placeholder: 'e.g. 200' },
+    field2: { label: 'Increase by (%)', placeholder: 'e.g. 15' },
+  },
+  percent_decrease: {
+    field1: { label: 'Number',       placeholder: 'e.g. 200' },
+    field2: { label: 'Decrease by (%)', placeholder: 'e.g. 15' },
+  },
+  reverse_percent: {
+    field1: { label: 'Final value',  placeholder: 'e.g. 230' },
+    field2: { label: 'Percent applied (%)', placeholder: 'e.g. 15' },
+  },
+  percent_difference: {
+    field1: { label: 'Value A',      placeholder: 'e.g. 100' },
+    field2: { label: 'Value B',      placeholder: 'e.g. 150' },
+  },
+
+  // Points
+  add_percent_points: {
+    field1: { label: 'First percent (%)',  placeholder: 'e.g. 5' },
+    field2: { label: 'Second percent (%)', placeholder: 'e.g. 3' },
+  },
+  subtract_percent_points: {
+    field1: { label: 'First percent (%)',  placeholder: 'e.g. 5' },
+    field2: { label: 'Second percent (%)', placeholder: 'e.g. 3' },
+  },
+
+  // Business
+  discount: {
+    field1: { label: 'Original price',  placeholder: 'e.g. 500' },
+    field2: { label: 'Discount (%)',    placeholder: 'e.g. 20' },
+  },
+  markup: {
+    field1: { label: 'Cost price',      placeholder: 'e.g. 100' },
+    field2: { label: 'Markup (%)',      placeholder: 'e.g. 20' },
+  },
+  profit_loss: {
+    field1: { label: 'Cost price',      placeholder: 'e.g. 100' },
+    field2: { label: 'Selling price',   placeholder: 'e.g. 120' },
+  },
+
+  // Convert
+  percent_to_fraction: {
+    field1: { label: 'Percent (%)',     placeholder: 'e.g. 25' },
+  },
+  fraction_to_percent: {
+    field1: { label: 'Numerator',       placeholder: 'e.g. 1' },
+    field2: { label: 'Denominator',     placeholder: 'e.g. 4' },
+  },
+  decimal_to_percent: {
+    field1: { label: 'Decimal',         placeholder: 'e.g. 0.25' },
+  },
+
+  // Advanced
+  compound_percent: {
+    field1: { label: 'Base amount',     placeholder: 'e.g. 1000' },
+    field2: { label: 'Percent per period (%)', placeholder: 'e.g. 10' },
+    field3: { label: 'Number of periods', placeholder: 'e.g. 3' },
+  },
+  marks_percentage: {
+    field1: { label: 'Obtained marks',  placeholder: 'e.g. 85' },
+    field2: { label: 'Total marks',     placeholder: 'e.g. 100' },
+  },
+  cgpa_to_percent: {
+    field1: { label: 'CGPA',            placeholder: 'e.g. 8.0' },
+  },
+};
+
+const percentageForm = document.getElementById('percentage-form') as HTMLFormElement | null;
+
+if (percentageForm) {
+  const pctOperation       = document.getElementById('percentage-operation')     as HTMLSelectElement;
+  const pctField1Wrap      = document.getElementById('pct-field1-wrap')          as HTMLDivElement;
+  const pctField1Label     = document.getElementById('pct-field1-label')         as HTMLLabelElement;
+  const pctField1          = document.getElementById('pct-field1')               as HTMLInputElement;
+
+  const pctField2Wrap      = document.getElementById('pct-field2-wrap')          as HTMLDivElement;
+  const pctField2Label     = document.getElementById('pct-field2-label')         as HTMLLabelElement;
+  const pctField2          = document.getElementById('pct-field2')               as HTMLInputElement;
+
+  const pctField3Wrap      = document.getElementById('pct-field3-wrap')          as HTMLDivElement;
+  const pctField3Label     = document.getElementById('pct-field3-label')         as HTMLLabelElement;
+  const pctField3          = document.getElementById('pct-field3')               as HTMLInputElement;
+
+  const pctStatusMessage   = document.getElementById('percentage-status-message') as HTMLParagraphElement;
+  const pctResultBox       = document.getElementById('percentage-result-box')     as HTMLDivElement;
+  const pctResultFormatted = document.getElementById('percentage-result-formatted') as HTMLSpanElement;
+  const pctExtraChips      = document.getElementById('percentage-extra-chips')    as HTMLDivElement;
+  const pctStepsBox        = document.getElementById('percentage-steps-box')      as HTMLDivElement;
+  const pctStepsList       = document.getElementById('percentage-steps-list')     as HTMLUListElement;
+  const pctCopyBtn         = document.getElementById('percentage-copy-btn')       as HTMLButtonElement;
+
+  // Apply the field configuration for the selected operation
+  function applyPercentageOpConfig(op: string) {
+    const cfg = PERCENTAGE_OPS[op];
+    if (!cfg) return;
+
+    // Field 1 (always visible)
+    pctField1Label.textContent   = cfg.field1.label;
+    pctField1.placeholder        = cfg.field1.placeholder;
+    pctField1Wrap.classList.remove('hidden');
+
+    // Field 2 (optional)
+    if (cfg.field2) {
+      pctField2Label.textContent = cfg.field2.label;
+      pctField2.placeholder      = cfg.field2.placeholder;
+      pctField2Wrap.classList.remove('hidden');
+      pctField2.required = true;
+    } else {
+      pctField2.value = '';
+      pctField2.required = false;
+      pctField2Wrap.classList.add('hidden');
+    }
+
+    // Field 3 (optional — only for compound_percent)
+    if (cfg.field3) {
+      pctField3Label.textContent = cfg.field3.label;
+      pctField3.placeholder      = cfg.field3.placeholder;
+      pctField3Wrap.classList.remove('hidden');
+      pctField3.required = true;
+    } else {
+      pctField3.value = '';
+      pctField3.required = false;
+      pctField3Wrap.classList.add('hidden');
+    }
+
+    // Hide stale results when the operation changes
+    pctResultBox.classList.add('hidden');
+    pctStatusMessage.classList.add('hidden');
+  }
+
+  // React to operation changes
+  pctOperation.addEventListener('change', () => {
+    applyPercentageOpConfig(pctOperation.value);
+  });
+
+  // Initialize on page load
+  applyPercentageOpConfig(pctOperation.value);
+
+  // Copy-result button
+  pctCopyBtn.addEventListener('click', async () => {
+    const text = pctResultFormatted.textContent || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      const original = pctCopyBtn.textContent;
+      pctCopyBtn.textContent = 'Copied!';
+      setTimeout(() => { pctCopyBtn.textContent = original; }, 1200);
+    } catch {
+      // Clipboard API may fail silently — no need to shout at the user
+    }
+  });
+
+  // Submit handler
+  percentageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    pctStatusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    pctStatusMessage.classList.add('text-gray-500');
+    pctStatusMessage.textContent = 'Calculating...';
+    pctResultBox.classList.add('hidden');
+
+    const op = pctOperation.value;
+    const cfg = PERCENTAGE_OPS[op];
+
+    const payload: Record<string, unknown> = { operation: op };
+
+    // value1 is always sent if the field exists
+    if (cfg.field1) {
+      const v = parseFloat(pctField1.value);
+      if (isNaN(v)) {
+        pctStatusMessage.textContent = 'Please enter a valid number for ' + cfg.field1.label;
+        pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+        return;
+      }
+      payload.value1 = v;
+    }
+
+    if (cfg.field2) {
+      const v = parseFloat(pctField2.value);
+      if (isNaN(v)) {
+        pctStatusMessage.textContent = 'Please enter a valid number for ' + cfg.field2.label;
+        pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+        return;
+      }
+      payload.value2 = v;
+    }
+
+    if (cfg.field3) {
+      const v = parseFloat(pctField3.value);
+      if (isNaN(v)) {
+        pctStatusMessage.textContent = 'Please enter a valid number for ' + cfg.field3.label;
+        pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+        return;
+      }
+      payload.value3 = v;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-percentage'
+        : 'https://utils.api.srilakshmiretail.in/calculate-percentage';
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Main result
+      pctResultFormatted.textContent = data.formatted ?? String(data.result);
+
+      // Extra info chips
+      pctExtraChips.innerHTML = '';
+      if (data.extra && typeof data.extra === 'object') {
+        Object.entries(data.extra).forEach(([k, v]) => {
+          const chip = document.createElement('span');
+          chip.className = 'inline-flex items-center gap-1 bg-white border border-teal-200 text-teal-800 text-xs font-medium px-3 py-1 rounded-full';
+          const keyLabel = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+          chip.textContent = `${keyLabel}: ${v}`;
+          pctExtraChips.appendChild(chip);
+        });
+      }
+
+      // Steps
+      pctStepsList.innerHTML = '';
+      if (Array.isArray(data.steps) && data.steps.length > 0) {
+        data.steps.forEach((s: string) => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          pctStepsList.appendChild(li);
+        });
+        pctStepsBox.classList.remove('hidden');
+      } else {
+        pctStepsBox.classList.add('hidden');
+      }
+
+      pctResultBox.classList.remove('hidden');
+      pctStatusMessage.classList.add('hidden');
+
+    } catch (err) {
+      console.error('Percentage calculation error:', err);
+      pctStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
     }
   });
 }
