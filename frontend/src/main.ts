@@ -77,7 +77,6 @@ mobileMenuBtn?.addEventListener('click', openMobileMenu);
 mobileMenuClose?.addEventListener('click', closeMobileMenu);
 mobileOverlay?.addEventListener('click', closeMobileMenu);
 
-// Auto-close mobile menu when a category button is clicked
 [btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
   btn.addEventListener('click', () => {
     if (window.innerWidth < 768) {
@@ -143,12 +142,10 @@ function highlightCategoryButtons() {
 }
 
 function setTool(toolId: ToolId) {
-  // Ensure the tool belongs to the current category; if not, switch category.
   const toolsInCategory = TOOLS[currentCategory];
   const toolExists = toolsInCategory.some(t => t.id === toolId);
 
   if (!toolExists) {
-    // Find which category contains this tool, and switch to it.
     for (const cat of Object.keys(TOOLS) as CategoryId[]) {
       if (TOOLS[cat].some(t => t.id === toolId)) {
         currentCategory = cat;
@@ -159,15 +156,12 @@ function setTool(toolId: ToolId) {
 
   currentTool = toolId;
 
-  // Update header + breadcrumb
   categoryTitle.textContent = CATEGORY_LABELS[currentCategory];
   const toolDef = TOOLS[currentCategory].find(t => t.id === currentTool)!;
   breadcrumbTool.textContent = toolDef.label;
 
-  // Render tabs (needed when category changed) and refresh active styles
   renderTabs(currentCategory);
 
-  // Show only the selected tool view
   allToolViews.forEach(view => {
     if (view.id === toolDef.viewId) {
       view.classList.remove('hidden');
@@ -178,13 +172,11 @@ function setTool(toolId: ToolId) {
 
   highlightCategoryButtons();
 
-  // Scroll the active tab into view (useful on mobile with horizontal scroll)
   const activeTab = tabStrip.querySelector<HTMLButtonElement>(
     `button[data-tool="${currentTool}"]`
   );
   activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 
-  // Scroll main content area back to top so users see the form header
   const viewport = document.querySelector('main > .flex-1.overflow-y-auto');
   viewport?.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -192,7 +184,6 @@ function setTool(toolId: ToolId) {
 function setCategory(category: CategoryId, preserveTool = true) {
   currentCategory = category;
 
-  // Decide which tool to land on
   const tools = TOOLS[category];
   let landingTool: ToolId;
 
@@ -211,7 +202,6 @@ function setCategory(category: CategoryId, preserveTool = true) {
 btnCategoryConversion.addEventListener('click', () => setCategory('conversion'));
 btnCategoryCalculations.addEventListener('click', () => setCategory('calculations'));
 
-// Breadcrumb: clicking the category name keeps the current tab (per design decision)
 document.querySelector('#breadcrumb > span:first-child')?.addEventListener('click', () => {
   setCategory(currentCategory, true);
 });
@@ -917,8 +907,6 @@ if (bmiForm) {
 // PERCENTAGE CALCULATOR LOGIC
 // ----------------------------------------------------
 
-// Field config per operation: what to show in each input box.
-// Each entry has up to 3 fields; fields not listed are hidden.
 interface PctFieldConfig {
   label: string;
   placeholder: string;
@@ -1018,41 +1006,118 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
   },
 };
 
+// Human-readable operation names for the copy output (matches dropdown labels)
+const PERCENTAGE_OP_NAMES: Record<string, string> = {
+  percent_of:              'X% of Y',
+  what_percent:            'X is what % of Y',
+  is_percent_of_what:      'X is Y% of what number',
+  percent_change:          'Percentage change',
+  percent_increase:        'Increase a number by X%',
+  percent_decrease:        'Decrease a number by X%',
+  reverse_percent:         'Reverse percentage',
+  percent_difference:      'Percentage difference',
+  add_percent_points:      'Add percentage points',
+  subtract_percent_points: 'Subtract percentage points',
+  discount:                'Discount',
+  markup:                  'Markup',
+  profit_loss:             'Profit / Loss %',
+  percent_to_fraction:     'Percent → Fraction',
+  fraction_to_percent:     'Fraction → Percent',
+  decimal_to_percent:      'Decimal → Percent',
+  compound_percent:        'Compound percentage',
+  marks_percentage:        'Marks percentage',
+  cgpa_to_percent:         'CGPA → Percent',
+};
+
+// Clipboard helper with 3-layer fallback
+async function copyToClipboard(text: string): Promise<boolean> {
+  // Layer 1: Modern Clipboard API (needs HTTPS or localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to layer 2
+    }
+  }
+
+  // Layer 2: Legacy execCommand fallback
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) return true;
+  } catch {
+    // Fall through to return false
+  }
+
+  // Layer 3: Both failed — caller will show an error
+  return false;
+}
+
+// Per-button transient feedback helper
+function flashButtonLabel(btn: HTMLButtonElement, newLabel: string, restoreMs = 1500) {
+  const original = btn.dataset.originalLabel ?? btn.textContent ?? '';
+  btn.dataset.originalLabel = original;
+  btn.textContent = newLabel;
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.disabled = false;
+  }, restoreMs);
+}
+
 const percentageForm = document.getElementById('percentage-form') as HTMLFormElement | null;
 
 if (percentageForm) {
-  const pctOperation       = document.getElementById('percentage-operation')     as HTMLSelectElement;
-  const pctField1Wrap      = document.getElementById('pct-field1-wrap')          as HTMLDivElement;
-  const pctField1Label     = document.getElementById('pct-field1-label')         as HTMLLabelElement;
-  const pctField1          = document.getElementById('pct-field1')               as HTMLInputElement;
+  const pctOperation       = document.getElementById('percentage-operation')       as HTMLSelectElement;
+  const pctField1Wrap      = document.getElementById('pct-field1-wrap')            as HTMLDivElement;
+  const pctField1Label     = document.getElementById('pct-field1-label')           as HTMLLabelElement;
+  const pctField1          = document.getElementById('pct-field1')                 as HTMLInputElement;
 
-  const pctField2Wrap      = document.getElementById('pct-field2-wrap')          as HTMLDivElement;
-  const pctField2Label     = document.getElementById('pct-field2-label')         as HTMLLabelElement;
-  const pctField2          = document.getElementById('pct-field2')               as HTMLInputElement;
+  const pctField2Wrap      = document.getElementById('pct-field2-wrap')            as HTMLDivElement;
+  const pctField2Label     = document.getElementById('pct-field2-label')           as HTMLLabelElement;
+  const pctField2          = document.getElementById('pct-field2')                 as HTMLInputElement;
 
-  const pctField3Wrap      = document.getElementById('pct-field3-wrap')          as HTMLDivElement;
-  const pctField3Label     = document.getElementById('pct-field3-label')         as HTMLLabelElement;
-  const pctField3          = document.getElementById('pct-field3')               as HTMLInputElement;
+  const pctField3Wrap      = document.getElementById('pct-field3-wrap')            as HTMLDivElement;
+  const pctField3Label     = document.getElementById('pct-field3-label')           as HTMLLabelElement;
+  const pctField3          = document.getElementById('pct-field3')                 as HTMLInputElement;
 
-  const pctStatusMessage   = document.getElementById('percentage-status-message') as HTMLParagraphElement;
-  const pctResultBox       = document.getElementById('percentage-result-box')     as HTMLDivElement;
+  const pctStatusMessage   = document.getElementById('percentage-status-message')  as HTMLParagraphElement;
+  const pctResultBox       = document.getElementById('percentage-result-box')      as HTMLDivElement;
   const pctResultFormatted = document.getElementById('percentage-result-formatted') as HTMLSpanElement;
-  const pctExtraChips      = document.getElementById('percentage-extra-chips')    as HTMLDivElement;
-  const pctStepsBox        = document.getElementById('percentage-steps-box')      as HTMLDivElement;
-  const pctStepsList       = document.getElementById('percentage-steps-list')     as HTMLUListElement;
-  const pctCopyBtn         = document.getElementById('percentage-copy-btn')       as HTMLButtonElement;
+  const pctExtraChips      = document.getElementById('percentage-extra-chips')     as HTMLDivElement;
+  const pctStepsBox        = document.getElementById('percentage-steps-box')       as HTMLDivElement;
+  const pctStepsList       = document.getElementById('percentage-steps-list')      as HTMLUListElement;
+  const pctCopyBtn         = document.getElementById('percentage-copy-btn')        as HTMLButtonElement;
+  const pctCopyFullBtn     = document.getElementById('percentage-copy-full-btn')   as HTMLButtonElement;
 
-  // Apply the field configuration for the selected operation
+  // Snapshot of the last successful calculation (used by copy handlers)
+  let lastCalculation: {
+    operation: string;
+    opLabel: string;
+    inputs: { label: string; value: number }[];
+    result: string;
+    steps: string[];
+    extras: { label: string; value: string }[];
+  } | null = null;
+
   function applyPercentageOpConfig(op: string) {
     const cfg = PERCENTAGE_OPS[op];
     if (!cfg) return;
 
-    // Field 1 (always visible)
-    pctField1Label.textContent   = cfg.field1.label;
-    pctField1.placeholder        = cfg.field1.placeholder;
+    pctField1Label.textContent = cfg.field1.label;
+    pctField1.placeholder      = cfg.field1.placeholder;
     pctField1Wrap.classList.remove('hidden');
 
-    // Field 2 (optional)
     if (cfg.field2) {
       pctField2Label.textContent = cfg.field2.label;
       pctField2.placeholder      = cfg.field2.placeholder;
@@ -1064,7 +1129,6 @@ if (percentageForm) {
       pctField2Wrap.classList.add('hidden');
     }
 
-    // Field 3 (optional — only for compound_percent)
     if (cfg.field3) {
       pctField3Label.textContent = cfg.field3.label;
       pctField3.placeholder      = cfg.field3.placeholder;
@@ -1076,33 +1140,71 @@ if (percentageForm) {
       pctField3Wrap.classList.add('hidden');
     }
 
-    // Hide stale results when the operation changes
     pctResultBox.classList.add('hidden');
     pctStatusMessage.classList.add('hidden');
+    lastCalculation = null;
   }
 
-  // React to operation changes
   pctOperation.addEventListener('change', () => {
     applyPercentageOpConfig(pctOperation.value);
   });
 
-  // Initialize on page load
   applyPercentageOpConfig(pctOperation.value);
 
-  // Copy-result button
+  // -------- Copy Result (just the number) --------
   pctCopyBtn.addEventListener('click', async () => {
     const text = pctResultFormatted.textContent || '';
-    try {
-      await navigator.clipboard.writeText(text);
-      const original = pctCopyBtn.textContent;
-      pctCopyBtn.textContent = 'Copied!';
-      setTimeout(() => { pctCopyBtn.textContent = original; }, 1200);
-    } catch {
-      // Clipboard API may fail silently — no need to shout at the user
+    if (!text) return;
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      flashButtonLabel(pctCopyBtn, '✓ Result Copied');
+    } else {
+      flashButtonLabel(pctCopyBtn, '⚠ Copy failed');
     }
   });
 
-  // Submit handler
+  // -------- Copy Full (audit-trail breakdown) --------
+  pctCopyFullBtn.addEventListener('click', async () => {
+    if (!lastCalculation) return;
+
+    const line = '━'.repeat(44);
+    const buf: string[] = [];
+    buf.push(line);
+    buf.push('  PERCENTAGE CALCULATION');
+    buf.push(line);
+    buf.push(`  Operation:    ${lastCalculation.opLabel}`);
+
+    lastCalculation.inputs.forEach((inp, i) => {
+      buf.push(`  Input ${i + 1}:      ${inp.label} = ${inp.value}`);
+    });
+
+    buf.push('');
+    buf.push('  Calculation:');
+    lastCalculation.steps.forEach((s, i) => {
+      buf.push(`    ${i + 1}. ${s}`);
+    });
+
+    if (lastCalculation.extras.length > 0) {
+      buf.push('');
+      buf.push('  Additional Info:');
+      lastCalculation.extras.forEach(e => {
+        buf.push(`    ${e.label}: ${e.value}`);
+      });
+    }
+
+    buf.push('');
+    buf.push(`  Result:       ${lastCalculation.result}`);
+    buf.push(line);
+
+    const ok = await copyToClipboard(buf.join('\n'));
+    if (ok) {
+      flashButtonLabel(pctCopyFullBtn, '✓ Full Copied');
+    } else {
+      flashButtonLabel(pctCopyFullBtn, '⚠ Copy failed');
+    }
+  });
+
+  // -------- Submit handler --------
   percentageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -1115,8 +1217,8 @@ if (percentageForm) {
     const cfg = PERCENTAGE_OPS[op];
 
     const payload: Record<string, unknown> = { operation: op };
+    const capturedInputs: { label: string; value: number }[] = [];
 
-    // value1 is always sent if the field exists
     if (cfg.field1) {
       const v = parseFloat(pctField1.value);
       if (isNaN(v)) {
@@ -1125,6 +1227,7 @@ if (percentageForm) {
         return;
       }
       payload.value1 = v;
+      capturedInputs.push({ label: cfg.field1.label, value: v });
     }
 
     if (cfg.field2) {
@@ -1135,6 +1238,7 @@ if (percentageForm) {
         return;
       }
       payload.value2 = v;
+      capturedInputs.push({ label: cfg.field2.label, value: v });
     }
 
     if (cfg.field3) {
@@ -1145,6 +1249,7 @@ if (percentageForm) {
         return;
       }
       payload.value3 = v;
+      capturedInputs.push({ label: cfg.field3.label, value: v });
     }
 
     try {
@@ -1166,33 +1271,46 @@ if (percentageForm) {
 
       const data = await res.json();
 
-      // Main result
       pctResultFormatted.textContent = data.formatted ?? String(data.result);
 
       // Extra info chips
       pctExtraChips.innerHTML = '';
+      const capturedExtras: { label: string; value: string }[] = [];
       if (data.extra && typeof data.extra === 'object') {
         Object.entries(data.extra).forEach(([k, v]) => {
+          const keyLabel = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
           const chip = document.createElement('span');
           chip.className = 'inline-flex items-center gap-1 bg-white border border-teal-200 text-teal-800 text-xs font-medium px-3 py-1 rounded-full';
-          const keyLabel = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
           chip.textContent = `${keyLabel}: ${v}`;
           pctExtraChips.appendChild(chip);
+          capturedExtras.push({ label: keyLabel, value: String(v) });
         });
       }
 
       // Steps
+      const capturedSteps: string[] = [];
       pctStepsList.innerHTML = '';
       if (Array.isArray(data.steps) && data.steps.length > 0) {
         data.steps.forEach((s: string) => {
           const li = document.createElement('li');
           li.textContent = s;
           pctStepsList.appendChild(li);
+          capturedSteps.push(s);
         });
         pctStepsBox.classList.remove('hidden');
       } else {
         pctStepsBox.classList.add('hidden');
       }
+
+      // Save snapshot for the Copy Full button
+      lastCalculation = {
+        operation: op,
+        opLabel: PERCENTAGE_OP_NAMES[op] ?? op,
+        inputs: capturedInputs,
+        result: data.formatted ?? String(data.result),
+        steps: capturedSteps,
+        extras: capturedExtras,
+      };
 
       pctResultBox.classList.remove('hidden');
       pctStatusMessage.classList.add('hidden');
@@ -1201,6 +1319,7 @@ if (percentageForm) {
       console.error('Percentage calculation error:', err);
       pctStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
       pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
+      lastCalculation = null;
     }
   });
 }
