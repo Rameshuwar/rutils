@@ -83,6 +83,46 @@
                 }
             }
         },
+        "/calculate-percentage": {
+            "post": {
+                "description": "Performs any percentage operation (X% of Y, what %, change, increase, decrease,\n\n**Supported operations (`operation` field):**\n- `percent_of`              (value1 = percent, value2 = number)\n- `what_percent`            (value1 = part, value2 = whole)\n- `percent_change`          (value1 = old, value2 = new)\n- `percent_increase`        (value1 = number, value2 = percent)\n- `percent_decrease`        (value1 = number, value2 = percent)\n- `reverse_percent`         (value1 = final, value2 = percent)\n- `is_percent_of_what`      (value1 = part, value2 = percent)\n- `percent_difference`      (value1 = a, value2 = b)\n- `add_percent_points`      (value1 = p1%, value2 = p2%)\n- `subtract_percent_points` (value1 = p1%, value2 = p2%)\n- `discount`                (value1 = price, value2 = discount%)\n- `markup`                  (value1 = cost, value2 = markup%)\n- `profit_loss`             (value1 = cost, value2 = selling)\n- `percent_to_fraction`     (value1 = percent)\n- `fraction_to_percent`     (value1 = numerator, value2 = denominator)\n- `decimal_to_percent`      (value1 = decimal)\n- `compound_percent`        (value1 = base, value2 = percent, value3 = periods)\n- `marks_percentage`        (value1 = obtained, value2 = total)\n- `cgpa_to_percent`         (value1 = cgpa; uses CBSE factor 9.5)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Percentage Calculator"
+                ],
+                "summary": "Percentage Calculator",
+                "parameters": [
+                    {
+                        "description": "Percentage Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.PercentageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Percentage Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.PercentageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid operation or parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/convert": {
             "post": {
                 "description": "Converts any supported file type to another supported file type dynamically.",
@@ -437,6 +477,23 @@
                 }
             }
         },
+        "api.PercentageRequest": {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "type": "string"
+                },
+                "value1": {
+                    "type": "number"
+                },
+                "value2": {
+                    "type": "number"
+                },
+                "value3": {
+                    "type": "number"
+                }
+            }
+        },
         "converter.AgeCalculationResponse": {
             "type": "object",
             "properties": {
@@ -485,6 +542,30 @@
                 },
                 "monthsRemaining": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.PercentageResponse": {
+            "type": "object",
+            "properties": {
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "formatted": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

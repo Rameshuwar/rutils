@@ -59,6 +59,17 @@ definitions:
       result:
         type: string
     type: object
+  api.PercentageRequest:
+    properties:
+      operation:
+        type: string
+      value1:
+        type: number
+      value2:
+        type: number
+      value3:
+        type: number
+    type: object
   converter.AgeCalculationResponse:
     properties:
       age:
@@ -91,6 +102,22 @@ definitions:
         type: integer
       monthsRemaining:
         type: integer
+    type: object
+  converter.PercentageResponse:
+    properties:
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      operation:
+        type: string
+      result:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
     type: object
   converter.RailwayConversionRequest:
     properties:
@@ -259,6 +286,54 @@ paths:
           schema:
             type: string
       summary: BMI Calculator
+  /calculate-percentage:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any percentage operation (X% of Y, what %, change, increase, decrease,
+
+        **Supported operations (`operation` field):**
+        - `percent_of`              (value1 = percent, value2 = number)
+        - `what_percent`            (value1 = part, value2 = whole)
+        - `percent_change`          (value1 = old, value2 = new)
+        - `percent_increase`        (value1 = number, value2 = percent)
+        - `percent_decrease`        (value1 = number, value2 = percent)
+        - `reverse_percent`         (value1 = final, value2 = percent)
+        - `is_percent_of_what`      (value1 = part, value2 = percent)
+        - `percent_difference`      (value1 = a, value2 = b)
+        - `add_percent_points`      (value1 = p1%, value2 = p2%)
+        - `subtract_percent_points` (value1 = p1%, value2 = p2%)
+        - `discount`                (value1 = price, value2 = discount%)
+        - `markup`                  (value1 = cost, value2 = markup%)
+        - `profit_loss`             (value1 = cost, value2 = selling)
+        - `percent_to_fraction`     (value1 = percent)
+        - `fraction_to_percent`     (value1 = numerator, value2 = denominator)
+        - `decimal_to_percent`      (value1 = decimal)
+        - `compound_percent`        (value1 = base, value2 = percent, value3 = periods)
+        - `marks_percentage`        (value1 = obtained, value2 = total)
+        - `cgpa_to_percent`         (value1 = cgpa; uses CBSE factor 9.5)
+      parameters:
+      - description: Percentage Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.PercentageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Percentage Result
+          schema:
+            $ref: '#/definitions/converter.PercentageResponse'
+        "400":
+          description: Bad Request - invalid operation or parameters
+          schema:
+            type: string
+      summary: Percentage Calculator
+      tags:
+      - Percentage Calculator
   /convert:
     post:
       consumes:
