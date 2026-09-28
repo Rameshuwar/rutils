@@ -42,8 +42,8 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res),
 			Steps: []string{
-				fmt.Sprintf("(%s / 100) Г— %s", formatNumber(value1), formatNumber(value2)),
-				fmt.Sprintf("%s Г— %s", formatNumber(value1/100.0), formatNumber(value2)),
+				fmt.Sprintf("(%s / 100) X %s", formatNumber(value1), formatNumber(value2)),
+				fmt.Sprintf("%s X %s", formatNumber(value1/100.0), formatNumber(value2)),
 				formatNumber(res),
 			},
 		}, nil
@@ -60,8 +60,8 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("(%s / %s) Г— 100", formatNumber(value1), formatNumber(value2)),
-				fmt.Sprintf("%s Г— 100", formatNumber(value1/value2)),
+				fmt.Sprintf("(%s / %s) X 100", formatNumber(value1), formatNumber(value2)),
+				fmt.Sprintf("%s X 100", formatNumber(value1/value2)),
 				formatNumber(res) + "%",
 			},
 		}, nil
@@ -85,8 +85,8 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("((%s в€’ %s) / %s) Г— 100", formatNumber(value2), formatNumber(value1), formatNumber(value1)),
-				fmt.Sprintf("(%s / %s) Г— 100", formatNumber(diff), formatNumber(value1)),
+				fmt.Sprintf("((%s в€’ %s) / %s) X 100", formatNumber(value2), formatNumber(value1), formatNumber(value1)),
+				fmt.Sprintf("(%s / %s) X 100", formatNumber(diff), formatNumber(value1)),
 				formatNumber(res) + "%",
 			},
 			Extra: map[string]interface{}{
@@ -140,7 +140,7 @@ func CalculatePercentage(
 		if divisor == 0 {
 			return nil, errors.New("cannot reverse a -100% change")
 		}
-		res := value1 / divisor
+		res := roundTo(value1/divisor, 6)
 		return &PercentageResponse{
 			Operation: op,
 			Result:    res,
@@ -183,10 +183,10 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("|%s в€’ %s| / ((%s + %s) / 2) Г— 100",
+				fmt.Sprintf("|%s в€’ %s| / ((%s + %s) / 2) X 100",
 					formatNumber(value1), formatNumber(value2),
 					formatNumber(value1), formatNumber(value2)),
-				fmt.Sprintf("%s / %s Г— 100",
+				fmt.Sprintf("%s / %s X 100",
 					formatNumber(math.Abs(value1-value2)), formatNumber(avg)),
 				formatNumber(res) + "%",
 			},
@@ -278,7 +278,7 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("((%s в€’ %s) / %s) Г— 100", formatNumber(value2), formatNumber(value1), formatNumber(value1)),
+				fmt.Sprintf("((%s в€’ %s) / %s) X 100", formatNumber(value2), formatNumber(value1), formatNumber(value1)),
 				formatNumber(res) + "%",
 			},
 			Extra: map[string]interface{}{
@@ -319,7 +319,7 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("(%s / %s) Г— 100", formatNumber(value1), formatNumber(value2)),
+				fmt.Sprintf("(%s / %s) X 100", formatNumber(value1), formatNumber(value2)),
 				formatNumber(res) + "%",
 			},
 		}, nil
@@ -333,7 +333,7 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("%s Г— 100", formatNumber(value1)),
+				fmt.Sprintf("%s X 100", formatNumber(value1)),
 				formatNumber(res) + "%",
 			},
 		}, nil
@@ -348,15 +348,15 @@ func CalculatePercentage(
 			return nil, errors.New("value3 (number of periods) cannot be negative")
 		}
 		factor := 1.0 + (value2 / 100.0)
-		res := value1 * math.Pow(factor, value3)
+		res := roundTo(value1*math.Pow(factor, value3), 6)
 		return &PercentageResponse{
 			Operation: op,
 			Result:    res,
 			Formatted: formatNumber(res),
 			Steps: []string{
-				fmt.Sprintf("%s Г— (1 + %s/100)^%s",
+				fmt.Sprintf("%s X (1 + %s/100)^%s",
 					formatNumber(value1), formatNumber(value2), formatNumber(value3)),
-				fmt.Sprintf("%s Г— %s^%s",
+				fmt.Sprintf("%s X %s^%s",
 					formatNumber(value1), formatNumber(factor), formatNumber(value3)),
 				formatNumber(res),
 			},
@@ -378,7 +378,7 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("(%s / %s) Г— 100", formatNumber(value1), formatNumber(value2)),
+				fmt.Sprintf("(%s / %s) X 100", formatNumber(value1), formatNumber(value2)),
 				formatNumber(res) + "%",
 			},
 		}, nil
@@ -393,7 +393,7 @@ func CalculatePercentage(
 			Result:    res,
 			Formatted: formatNumber(res) + "%",
 			Steps: []string{
-				fmt.Sprintf("%s Г— 9.5", formatNumber(value1)),
+				fmt.Sprintf("%s X 9.5", formatNumber(value1)),
 				formatNumber(res) + "%",
 			},
 			Extra: map[string]interface{}{
@@ -475,4 +475,15 @@ func abs64(x int64) int64 {
 		return -x
 	}
 	return x
+}
+
+// roundTo rounds a float64 to the given number of decimal places.
+// This avoids IEEE 754 floating-point artifacts like 200.00000000000003
+// appearing in API responses.
+func roundTo(value float64, places int) float64 {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return value
+	}
+	factor := math.Pow(10, float64(places))
+	return math.Round(value*factor) / factor
 }
