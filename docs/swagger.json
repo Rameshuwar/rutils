@@ -83,6 +83,46 @@
                 }
             }
         },
+        "/calculate-emi": {
+            "post": {
+                "description": "Calculates the Equated Monthly Installment (EMI) for a loan along with\nthe total interest, total payment, principal/interest split, and a\nmonth-by-month amortization schedule.\n\n**Formula:** `EMI = [P × r × (1+r)^N] / [(1+r)^N − 1]`\nwhere `r` is the monthly interest rate (annual / 12 / 100) and `N` is\nthe tenure in months.\n\n**Special case:** an annual interest rate of `0` returns a simple\n`principal / tenure` division (interest-free loan).\n\n**Limits:**\n- `principal` must be positive and ≤ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `tenure` must be positive; tenure in months must be ≤ 600.\n- `tenureUnit` must be exactly `\"months\"` or `\"years\"`.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Loan EMI Calculator",
+                "parameters": [
+                    {
+                        "description": "EMI Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.EMIRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "EMI Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.EMIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-percentage": {
             "post": {
                 "description": "Performs any percentage operation (X% of Y, what %, change, increase, decrease,\n\n**Supported operations (`operation` field):**\n- `percent_of`              (value1 = percent, value2 = number)\n- `what_percent`            (value1 = part, value2 = whole)\n- `percent_change`          (value1 = old, value2 = new)\n- `percent_increase`        (value1 = number, value2 = percent)\n- `percent_decrease`        (value1 = number, value2 = percent)\n- `reverse_percent`         (value1 = final, value2 = percent)\n- `is_percent_of_what`      (value1 = part, value2 = percent)\n- `percent_difference`      (value1 = a, value2 = b)\n- `add_percent_points`      (value1 = p1%, value2 = p2%)\n- `subtract_percent_points` (value1 = p1%, value2 = p2%)\n- `discount`                (value1 = price, value2 = discount%)\n- `markup`                  (value1 = cost, value2 = markup%)\n- `profit_loss`             (value1 = cost, value2 = selling)\n- `percent_to_fraction`     (value1 = percent)\n- `fraction_to_percent`     (value1 = numerator, value2 = denominator)\n- `decimal_to_percent`      (value1 = decimal)\n- `compound_percent`        (value1 = base, value2 = percent, value3 = periods)\n- `marks_percentage`        (value1 = obtained, value2 = total)\n- `cgpa_to_percent`         (value1 = cgpa; uses CBSE factor 9.5)",
@@ -492,6 +532,24 @@
                 }
             }
         },
+        "api.EMIRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "tenure": {
+                    "type": "number"
+                },
+                "tenureUnit": {
+                    "description": "\"months\" or \"years\"",
+                    "type": "string"
+                }
+            }
+        },
         "api.MeasurementRequest": {
             "type": "object",
             "properties": {
@@ -581,6 +639,72 @@
                 },
                 "years": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.AmortizationRow": {
+            "type": "object",
+            "properties": {
+                "closingBalance": {
+                    "type": "number"
+                },
+                "interestPaid": {
+                    "type": "number"
+                },
+                "month": {
+                    "type": "integer"
+                },
+                "openingBalance": {
+                    "type": "number"
+                },
+                "principalPaid": {
+                    "type": "number"
+                },
+                "totalPaid": {
+                    "type": "number"
+                }
+            }
+        },
+        "converter.EMIBreakdown": {
+            "type": "object",
+            "properties": {
+                "interestPercent": {
+                    "type": "number"
+                },
+                "principalPercent": {
+                    "type": "number"
+                }
+            }
+        },
+        "converter.EMIResponse": {
+            "type": "object",
+            "properties": {
+                "amortization": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.AmortizationRow"
+                    }
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.EMIBreakdown"
+                },
+                "emi": {
+                    "type": "number"
+                },
+                "monthlyRatePercent": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "tenureMonths": {
+                    "type": "integer"
+                },
+                "totalInterest": {
+                    "type": "number"
+                },
+                "totalPayment": {
+                    "type": "number"
                 }
             }
         },

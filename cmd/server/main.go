@@ -50,6 +50,9 @@ func main() {
 	// ⬅️ NEW: Percentage Calculator
 	apiMux.HandleFunc("/calculate-percentage", api.HandlePercentageCalculate)
 
+	// ⬅️ NEW: Loan EMI Calculator
+	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
+
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// UI Server
@@ -74,6 +77,9 @@ func main() {
 
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
+
+	// ⬅️ NEW: Loan EMI Calculator in startup banner
+	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
 
 	fmt.Println(" -> GET  http://localhost:8080/swagger/doc.json       (Swagger JSON)")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/              (Swagger UI)")
