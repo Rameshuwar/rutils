@@ -70,6 +70,97 @@ definitions:
       value3:
         type: number
     type: object
+  auth.ChangePasswordRequest:
+    properties:
+      confirm_password:
+        example: BrandNewStrongP@ss2!
+        type: string
+      current_password:
+        example: CurrentStrongP@ss1!
+        type: string
+      new_password:
+        example: BrandNewStrongP@ss2!
+        type: string
+    type: object
+  auth.ForgotPasswordRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+      password:
+        example: StrongP@ssw0rd!
+        type: string
+    type: object
+  auth.LoginResponse:
+    properties:
+      message:
+        example: Login successful
+        type: string
+      must_reset_password:
+        example: false
+        type: boolean
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/auth.UserResponse'
+    type: object
+  auth.MessageResponse:
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  auth.RegisterRequest:
+    properties:
+      confirm_password:
+        example: StrongP@ssw0rd!
+        type: string
+      email:
+        example: jane@example.com
+        type: string
+      name:
+        example: Jane Doe
+        type: string
+      password:
+        example: StrongP@ssw0rd!
+        type: string
+    type: object
+  auth.ResetPasswordRequest:
+    properties:
+      confirm_password:
+        example: NewStrongP@ssw0rd123!
+        type: string
+      new_password:
+        example: NewStrongP@ssw0rd123!
+        type: string
+    type: object
+  auth.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        example: jane@example.com
+        type: string
+      id:
+        example: u_984f1a23
+        type: string
+      must_reset_password:
+        example: false
+        type: boolean
+      name:
+        example: Jane Doe
+        type: string
+    type: object
   converter.AgeCalculationResponse:
     properties:
       age:
@@ -266,10 +357,260 @@ definitions:
 host: localhost:8080
 info:
   contact: {}
-  description: Utility Microservice for converting files.
+  description: Utility Microservice for converting files and user authentication.
   title: File Converter API
   version: "1.0"
 paths:
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the password for the currently authenticated user and sends
+        an email confirmation. Requires Bearer JWT.
+      parameters:
+      - description: Change Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Current password incorrect or unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password for logged-in user
+      tags:
+      - Authentication
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a temporary password to the user's email. When used to log
+        in, forces password reset.
+      parameters:
+      - description: Forgot Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Temporary password dispatched
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Account not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send temporary password via Google SMTP
+      tags:
+      - Authentication
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user credentials and returns a signed JWT token.
+        If logged in with a temporary password, must_reset_password will be true.
+      parameters:
+      - description: User Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login with email and password
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      description: Clears the user's authentication session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+      summary: Logout user
+      tags:
+      - Authentication
+  /auth/me:
+    get:
+      description: Returns the profile details for the authenticated user. Requires
+        Bearer JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get logged-in user profile
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with name, email, password, and confirm_password.
+        Requires strong password.
+      parameters:
+      - description: User Registration Information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Email already registered
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Authentication
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Sets a permanent password for a user logged in with a temporary
+        password. Requires Bearer JWT.
+      parameters:
+      - description: Reset Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated successfully
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reset password
+      tags:
+      - Authentication
   /calculate-age:
     post:
       consumes:
@@ -610,4 +951,10 @@ paths:
       summary: Extract text from PDF or image
       tags:
       - Text Extraction
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

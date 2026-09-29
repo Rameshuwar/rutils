@@ -25,3 +25,65 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: #a5b4fc;
 }
+
+/* ------------------------------------------------------------
+   Auth modal — reusable component classes
+   ------------------------------------------------------------ */
+
+/* Standard form input */
+.auth-input {
+  display: block;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.925rem;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.auth-input:focus {
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.auth-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Primary action button */
+.auth-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

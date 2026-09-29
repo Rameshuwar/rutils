@@ -7,6 +7,7 @@ import (
 
 	_ "file-converter/docs" // Import swagger docs
 	"file-converter/internal/api"
+	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -14,9 +15,13 @@ import (
 
 // @title File Converter API
 // @version 1.0
-// @description Utility Microservice for converting files.
+// @description Utility Microservice for converting files and user authentication.
 // @host localhost:8080
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// ============================================================
 	// Startup environment checks (non-fatal)
@@ -50,6 +55,32 @@ func main() {
 	// ⬅️ NEW: Percentage Calculator
 	apiMux.HandleFunc("/calculate-percentage", api.HandlePercentageCalculate)
 
+	// ============================================================
+	// Authentication Service & Endpoints
+	// ============================================================
+	cfg, err := auth.LoadConfig("config.json")
+	if err != nil {
+		log.Printf("[WARN] Failed to load config.json, using defaults: %v", err)
+		cfg = auth.DefaultConfig()
+	}
+
+	userStore, err := auth.NewStore(cfg.GetUsersFilePath())
+	if err != nil {
+		log.Fatalf("Failed to initialize user store: %v", err)
+	}
+
+	emailSender := auth.NewEmailSender(cfg)
+	authService := auth.NewAuthService(userStore, cfg, emailSender)
+	authHandler := api.NewAuthHandler(authService, cfg)
+
+	apiMux.HandleFunc("/auth/register", authHandler.Register)
+	apiMux.HandleFunc("/auth/login", authHandler.Login)
+	apiMux.HandleFunc("/auth/logout", authHandler.Logout)
+	apiMux.HandleFunc("/auth/forgot-password", authHandler.ForgotPassword)
+	apiMux.HandleFunc("/auth/reset-password", api.RequireAuth(cfg, authHandler.ResetPassword))
+	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
+	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
+
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// UI Server
@@ -74,6 +105,15 @@ func main() {
 
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
+
+	// ⬅️ Authentication Endpoints in startup banner
+	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
+	fmt.Println(" -> POST http://localhost:8080/auth/login            (User Login - JWT)")
+	fmt.Println(" -> POST http://localhost:8080/auth/logout           (User Logout)")
+	fmt.Println(" -> POST http://localhost:8080/auth/forgot-password  (Forgot Password - Google SMTP)")
+	fmt.Println(" -> POST http://localhost:8080/auth/reset-password   (Forced Password Reset)")
+	fmt.Println(" -> POST http://localhost:8080/auth/change-password  (Change Password)")
+	fmt.Println(" -> GET  http://localhost:8080/auth/me               (Current User Profile)")
 
 	fmt.Println(" -> GET  http://localhost:8080/swagger/doc.json       (Swagger JSON)")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/              (Swagger UI)")

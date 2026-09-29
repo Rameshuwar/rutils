@@ -1,4 +1,6 @@
 import './style.css'
+import { initAuth } from './auth-ui'
+
 
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
@@ -210,6 +212,10 @@ document.querySelector('#breadcrumb > span:first-child')?.addEventListener('clic
 // INITIAL RENDER
 // ============================================================
 setCategory('conversion', false);
+
+// ─── Initialise authentication system ────────────────────
+initAuth();
+
 
 // ============================================================
 // ------------------------------------------------------------

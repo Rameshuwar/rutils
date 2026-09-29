@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Utility Microservice for converting files.",
+        "description": "Utility Microservice for converting files and user authentication.",
         "title": "File Converter API",
         "contact": {},
         "version": "1.0"
@@ -9,6 +9,384 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/auth/change-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the password for the currently authenticated user and sends an email confirmation. Requires Bearer JWT.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Change password for logged-in user",
+                "parameters": [
+                    {
+                        "description": "Change Password Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/auth.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or weak password",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Current password incorrect or unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Sends a temporary password to the user's email. When used to log in, forces password reset.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Send temporary password via Google SMTP",
+                "parameters": [
+                    {
+                        "description": "Forgot Password Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Temporary password dispatched",
+                        "schema": {
+                            "$ref": "#/definitions/auth.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Account not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticates user credentials and returns a signed JWT token. If logged in with a temporary password, must_reset_password will be true.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login with email and password",
+                "parameters": [
+                    {
+                        "description": "User Login Credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "$ref": "#/definitions/auth.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Clears the user's authentication session",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "schema": {
+                            "$ref": "#/definitions/auth.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the profile details for the authenticated user. Requires Bearer JWT.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get logged-in user profile",
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "schema": {
+                            "$ref": "#/definitions/auth.UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Registers a new user with name, email, password, and confirm_password. Requires strong password.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User Registration Information",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/auth.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or weak password",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Email already registered",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets a permanent password for a user logged in with a temporary password. Requires Bearer JWT.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Reset Password Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/auth.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or weak password",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-age": {
             "post": {
                 "description": "Calculates exact age, next birthday, and life summary based on date of birth and a reference date.",
@@ -556,6 +934,136 @@
                 }
             }
         },
+        "auth.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "example": "BrandNewStrongP@ss2!"
+                },
+                "current_password": {
+                    "type": "string",
+                    "example": "CurrentStrongP@ss1!"
+                },
+                "new_password": {
+                    "type": "string",
+                    "example": "BrandNewStrongP@ss2!"
+                }
+            }
+        },
+        "auth.ForgotPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "jane@example.com"
+                }
+            }
+        },
+        "auth.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "jane@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "StrongP@ssw0rd!"
+                }
+            }
+        },
+        "auth.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Login successful"
+                },
+                "must_reset_password": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "user": {
+                    "$ref": "#/definitions/auth.UserResponse"
+                }
+            }
+        },
+        "auth.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "auth.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "example": "StrongP@ssw0rd!"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "jane@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Jane Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "StrongP@ssw0rd!"
+                }
+            }
+        },
+        "auth.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string",
+                    "example": "NewStrongP@ssw0rd123!"
+                },
+                "new_password": {
+                    "type": "string",
+                    "example": "NewStrongP@ssw0rd123!"
+                }
+            }
+        },
+        "auth.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "jane@example.com"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "u_984f1a23"
+                },
+                "must_reset_password": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Jane Doe"
+                }
+            }
+        },
         "converter.AgeCalculationResponse": {
             "type": "object",
             "properties": {
@@ -836,6 +1344,14 @@
                 "ResolutionAmbiguous",
                 "ResolutionNonExistent"
             ]
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
