@@ -1,6 +1,6 @@
 # Go binaries and executables
-server
-file-converter
+/server
+/file-converter
 *.exe
 *.exe?
 *.dll
