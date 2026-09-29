@@ -43,7 +43,8 @@ func main() {
 	apiMux.HandleFunc("/calculate-bmi", api.HandleBMICalculate)
 	apiMux.HandleFunc("/calculate-age", api.HandleAgeCalculate)
 	apiMux.HandleFunc("/convert-pdf-size", api.ConvertPDFSize)
-
+   
+	
 	// ⬅️ NEW: Text Extraction (PDF + Image, with OCR fallback)
 	apiMux.HandleFunc("/extract-text", api.HandleExtractText)
 
@@ -52,7 +53,8 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
-
+	 apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
+    
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// UI Server
@@ -80,6 +82,10 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+		fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+
+	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner
+	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")
 
 	fmt.Println(" -> GET  http://localhost:8080/swagger/doc.json       (Swagger JSON)")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/              (Swagger UI)")

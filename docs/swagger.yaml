@@ -82,6 +82,33 @@ definitions:
       value3:
         type: number
     type: object
+  api.TaxRequest:
+    properties:
+      amount:
+        description: GST / VAT style
+        type: number
+      grossAmount:
+        type: number
+      income:
+        description: Income-tax style
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      regime:
+        type: string
+      slabs:
+        items:
+          $ref: '#/definitions/converter.TaxSlab'
+        type: array
+      taxPaid:
+        type: number
+      taxRate:
+        type: number
+      taxType:
+        type: string
+    type: object
   converter.AgeCalculationResponse:
     properties:
       age:
@@ -245,6 +272,38 @@ definitions:
         type: integer
       years:
         type: integer
+    type: object
+  converter.TaxResponse:
+    properties:
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      grossAmount:
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      taxAmount:
+        type: number
+      taxRate:
+        type: number
+    type: object
+  converter.TaxSlab:
+    properties:
+      from:
+        type: number
+      rate:
+        type: number
+      to:
+        description: 0 == no upper bound
+        type: number
     type: object
   converter.TimeConversionRequest:
     properties:
@@ -464,6 +523,46 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-tax:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any tax calculation through a single `mode`-discriminated endpoint.
+
+        **Supported modes (`mode` field):**
+        - `add_tax`      (amount, taxRate)                       — exclusive → inclusive
+        - `remove_tax`   (amount, taxRate)                       — inclusive → exclusive
+        - `find_rate`    (netAmount, grossAmount)                — effective tax rate
+        - `split_gst`    (amount, taxRate, taxType)              — CGST+SGST or IGST breakdown
+        - `reverse_gst`  (taxPaid, taxRate)                      — recover net from tax paid
+        - `income_tax`   (income, slabs[], regime?)              — progressive slab tax
+
+        **Notes:**
+        - The endpoint is country-neutral: the client supplies the rate and, for income tax, the slab schedule.
+        - For `split_gst`, `taxType` must be `cgst_sgst` (default) or `igst`.
+        - For `income_tax`, slabs must be non-overlapping; at most one slab may have `to = 0` (open-ended).
+      parameters:
+      - description: Tax Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.TaxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tax Result
+          schema:
+            $ref: '#/definitions/converter.TaxResponse'
+        "400":
+          description: Bad Request - invalid mode or parameters
+          schema:
+            type: string
+      summary: Tax / VAT / GST Calculator
+      tags:
+      - Calculators
   /convert:
     post:
       consumes:

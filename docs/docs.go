@@ -169,6 +169,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/calculate-tax": {
+            "post": {
+                "description": "Performs any tax calculation through a single ` + "`" + `mode` + "`" + `-discriminated endpoint.\n\n**Supported modes (` + "`" + `mode` + "`" + ` field):**\n- ` + "`" + `add_tax` + "`" + `      (amount, taxRate)                       — exclusive → inclusive\n- ` + "`" + `remove_tax` + "`" + `   (amount, taxRate)                       — inclusive → exclusive\n- ` + "`" + `find_rate` + "`" + `    (netAmount, grossAmount)                — effective tax rate\n- ` + "`" + `split_gst` + "`" + `    (amount, taxRate, taxType)              — CGST+SGST or IGST breakdown\n- ` + "`" + `reverse_gst` + "`" + `  (taxPaid, taxRate)                      — recover net from tax paid\n- ` + "`" + `income_tax` + "`" + `   (income, slabs[], regime?)              — progressive slab tax\n\n**Notes:**\n- The endpoint is country-neutral: the client supplies the rate and, for income tax, the slab schedule.\n- For ` + "`" + `split_gst` + "`" + `, ` + "`" + `taxType` + "`" + ` must be ` + "`" + `cgst_sgst` + "`" + ` (default) or ` + "`" + `igst` + "`" + `.\n- For ` + "`" + `income_tax` + "`" + `, slabs must be non-overlapping; at most one slab may have ` + "`" + `to = 0` + "`" + ` (open-ended).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Tax / VAT / GST Calculator",
+                "parameters": [
+                    {
+                        "description": "Tax Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.TaxRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tax Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.TaxResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid mode or parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/convert": {
             "post": {
                 "description": "Converts any supported file type to another supported file type dynamically.",
@@ -620,6 +660,46 @@ const docTemplate = `{
                 }
             }
         },
+        "api.TaxRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "GST / VAT style",
+                    "type": "number"
+                },
+                "grossAmount": {
+                    "type": "number"
+                },
+                "income": {
+                    "description": "Income-tax style",
+                    "type": "number"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "netAmount": {
+                    "type": "number"
+                },
+                "regime": {
+                    "type": "string"
+                },
+                "slabs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.TaxSlab"
+                    }
+                },
+                "taxPaid": {
+                    "type": "number"
+                },
+                "taxRate": {
+                    "type": "number"
+                },
+                "taxType": {
+                    "type": "string"
+                }
+            }
+        },
         "converter.AgeCalculationResponse": {
             "type": "object",
             "properties": {
@@ -865,6 +945,54 @@ const docTemplate = `{
                 },
                 "years": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.TaxResponse": {
+            "type": "object",
+            "properties": {
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "formatted": {
+                    "type": "string"
+                },
+                "grossAmount": {
+                    "type": "number"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "netAmount": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "taxAmount": {
+                    "type": "number"
+                },
+                "taxRate": {
+                    "type": "number"
+                }
+            }
+        },
+        "converter.TaxSlab": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "number"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "to": {
+                    "description": "0 == no upper bound",
+                    "type": "number"
                 }
             }
         },
