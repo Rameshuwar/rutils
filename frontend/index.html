@@ -501,6 +501,166 @@
             </div>
           </div>
 
+          <!-- EMI Calculator View -->
+          <div id="emi-calculator-view" class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Loan EMI Calculator</h2>
+              <p class="text-teal-100 mt-2 text-sm md:text-base">Calculate your monthly installment and full repayment plan.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="emi-form" class="space-y-6">
+
+                <!-- Inputs — 2×2 grid on desktop, stacked on mobile -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Loan Amount (₹)</label>
+                    <input
+                      type="number"
+                      id="emi-principal"
+                      step="any"
+                      min="1"
+                      required
+                      placeholder="e.g. 500000"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Interest Rate (% p.a.)</label>
+                    <input
+                      type="number"
+                      id="emi-rate"
+                      step="any"
+                      min="0"
+                      max="100"
+                      required
+                      placeholder="e.g. 10.5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tenure</label>
+                    <input
+                      type="number"
+                      id="emi-tenure"
+                      step="any"
+                      min="1"
+                      required
+                      placeholder="e.g. 5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                    <select
+                      id="emi-tenure-unit"
+                      required
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="" disabled selected>Select unit</option>
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Calculate EMI
+                </button>
+
+                <p id="emi-status-message" class="text-sm text-center hidden"></p>
+
+                <!-- ================================ -->
+                <!-- Result Card (hidden until submit) -->
+                <!-- ================================ -->
+                <div id="emi-result-box" class="hidden mt-4 space-y-6">
+
+                  <!-- Hero EMI number -->
+                  <div class="p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
+                    <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Monthly EMI</span>
+                    <span id="emi-result-value" class="text-4xl font-extrabold text-teal-900 break-all">₹0</span>
+                  </div>
+
+                  <!-- Three stat blocks -->
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-white border border-teal-100 rounded-lg p-4 text-center shadow-sm">
+                      <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-1">Principal</span>
+                      <span id="emi-result-principal" class="text-lg font-bold text-teal-800 break-all">₹0</span>
+                    </div>
+                    <div class="bg-white border border-amber-100 rounded-lg p-4 text-center shadow-sm">
+                      <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-1">Total Interest</span>
+                      <span id="emi-result-interest" class="text-lg font-bold text-amber-700 break-all">₹0</span>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
+                      <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-1">Total Payment</span>
+                      <span id="emi-result-total" class="text-lg font-bold text-gray-800 break-all">₹0</span>
+                    </div>
+                  </div>
+
+                  <!-- Split bar -->
+                  <div>
+                    <div class="flex w-full h-3 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                      <div id="emi-split-bar-principal" class="bg-teal-600 h-full transition-all" style="width: 0%"></div>
+                      <div id="emi-split-bar-interest" class="bg-amber-500 h-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs font-medium">
+                      <span id="emi-breakdown-principal-pct" class="text-teal-700">0% Principal</span>
+                      <span id="emi-breakdown-interest-pct" class="text-amber-700">0% Interest</span>
+                    </div>
+                  </div>
+
+                  <!-- Amortization toggle -->
+                  <div>
+                    <button
+                      type="button"
+                      id="emi-amortization-toggle"
+                      class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span id="emi-amortization-toggle-label">▸ Amortization Schedule</span>
+                      <span id="emi-amortization-count" class="text-xs text-gray-500"></span>
+                    </button>
+
+                    <div id="emi-amortization-box" class="hidden mt-3 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                      <table class="w-full text-sm">
+                        <thead class="bg-teal-50 text-teal-800 sticky top-0 z-10">
+                          <tr>
+                            <th class="px-3 py-2 text-left font-semibold">#</th>
+                            <th class="px-3 py-2 text-right font-semibold">Opening</th>
+                            <th class="px-3 py-2 text-right font-semibold">Principal</th>
+                            <th class="px-3 py-2 text-right font-semibold">Interest</th>
+                            <th class="px-3 py-2 text-right font-semibold">Closing</th>
+                          </tr>
+                        </thead>
+                        <tbody id="emi-amortization-body" class="divide-y divide-gray-100"></tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Action buttons -->
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      id="emi-copy-btn"
+                      class="flex-1 px-4 py-3 bg-white hover:bg-teal-50 border border-teal-200 text-teal-700 font-medium rounded-lg transition-colors"
+                    >
+                      📋 Copy Full Breakdown
+                    </button>
+                    <button
+                      type="button"
+                      id="emi-download-btn"
+                      class="flex-1 px-4 py-3 bg-white hover:bg-teal-50 border border-teal-200 text-teal-700 font-medium rounded-lg transition-colors"
+                    >
+                      📥 Download CSV
+                    </button>
+                  </div>
+
+                </div>
+                <!-- /Result Card -->
+
+              </form>
+            </div>
+          </div>
+          <!-- /EMI Calculator View -->
+
         </div>
       </div>
 

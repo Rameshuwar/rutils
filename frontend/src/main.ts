@@ -3,7 +3,7 @@ import './style.css'
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
-type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age' | 'percentage';
+type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age' | 'percentage' | 'emi';
 type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
@@ -24,6 +24,7 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'bmi',        label: 'BMI',        viewId: 'hr-calculator-view' },
     { id: 'age',        label: 'Age',        viewId: 'age-calculator-view' },
     { id: 'percentage', label: 'Percentage', viewId: 'percentage-calculator-view' },
+    { id: 'emi',        label: 'EMI',        viewId: 'emi-calculator-view' },
   ],
 };
 
@@ -1320,6 +1321,315 @@ if (percentageForm) {
       pctStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
       pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
       lastCalculation = null;
+    }
+  });
+}
+
+// ----------------------------------------------------
+// EMI CALCULATOR LOGIC
+// ----------------------------------------------------
+
+// Format a number as Indian Rupees (with Indian digit grouping).
+// Falls back to plain formatting if Intl throws.
+function formatINR(amount: number): string {
+  if (!isFinite(amount)) return '₹0';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return '₹' + amount.toFixed(2);
+  }
+}
+
+// Format a plain number with Indian digit grouping (no currency symbol).
+function formatINRPlain(amount: number): string {
+  if (!isFinite(amount)) return '0';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return amount.toFixed(2);
+  }
+}
+
+const emiForm = document.getElementById('emi-form') as HTMLFormElement | null;
+
+if (emiForm) {
+  // ---- DOM refs ----
+  const emiPrincipal    = document.getElementById('emi-principal')          as HTMLInputElement;
+  const emiRate         = document.getElementById('emi-rate')               as HTMLInputElement;
+  const emiTenure       = document.getElementById('emi-tenure')             as HTMLInputElement;
+  const emiTenureUnit   = document.getElementById('emi-tenure-unit')        as HTMLSelectElement;
+  const emiStatus       = document.getElementById('emi-status-message')     as HTMLParagraphElement;
+
+  const emiResultBox        = document.getElementById('emi-result-box')             as HTMLDivElement;
+  const emiResultValue      = document.getElementById('emi-result-value')           as HTMLSpanElement;
+  const emiResultPrincipal  = document.getElementById('emi-result-principal')       as HTMLSpanElement;
+  const emiResultInterest   = document.getElementById('emi-result-interest')        as HTMLSpanElement;
+  const emiResultTotal      = document.getElementById('emi-result-total')           as HTMLSpanElement;
+
+  const emiSplitPrincipal   = document.getElementById('emi-split-bar-principal')    as HTMLDivElement;
+  const emiSplitInterest    = document.getElementById('emi-split-bar-interest')     as HTMLDivElement;
+  const emiPctPrincipal     = document.getElementById('emi-breakdown-principal-pct') as HTMLSpanElement;
+  const emiPctInterest      = document.getElementById('emi-breakdown-interest-pct')  as HTMLSpanElement;
+
+  const emiToggleBtn        = document.getElementById('emi-amortization-toggle')    as HTMLButtonElement;
+  const emiToggleLabel      = document.getElementById('emi-amortization-toggle-label') as HTMLSpanElement;
+  const emiToggleCount      = document.getElementById('emi-amortization-count')      as HTMLSpanElement;
+  const emiAmortBox         = document.getElementById('emi-amortization-box')       as HTMLDivElement;
+  const emiAmortBody        = document.getElementById('emi-amortization-body')      as HTMLTableSectionElement;
+
+  const emiCopyBtn          = document.getElementById('emi-copy-btn')               as HTMLButtonElement;
+  const emiDownloadBtn      = document.getElementById('emi-download-btn')           as HTMLButtonElement;
+
+  // ---- Snapshot of the last successful calculation ----
+  interface EMIAmortRow {
+    month: number;
+    openingBalance: number;
+    principalPaid: number;
+    interestPaid: number;
+    totalPaid: number;
+    closingBalance: number;
+  }
+
+  interface EMISnapshot {
+    principal: number;
+    annualRate: number;
+    tenureMonths: number;
+    tenureInput: number;
+    tenureUnit: string;
+    monthlyRatePercent: number;
+    emi: number;
+    totalInterest: number;
+    totalPayment: number;
+    principalPercent: number;
+    interestPercent: number;
+    amortization: EMIAmortRow[];
+  }
+
+  let lastEMI: EMISnapshot | null = null;
+  let amortizationOpen = false;
+
+  // ---- Amortization toggle ----
+  function setAmortizationOpen(open: boolean) {
+    amortizationOpen = open;
+    if (open) {
+      emiAmortBox.classList.remove('hidden');
+      emiToggleLabel.textContent = '▾ Amortization Schedule';
+    } else {
+      emiAmortBox.classList.add('hidden');
+      emiToggleLabel.textContent = '▸ Amortization Schedule';
+    }
+  }
+
+  emiToggleBtn.addEventListener('click', () => {
+    setAmortizationOpen(!amortizationOpen);
+  });
+
+  // ---- Render amortization table ----
+  function renderAmortization(rows: EMIAmortRow[]) {
+    emiAmortBody.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+
+      const cells: [string, string][] = [
+        [String(row.month),                       'text-left'],
+        [formatINRPlain(row.openingBalance),      'text-right'],
+        [formatINRPlain(row.principalPaid),       'text-right'],
+        [formatINRPlain(row.interestPaid),        'text-right'],
+        [formatINRPlain(row.closingBalance),      'text-right'],
+      ];
+
+      cells.forEach(([text, align]) => {
+        const td = document.createElement('td');
+        td.className = `px-3 py-2 ${align} tabular-nums text-gray-700`;
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+
+      frag.appendChild(tr);
+    });
+
+    emiAmortBody.appendChild(frag);
+    emiToggleCount.textContent = `${rows.length} rows`;
+  }
+
+  // ---- Copy Full Breakdown ----
+  emiCopyBtn.addEventListener('click', async () => {
+    if (!lastEMI) return;
+
+    const line = '━'.repeat(52);
+    const buf: string[] = [];
+    buf.push(line);
+    buf.push('  LOAN EMI CALCULATION');
+    buf.push(line);
+    buf.push('');
+    buf.push('  INPUT');
+    buf.push(`    Loan Amount:      ${formatINR(lastEMI.principal)}`);
+    buf.push(`    Interest Rate:    ${lastEMI.annualRate}% p.a.`);
+    buf.push(`    Tenure:           ${lastEMI.tenureInput} ${lastEMI.tenureUnit} (${lastEMI.tenureMonths} months)`);
+    buf.push(`    Monthly Rate:     ${lastEMI.monthlyRatePercent}%`);
+    buf.push('');
+    buf.push('  RESULT');
+    buf.push(`    Monthly EMI:      ${formatINR(lastEMI.emi)}`);
+    buf.push(`    Total Interest:   ${formatINR(lastEMI.totalInterest)}`);
+    buf.push(`    Total Payment:    ${formatINR(lastEMI.totalPayment)}`);
+    buf.push('');
+    buf.push('  BREAKDOWN');
+    buf.push(`    Principal:        ${lastEMI.principalPercent.toFixed(2)}%`);
+    buf.push(`    Interest:         ${lastEMI.interestPercent.toFixed(2)}%`);
+    buf.push('');
+    buf.push(line);
+
+    const ok = await copyToClipboard(buf.join('\n'));
+    if (ok) {
+      flashButtonLabel(emiCopyBtn, '✓ Full Copied');
+    } else {
+      flashButtonLabel(emiCopyBtn, '⚠ Copy failed');
+    }
+  });
+
+  // ---- Download Amortization as CSV ----
+  emiDownloadBtn.addEventListener('click', () => {
+    if (!lastEMI) return;
+
+    const headers = ['Month', 'Opening Balance', 'Principal Paid', 'Interest Paid', 'Total Paid', 'Closing Balance'];
+    const csvRows: string[] = [headers.join(',')];
+
+    lastEMI.amortization.forEach(r => {
+      csvRows.push([
+        r.month,
+        r.openingBalance.toFixed(2),
+        r.principalPaid.toFixed(2),
+        r.interestPaid.toFixed(2),
+        r.totalPaid.toFixed(2),
+        r.closingBalance.toFixed(2),
+      ].join(','));
+    });
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `emi-amortization-${lastEMI.tenureMonths}months.csv`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    flashButtonLabel(emiDownloadBtn, '✓ Downloaded');
+  });
+
+  // ---- Submit handler ----
+  emiForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    emiStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    emiStatus.classList.add('text-gray-500');
+    emiStatus.textContent = 'Calculating...';
+    emiResultBox.classList.add('hidden');
+    setAmortizationOpen(false);
+
+    const principal = parseFloat(emiPrincipal.value);
+    const rate = parseFloat(emiRate.value);
+    const tenure = parseFloat(emiTenure.value);
+    const unit = emiTenureUnit.value;
+
+    if (isNaN(principal) || principal <= 0) {
+      emiStatus.textContent = 'Please enter a valid loan amount.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(rate) || rate < 0) {
+      emiStatus.textContent = 'Please enter a valid interest rate.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(tenure) || tenure <= 0) {
+      emiStatus.textContent = 'Please enter a valid tenure.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-emi'
+        : 'https://utils.api.srilakshmiretail.in/calculate-emi';
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          principal,
+          annualInterestRate: rate,
+          tenure,
+          tenureUnit: unit,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // ---- Update hero number ----
+      emiResultValue.textContent = formatINR(data.emi);
+
+      // ---- Update stat blocks ----
+      emiResultPrincipal.textContent = formatINR(data.principal);
+      emiResultInterest.textContent  = formatINR(data.totalInterest);
+      emiResultTotal.textContent     = formatINR(data.totalPayment);
+
+      // ---- Update split bar ----
+      const pPct = data.breakdown.principalPercent;
+      const iPct = data.breakdown.interestPercent;
+      emiSplitPrincipal.style.width = `${pPct}%`;
+      emiSplitInterest.style.width  = `${iPct}%`;
+      emiPctPrincipal.textContent = `${pPct.toFixed(2)}% Principal`;
+      emiPctInterest.textContent  = `${iPct.toFixed(2)}% Interest`;
+
+      // ---- Render amortization table ----
+      renderAmortization(data.amortization);
+
+      // ---- Save snapshot for copy/download ----
+      lastEMI = {
+        principal: data.principal,
+        annualRate: rate,
+        tenureMonths: data.tenureMonths,
+        tenureInput: tenure,
+        tenureUnit: unit,
+        monthlyRatePercent: data.monthlyRatePercent,
+        emi: data.emi,
+        totalInterest: data.totalInterest,
+        totalPayment: data.totalPayment,
+        principalPercent: pPct,
+        interestPercent: iPct,
+        amortization: data.amortization,
+      };
+
+      // ---- Reveal result ----
+      emiResultBox.classList.remove('hidden');
+      emiStatus.classList.add('hidden');
+
+    } catch (err) {
+      console.error('EMI calculation error:', err);
+      emiStatus.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      lastEMI = null;
     }
   });
 }
