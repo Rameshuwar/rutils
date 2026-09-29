@@ -390,6 +390,68 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/extract-text": {
+            "post": {
+                "description": "Upload a PDF or image and receive the extracted text as JSON.\n\n**Supported inputs:**\n- PDF (digital and scanned -- scanned pages automatically fall back to OCR)\n- Images: JPG, JPEG, PNG, WEBP, TIFF, BMP\n\n**Optional parameters:**\n- lang:   OCR language code (default eng). Examples: eng, hin, eng+hin.\n- page:   For PDFs only -- extract a single 1-indexed page. Omit for all pages.\n- format: plain (default) or structured (include per-page array).\n\n**Limits:**\n- Upload size must not exceed 50 MB.\n- PDFs may have at most 500 pages.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Text Extraction"
+                ],
+                "summary": "Extract text from PDF or image",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF or image file (max 50 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OCR language code (default eng)",
+                        "name": "lang",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "PDF page number to extract (1-indexed)",
+                        "name": "page",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "plain or structured (default plain)",
+                        "name": "format",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Extraction result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.ExtractResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid file, parameters, or unsupported type",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -528,6 +590,43 @@ const docTemplate = `{
                 }
             }
         },
+        "converter.ExtractResponse": {
+            "type": "object",
+            "properties": {
+                "extractedAt": {
+                    "description": "RFC3339 UTC",
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "pageCount": {
+                    "type": "integer"
+                },
+                "pages": {
+                    "description": "per-page breakdown",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.PageExtract"
+                    }
+                },
+                "sourceType": {
+                    "description": "\"pdf\" | \"image\"",
+                    "type": "string"
+                },
+                "text": {
+                    "description": "concatenated text",
+                    "type": "string"
+                },
+                "warnings": {
+                    "description": "non-fatal notices",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "converter.NextBirthday": {
             "type": "object",
             "properties": {
@@ -548,6 +647,17 @@ const docTemplate = `{
                 },
                 "monthsRemaining": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.PageExtract": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
                 }
             }
         },

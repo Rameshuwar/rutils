@@ -88,6 +88,32 @@ definitions:
       years:
         type: integer
     type: object
+  converter.ExtractResponse:
+    properties:
+      extractedAt:
+        description: RFC3339 UTC
+        type: string
+      language:
+        type: string
+      pageCount:
+        type: integer
+      pages:
+        description: per-page breakdown
+        items:
+          $ref: '#/definitions/converter.PageExtract'
+        type: array
+      sourceType:
+        description: '"pdf" | "image"'
+        type: string
+      text:
+        description: concatenated text
+        type: string
+      warnings:
+        description: non-fatal notices
+        items:
+          type: string
+        type: array
+    type: object
   converter.NextBirthday:
     properties:
       date:
@@ -102,6 +128,13 @@ definitions:
         type: integer
       monthsRemaining:
         type: integer
+    type: object
+  converter.PageExtract:
+    properties:
+      page:
+        type: integer
+      text:
+        type: string
     type: object
   converter.PercentageResponse:
     properties:
@@ -522,4 +555,59 @@ paths:
           schema:
             type: string
       summary: Universal Time Converter
+  /extract-text:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Upload a PDF or image and receive the extracted text as JSON.
+
+        **Supported inputs:**
+        - PDF (digital and scanned -- scanned pages automatically fall back to OCR)
+        - Images: JPG, JPEG, PNG, WEBP, TIFF, BMP
+
+        **Optional parameters:**
+        - lang:   OCR language code (default eng). Examples: eng, hin, eng+hin.
+        - page:   For PDFs only -- extract a single 1-indexed page. Omit for all pages.
+        - format: plain (default) or structured (include per-page array).
+
+        **Limits:**
+        - Upload size must not exceed 50 MB.
+        - PDFs may have at most 500 pages.
+      parameters:
+      - description: PDF or image file (max 50 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: OCR language code (default eng)
+        in: formData
+        name: lang
+        type: string
+      - description: PDF page number to extract (1-indexed)
+        in: formData
+        name: page
+        type: integer
+      - description: plain or structured (default plain)
+        in: formData
+        name: format
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Extraction result
+          schema:
+            $ref: '#/definitions/converter.ExtractResponse'
+        "400":
+          description: Bad Request - invalid file, parameters, or unsupported type
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Extract text from PDF or image
+      tags:
+      - Text Extraction
 swagger: "2.0"
