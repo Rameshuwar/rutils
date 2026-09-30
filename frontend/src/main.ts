@@ -5,7 +5,8 @@ import { initAuth } from './auth-ui'
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
-type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway' | 'bmi' | 'age' | 'percentage';
+type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway'
+             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax';
 type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
@@ -26,6 +27,8 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'bmi',        label: 'BMI',        viewId: 'hr-calculator-view' },
     { id: 'age',        label: 'Age',        viewId: 'age-calculator-view' },
     { id: 'percentage', label: 'Percentage', viewId: 'percentage-calculator-view' },
+    { id: 'emi',        label: 'EMI',        viewId: 'emi-calculator-view' },
+    { id: 'tax',        label: 'Tax / GST',  viewId: 'tax-calculator-view' },
   ],
 };
 
@@ -925,7 +928,6 @@ interface PctOpConfig {
 }
 
 const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
-  // Basic
   percent_of: {
     field1: { label: 'Percent (%)',  placeholder: 'e.g. 15' },
     field2: { label: 'Of number',    placeholder: 'e.g. 200' },
@@ -938,8 +940,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
     field1: { label: 'Part',         placeholder: 'e.g. 30' },
     field2: { label: 'Percent (%)',  placeholder: 'e.g. 15' },
   },
-
-  // Change
   percent_change: {
     field1: { label: 'Old value',    placeholder: 'e.g. 100' },
     field2: { label: 'New value',    placeholder: 'e.g. 150' },
@@ -960,8 +960,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
     field1: { label: 'Value A',      placeholder: 'e.g. 100' },
     field2: { label: 'Value B',      placeholder: 'e.g. 150' },
   },
-
-  // Points
   add_percent_points: {
     field1: { label: 'First percent (%)',  placeholder: 'e.g. 5' },
     field2: { label: 'Second percent (%)', placeholder: 'e.g. 3' },
@@ -970,8 +968,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
     field1: { label: 'First percent (%)',  placeholder: 'e.g. 5' },
     field2: { label: 'Second percent (%)', placeholder: 'e.g. 3' },
   },
-
-  // Business
   discount: {
     field1: { label: 'Original price',  placeholder: 'e.g. 500' },
     field2: { label: 'Discount (%)',    placeholder: 'e.g. 20' },
@@ -984,8 +980,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
     field1: { label: 'Cost price',      placeholder: 'e.g. 100' },
     field2: { label: 'Selling price',   placeholder: 'e.g. 120' },
   },
-
-  // Convert
   percent_to_fraction: {
     field1: { label: 'Percent (%)',     placeholder: 'e.g. 25' },
   },
@@ -996,8 +990,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
   decimal_to_percent: {
     field1: { label: 'Decimal',         placeholder: 'e.g. 0.25' },
   },
-
-  // Advanced
   compound_percent: {
     field1: { label: 'Base amount',     placeholder: 'e.g. 1000' },
     field2: { label: 'Percent per period (%)', placeholder: 'e.g. 10' },
@@ -1012,7 +1004,6 @@ const PERCENTAGE_OPS: Record<string, PctOpConfig> = {
   },
 };
 
-// Human-readable operation names for the copy output (matches dropdown labels)
 const PERCENTAGE_OP_NAMES: Record<string, string> = {
   percent_of:              'X% of Y',
   what_percent:            'X is what % of Y',
@@ -1035,19 +1026,16 @@ const PERCENTAGE_OP_NAMES: Record<string, string> = {
   cgpa_to_percent:         'CGPA → Percent',
 };
 
-// Clipboard helper with 3-layer fallback
 async function copyToClipboard(text: string): Promise<boolean> {
-  // Layer 1: Modern Clipboard API (needs HTTPS or localhost)
   if (navigator.clipboard && window.isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
       return true;
     } catch {
-      // Fall through to layer 2
+      // fall through
     }
   }
 
-  // Layer 2: Legacy execCommand fallback
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -1062,14 +1050,12 @@ async function copyToClipboard(text: string): Promise<boolean> {
     document.body.removeChild(ta);
     if (ok) return true;
   } catch {
-    // Fall through to return false
+    // fall through
   }
 
-  // Layer 3: Both failed — caller will show an error
   return false;
 }
 
-// Per-button transient feedback helper
 function flashButtonLabel(btn: HTMLButtonElement, newLabel: string, restoreMs = 1500) {
   const original = btn.dataset.originalLabel ?? btn.textContent ?? '';
   btn.dataset.originalLabel = original;
@@ -1106,7 +1092,6 @@ if (percentageForm) {
   const pctCopyBtn         = document.getElementById('percentage-copy-btn')        as HTMLButtonElement;
   const pctCopyFullBtn     = document.getElementById('percentage-copy-full-btn')   as HTMLButtonElement;
 
-  // Snapshot of the last successful calculation (used by copy handlers)
   let lastCalculation: {
     operation: string;
     opLabel: string;
@@ -1157,7 +1142,6 @@ if (percentageForm) {
 
   applyPercentageOpConfig(pctOperation.value);
 
-  // -------- Copy Result (just the number) --------
   pctCopyBtn.addEventListener('click', async () => {
     const text = pctResultFormatted.textContent || '';
     if (!text) return;
@@ -1169,7 +1153,6 @@ if (percentageForm) {
     }
   });
 
-  // -------- Copy Full (audit-trail breakdown) --------
   pctCopyFullBtn.addEventListener('click', async () => {
     if (!lastCalculation) return;
 
@@ -1210,7 +1193,6 @@ if (percentageForm) {
     }
   });
 
-  // -------- Submit handler --------
   percentageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -1279,7 +1261,6 @@ if (percentageForm) {
 
       pctResultFormatted.textContent = data.formatted ?? String(data.result);
 
-      // Extra info chips
       pctExtraChips.innerHTML = '';
       const capturedExtras: { label: string; value: string }[] = [];
       if (data.extra && typeof data.extra === 'object') {
@@ -1293,7 +1274,6 @@ if (percentageForm) {
         });
       }
 
-      // Steps
       const capturedSteps: string[] = [];
       pctStepsList.innerHTML = '';
       if (Array.isArray(data.steps) && data.steps.length > 0) {
@@ -1308,7 +1288,6 @@ if (percentageForm) {
         pctStepsBox.classList.add('hidden');
       }
 
-      // Save snapshot for the Copy Full button
       lastCalculation = {
         operation: op,
         opLabel: PERCENTAGE_OP_NAMES[op] ?? op,
@@ -1326,6 +1305,567 @@ if (percentageForm) {
       pctStatusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
       pctStatusMessage.classList.replace('text-gray-500', 'text-red-600');
       lastCalculation = null;
+    }
+  });
+}
+
+// ----------------------------------------------------
+// EMI CALCULATOR LOGIC
+// ----------------------------------------------------
+
+function formatINR(amount: number): string {
+  if (!isFinite(amount)) return '₹0';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return '₹' + amount.toFixed(2);
+  }
+}
+
+function formatINRPlain(amount: number): string {
+  if (!isFinite(amount)) return '0';
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return amount.toFixed(2);
+  }
+}
+
+const emiForm = document.getElementById('emi-form') as HTMLFormElement | null;
+
+if (emiForm) {
+  const emiPrincipal    = document.getElementById('emi-principal')          as HTMLInputElement;
+  const emiRate         = document.getElementById('emi-rate')               as HTMLInputElement;
+  const emiTenure       = document.getElementById('emi-tenure')             as HTMLInputElement;
+  const emiTenureUnit   = document.getElementById('emi-tenure-unit')        as HTMLSelectElement;
+  const emiStatus       = document.getElementById('emi-status-message')     as HTMLParagraphElement;
+
+  const emiResultBox        = document.getElementById('emi-result-box')             as HTMLDivElement;
+  const emiResultValue      = document.getElementById('emi-result-value')           as HTMLSpanElement;
+  const emiResultPrincipal  = document.getElementById('emi-result-principal')       as HTMLSpanElement;
+  const emiResultInterest   = document.getElementById('emi-result-interest')        as HTMLSpanElement;
+  const emiResultTotal      = document.getElementById('emi-result-total')           as HTMLSpanElement;
+
+  const emiSplitPrincipal   = document.getElementById('emi-split-bar-principal')    as HTMLDivElement;
+  const emiSplitInterest    = document.getElementById('emi-split-bar-interest')     as HTMLDivElement;
+  const emiPctPrincipal     = document.getElementById('emi-breakdown-principal-pct') as HTMLSpanElement;
+  const emiPctInterest      = document.getElementById('emi-breakdown-interest-pct')  as HTMLSpanElement;
+
+  const emiToggleBtn        = document.getElementById('emi-amortization-toggle')    as HTMLButtonElement;
+  const emiToggleLabel      = document.getElementById('emi-amortization-toggle-label') as HTMLSpanElement;
+  const emiToggleCount      = document.getElementById('emi-amortization-count')      as HTMLSpanElement;
+  const emiAmortBox         = document.getElementById('emi-amortization-box')       as HTMLDivElement;
+  const emiAmortBody        = document.getElementById('emi-amortization-body')      as HTMLTableSectionElement;
+
+  const emiCopyBtn          = document.getElementById('emi-copy-btn')               as HTMLButtonElement;
+  const emiDownloadBtn      = document.getElementById('emi-download-btn')           as HTMLButtonElement;
+
+  interface EMIAmortRow {
+    month: number;
+    openingBalance: number;
+    principalPaid: number;
+    interestPaid: number;
+    totalPaid: number;
+    closingBalance: number;
+  }
+
+  interface EMISnapshot {
+    principal: number;
+    annualRate: number;
+    tenureMonths: number;
+    tenureInput: number;
+    tenureUnit: string;
+    monthlyRatePercent: number;
+    emi: number;
+    totalInterest: number;
+    totalPayment: number;
+    principalPercent: number;
+    interestPercent: number;
+    amortization: EMIAmortRow[];
+  }
+
+  let lastEMI: EMISnapshot | null = null;
+  let amortizationOpen = false;
+
+  function setAmortizationOpen(open: boolean) {
+    amortizationOpen = open;
+    if (open) {
+      emiAmortBox.classList.remove('hidden');
+      emiToggleLabel.textContent = '▾ Amortization Schedule';
+    } else {
+      emiAmortBox.classList.add('hidden');
+      emiToggleLabel.textContent = '▸ Amortization Schedule';
+    }
+  }
+
+  emiToggleBtn.addEventListener('click', () => {
+    setAmortizationOpen(!amortizationOpen);
+  });
+
+  function renderAmortization(rows: EMIAmortRow[]) {
+    emiAmortBody.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+
+      const cells: [string, string][] = [
+        [String(row.month),                       'text-left'],
+        [formatINRPlain(row.openingBalance),      'text-right'],
+        [formatINRPlain(row.principalPaid),       'text-right'],
+        [formatINRPlain(row.interestPaid),        'text-right'],
+        [formatINRPlain(row.closingBalance),      'text-right'],
+      ];
+
+      cells.forEach(([text, align]) => {
+        const td = document.createElement('td');
+        td.className = `px-3 py-2 ${align} tabular-nums text-gray-700`;
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+
+      frag.appendChild(tr);
+    });
+
+    emiAmortBody.appendChild(frag);
+    emiToggleCount.textContent = `${rows.length} rows`;
+  }
+
+  emiCopyBtn.addEventListener('click', async () => {
+    if (!lastEMI) return;
+
+    const line = '━'.repeat(52);
+    const buf: string[] = [];
+    buf.push(line);
+    buf.push('  LOAN EMI CALCULATION');
+    buf.push(line);
+    buf.push('');
+    buf.push('  INPUT');
+    buf.push(`    Loan Amount:      ${formatINR(lastEMI.principal)}`);
+    buf.push(`    Interest Rate:    ${lastEMI.annualRate}% p.a.`);
+    buf.push(`    Tenure:           ${lastEMI.tenureInput} ${lastEMI.tenureUnit} (${lastEMI.tenureMonths} months)`);
+    buf.push(`    Monthly Rate:     ${lastEMI.monthlyRatePercent}%`);
+    buf.push('');
+    buf.push('  RESULT');
+    buf.push(`    Monthly EMI:      ${formatINR(lastEMI.emi)}`);
+    buf.push(`    Total Interest:   ${formatINR(lastEMI.totalInterest)}`);
+    buf.push(`    Total Payment:    ${formatINR(lastEMI.totalPayment)}`);
+    buf.push('');
+    buf.push('  BREAKDOWN');
+    buf.push(`    Principal:        ${lastEMI.principalPercent.toFixed(2)}%`);
+    buf.push(`    Interest:         ${lastEMI.interestPercent.toFixed(2)}%`);
+    buf.push('');
+    buf.push(line);
+
+    const ok = await copyToClipboard(buf.join('\n'));
+    if (ok) {
+      flashButtonLabel(emiCopyBtn, '✓ Full Copied');
+    } else {
+      flashButtonLabel(emiCopyBtn, '⚠ Copy failed');
+    }
+  });
+
+  emiDownloadBtn.addEventListener('click', () => {
+    if (!lastEMI) return;
+
+    const headers = ['Month', 'Opening Balance', 'Principal Paid', 'Interest Paid', 'Total Paid', 'Closing Balance'];
+    const csvRows: string[] = [headers.join(',')];
+
+    lastEMI.amortization.forEach(r => {
+      csvRows.push([
+        r.month,
+        r.openingBalance.toFixed(2),
+        r.principalPaid.toFixed(2),
+        r.interestPaid.toFixed(2),
+        r.totalPaid.toFixed(2),
+        r.closingBalance.toFixed(2),
+      ].join(','));
+    });
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `emi-amortization-${lastEMI.tenureMonths}months.csv`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    flashButtonLabel(emiDownloadBtn, '✓ Downloaded');
+  });
+
+  emiForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    emiStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    emiStatus.classList.add('text-gray-500');
+    emiStatus.textContent = 'Calculating...';
+    emiResultBox.classList.add('hidden');
+    setAmortizationOpen(false);
+
+    const principal = parseFloat(emiPrincipal.value);
+    const rate = parseFloat(emiRate.value);
+    const tenure = parseFloat(emiTenure.value);
+    const unit = emiTenureUnit.value;
+
+    if (isNaN(principal) || principal <= 0) {
+      emiStatus.textContent = 'Please enter a valid loan amount.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(rate) || rate < 0) {
+      emiStatus.textContent = 'Please enter a valid interest rate.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(tenure) || tenure <= 0) {
+      emiStatus.textContent = 'Please enter a valid tenure.';
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-emi'
+        : 'https://utils.api.srilakshmiretail.in/calculate-emi';
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          principal,
+          annualInterestRate: rate,
+          tenure,
+          tenureUnit: unit,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      emiResultValue.textContent = formatINR(data.emi);
+      emiResultPrincipal.textContent = formatINR(data.principal);
+      emiResultInterest.textContent  = formatINR(data.totalInterest);
+      emiResultTotal.textContent     = formatINR(data.totalPayment);
+
+      const pPct = data.breakdown.principalPercent;
+      const iPct = data.breakdown.interestPercent;
+      emiSplitPrincipal.style.width = `${pPct}%`;
+      emiSplitInterest.style.width  = `${iPct}%`;
+      emiPctPrincipal.textContent = `${pPct.toFixed(2)}% Principal`;
+      emiPctInterest.textContent  = `${iPct.toFixed(2)}% Interest`;
+
+      renderAmortization(data.amortization);
+
+      lastEMI = {
+        principal: data.principal,
+        annualRate: rate,
+        tenureMonths: data.tenureMonths,
+        tenureInput: tenure,
+        tenureUnit: unit,
+        monthlyRatePercent: data.monthlyRatePercent,
+        emi: data.emi,
+        totalInterest: data.totalInterest,
+        totalPayment: data.totalPayment,
+        principalPercent: pPct,
+        interestPercent: iPct,
+        amortization: data.amortization,
+      };
+
+      emiResultBox.classList.remove('hidden');
+      emiStatus.classList.add('hidden');
+
+    } catch (err) {
+      console.error('EMI calculation error:', err);
+      emiStatus.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      emiStatus.classList.replace('text-gray-500', 'text-red-600');
+      lastEMI = null;
+    }
+  });
+}
+
+// ----------------------------------------------------
+// TAX / VAT / GST CALCULATOR LOGIC  ⬅️ NEW
+// ----------------------------------------------------
+
+interface TaxModeConfig {
+  amount?:  { label: string; placeholder: string };
+  rate?:    { label: string; placeholder: string };
+  taxType?: boolean;
+  net?:     boolean;
+  gross?:   boolean;
+  taxPaid?: boolean;
+  income?:  boolean;
+  slabs?:   boolean;
+  regime?:  boolean;
+}
+
+const TAX_MODES: Record<string, TaxModeConfig> = {
+  add_tax: {
+    amount: { label: 'Base Amount (exclusive)', placeholder: 'e.g. 1000' },
+    rate:   { label: 'Tax Rate (%)',            placeholder: 'e.g. 18' },
+  },
+  remove_tax: {
+    amount: { label: 'Gross Amount (inclusive)', placeholder: 'e.g. 1180' },
+    rate:   { label: 'Tax Rate (%)',             placeholder: 'e.g. 18' },
+  },
+  find_rate: {
+    net:   true,
+    gross: true,
+  },
+  split_gst: {
+    amount:  { label: 'GST-inclusive Amount', placeholder: 'e.g. 1180' },
+    rate:    { label: 'GST Rate (%)',          placeholder: 'e.g. 18' },
+    taxType: true,
+  },
+  reverse_gst: {
+    taxPaid: true,
+    rate:    { label: 'GST Rate (%)', placeholder: 'e.g. 18' },
+  },
+  income_tax: {
+    income: true,
+    slabs:  true,
+    regime: true,
+  },
+};
+
+const taxForm = document.getElementById('tax-form') as HTMLFormElement | null;
+
+if (taxForm) {
+  const taxMode         = document.getElementById('tax-mode')         as HTMLSelectElement;
+  const taxAmountWrap   = document.getElementById('tax-amount-wrap')  as HTMLDivElement;
+  const taxAmountLabel  = document.getElementById('tax-amount-label') as HTMLLabelElement;
+  const taxAmount       = document.getElementById('tax-amount')       as HTMLInputElement;
+  const taxRateWrap     = document.getElementById('tax-rate-wrap')    as HTMLDivElement;
+  const taxRateLabel    = document.getElementById('tax-rate-label')   as HTMLLabelElement;
+  const taxRate         = document.getElementById('tax-rate')         as HTMLInputElement;
+  const taxTypeWrap     = document.getElementById('tax-type-wrap')    as HTMLDivElement;
+  const taxType         = document.getElementById('tax-type')         as HTMLSelectElement;
+  const taxNetWrap      = document.getElementById('tax-net-wrap')     as HTMLDivElement;
+  const taxNet          = document.getElementById('tax-net')          as HTMLInputElement;
+  const taxGrossWrap    = document.getElementById('tax-gross-wrap')   as HTMLDivElement;
+  const taxGross        = document.getElementById('tax-gross')        as HTMLInputElement;
+  const taxPaidWrap     = document.getElementById('tax-paid-wrap')    as HTMLDivElement;
+  const taxPaid         = document.getElementById('tax-paid')         as HTMLInputElement;
+  const taxIncomeWrap   = document.getElementById('tax-income-wrap')  as HTMLDivElement;
+  const taxIncome       = document.getElementById('tax-income')       as HTMLInputElement;
+  const taxSlabsWrap    = document.getElementById('tax-slabs-wrap')   as HTMLDivElement;
+  const taxSlabs        = document.getElementById('tax-slabs')        as HTMLTextAreaElement;
+  const taxRegimeWrap   = document.getElementById('tax-regime-wrap')  as HTMLDivElement;
+  const taxRegime       = document.getElementById('tax-regime')       as HTMLInputElement;
+
+  const taxStatus       = document.getElementById('tax-status-message')  as HTMLParagraphElement;
+  const taxResultBox    = document.getElementById('tax-result-box')      as HTMLDivElement;
+  const taxResultFmt    = document.getElementById('tax-result-formatted') as HTMLSpanElement;
+  const taxResultNet    = document.getElementById('tax-result-net')      as HTMLSpanElement;
+  const taxResultTax    = document.getElementById('tax-result-tax')      as HTMLSpanElement;
+  const taxResultGross  = document.getElementById('tax-result-gross')    as HTMLSpanElement;
+  const taxExtraChips   = document.getElementById('tax-extra-chips')     as HTMLDivElement;
+  const taxStepsBox     = document.getElementById('tax-steps-box')       as HTMLDivElement;
+  const taxStepsList    = document.getElementById('tax-steps-list')      as HTMLOListElement;
+
+  function applyTaxModeConfig(mode: string) {
+    const cfg = TAX_MODES[mode];
+    if (!cfg) return;
+
+    if (cfg.amount) {
+      taxAmountLabel.textContent = cfg.amount.label;
+      taxAmount.placeholder      = cfg.amount.placeholder;
+      taxAmountWrap.classList.remove('hidden');
+    } else {
+      taxAmount.value = '';
+      taxAmountWrap.classList.add('hidden');
+    }
+
+    if (cfg.rate) {
+      taxRateLabel.textContent = cfg.rate.label;
+      taxRate.placeholder      = cfg.rate.placeholder;
+      taxRateWrap.classList.remove('hidden');
+    } else {
+      taxRate.value = '';
+      taxRateWrap.classList.add('hidden');
+    }
+
+    const toggles: [HTMLDivElement, boolean | undefined][] = [
+      [taxTypeWrap,   cfg.taxType],
+      [taxNetWrap,    cfg.net],
+      [taxGrossWrap,  cfg.gross],
+      [taxPaidWrap,   cfg.taxPaid],
+      [taxIncomeWrap, cfg.income],
+      [taxSlabsWrap,  cfg.slabs],
+      [taxRegimeWrap, cfg.regime],
+    ];
+    for (const [el, show] of toggles) {
+      if (show) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
+
+    if (!cfg.net)     taxNet.value = '';
+    if (!cfg.gross)   taxGross.value = '';
+    if (!cfg.taxPaid) taxPaid.value = '';
+    if (!cfg.income)  taxIncome.value = '';
+    if (!cfg.slabs)   taxSlabs.value = '';
+    if (!cfg.regime)  taxRegime.value = '';
+
+    taxResultBox.classList.add('hidden');
+    taxStatus.classList.add('hidden');
+  }
+
+  taxMode.addEventListener('change', () => applyTaxModeConfig(taxMode.value));
+  applyTaxModeConfig(taxMode.value);
+
+  function parseSlabs(raw: string): { from: number; to: number; rate: number }[] {
+    const out: { from: number; to: number; rate: number }[] = [];
+    const lines = raw.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split(',').map(p => p.trim());
+      if (parts.length !== 3) {
+        throw new Error(`Invalid slab line: "${trimmed}" (expected "from,to,rate")`);
+      }
+      const from = parseFloat(parts[0]);
+      const to   = parseFloat(parts[1]);
+      const rate = parseFloat(parts[2]);
+      if (isNaN(from) || isNaN(to) || isNaN(rate)) {
+        throw new Error(`Non-numeric slab line: "${trimmed}"`);
+      }
+      out.push({ from, to, rate });
+    }
+    return out;
+  }
+
+  taxForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    taxStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    taxStatus.classList.add('text-gray-500');
+    taxStatus.textContent = 'Calculating...';
+    taxResultBox.classList.add('hidden');
+
+    const mode = taxMode.value;
+    const cfg  = TAX_MODES[mode];
+    const payload: Record<string, unknown> = { mode };
+
+    try {
+      if (cfg.amount) {
+        const v = parseFloat(taxAmount.value);
+        if (isNaN(v)) throw new Error('Please enter a valid amount.');
+        payload.amount = v;
+      }
+      if (cfg.rate) {
+        const v = parseFloat(taxRate.value);
+        if (isNaN(v)) throw new Error('Please enter a valid tax rate.');
+        payload.taxRate = v;
+      }
+      if (cfg.taxType) payload.taxType = taxType.value;
+      if (cfg.net) {
+        const v = parseFloat(taxNet.value);
+        if (isNaN(v)) throw new Error('Please enter a valid net amount.');
+        payload.netAmount = v;
+      }
+      if (cfg.gross) {
+        const v = parseFloat(taxGross.value);
+        if (isNaN(v)) throw new Error('Please enter a valid gross amount.');
+        payload.grossAmount = v;
+      }
+      if (cfg.taxPaid) {
+        const v = parseFloat(taxPaid.value);
+        if (isNaN(v)) throw new Error('Please enter a valid tax-paid amount.');
+        payload.taxPaid = v;
+      }
+      if (cfg.income) {
+        const v = parseFloat(taxIncome.value);
+        if (isNaN(v)) throw new Error('Please enter a valid income.');
+        payload.income = v;
+      }
+      if (cfg.slabs) {
+        payload.slabs = parseSlabs(taxSlabs.value);
+        if ((payload.slabs as unknown[]).length === 0) {
+          throw new Error('Please enter at least one slab.');
+        }
+      }
+      if (cfg.regime && taxRegime.value.trim() !== '') {
+        payload.regime = taxRegime.value.trim();
+      }
+    } catch (err) {
+      taxStatus.textContent = err instanceof Error ? err.message : 'Invalid input.';
+      taxStatus.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-tax'
+        : 'https://utils.api.srilakshmiretail.in/calculate-tax';
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      taxResultFmt.textContent   = data.formatted ?? String(data.grossAmount ?? '');
+      taxResultNet.textContent   = formatINRPlain(data.netAmount);
+      taxResultTax.textContent   = formatINRPlain(data.taxAmount);
+      taxResultGross.textContent = formatINRPlain(data.grossAmount);
+
+      taxExtraChips.innerHTML = '';
+      if (data.extra && typeof data.extra === 'object') {
+        Object.entries(data.extra).forEach(([k, v]) => {
+          if (v === null || v === undefined || Array.isArray(v) || typeof v === 'object') return;
+          const keyLabel = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+          const chip = document.createElement('span');
+          chip.className = 'inline-flex items-center gap-1 bg-white border border-teal-200 text-teal-800 text-xs font-medium px-3 py-1 rounded-full';
+          chip.textContent = `${keyLabel}: ${v}`;
+          taxExtraChips.appendChild(chip);
+        });
+      }
+
+      taxStepsList.innerHTML = '';
+      if (Array.isArray(data.steps) && data.steps.length > 0) {
+        data.steps.forEach((s: string) => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          taxStepsList.appendChild(li);
+        });
+        taxStepsBox.classList.remove('hidden');
+      } else {
+        taxStepsBox.classList.add('hidden');
+      }
+
+      taxResultBox.classList.remove('hidden');
+      taxStatus.classList.add('hidden');
+
+    } catch (err) {
+      console.error('Tax calculation error:', err);
+      taxStatus.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      taxStatus.classList.replace('text-gray-500', 'text-red-600');
     }
   });
 }

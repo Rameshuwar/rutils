@@ -29,6 +29,18 @@ definitions:
       category:
         type: string
     type: object
+  api.EMIRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      principal:
+        type: number
+      tenure:
+        type: number
+      tenureUnit:
+        description: '"months" or "years"'
+        type: string
+    type: object
   api.MeasurementRequest:
     properties:
       category:
@@ -69,6 +81,33 @@ definitions:
         type: number
       value3:
         type: number
+    type: object
+  api.TaxRequest:
+    properties:
+      amount:
+        description: GST / VAT style
+        type: number
+      grossAmount:
+        type: number
+      income:
+        description: Income-tax style
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      regime:
+        type: string
+      slabs:
+        items:
+          $ref: '#/definitions/converter.TaxSlab'
+        type: array
+      taxPaid:
+        type: number
+      taxRate:
+        type: number
+      taxType:
+        type: string
     type: object
   auth.ChangePasswordRequest:
     properties:
@@ -179,6 +218,49 @@ definitions:
       years:
         type: integer
     type: object
+  converter.AmortizationRow:
+    properties:
+      closingBalance:
+        type: number
+      interestPaid:
+        type: number
+      month:
+        type: integer
+      openingBalance:
+        type: number
+      principalPaid:
+        type: number
+      totalPaid:
+        type: number
+    type: object
+  converter.EMIBreakdown:
+    properties:
+      interestPercent:
+        type: number
+      principalPercent:
+        type: number
+    type: object
+  converter.EMIResponse:
+    properties:
+      amortization:
+        items:
+          $ref: '#/definitions/converter.AmortizationRow'
+        type: array
+      breakdown:
+        $ref: '#/definitions/converter.EMIBreakdown'
+      emi:
+        type: number
+      monthlyRatePercent:
+        type: number
+      principal:
+        type: number
+      tenureMonths:
+        type: integer
+      totalInterest:
+        type: number
+      totalPayment:
+        type: number
+    type: object
   converter.ExtractResponse:
     properties:
       extractedAt:
@@ -281,6 +363,38 @@ definitions:
         type: integer
       years:
         type: integer
+    type: object
+  converter.TaxResponse:
+    properties:
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      grossAmount:
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      taxAmount:
+        type: number
+      taxRate:
+        type: number
+    type: object
+  converter.TaxSlab:
+    properties:
+      from:
+        type: number
+      rate:
+        type: number
+      to:
+        description: 0 == no upper bound
+        type: number
     type: object
   converter.TimeConversionRequest:
     properties:
@@ -660,6 +774,48 @@ paths:
           schema:
             type: string
       summary: BMI Calculator
+  /calculate-emi:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the Equated Monthly Installment (EMI) for a loan along with
+        the total interest, total payment, principal/interest split, and a
+        month-by-month amortization schedule.
+
+        **Formula:** `EMI = [P × r × (1+r)^N] / [(1+r)^N − 1]`
+        where `r` is the monthly interest rate (annual / 12 / 100) and `N` is
+        the tenure in months.
+
+        **Special case:** an annual interest rate of `0` returns a simple
+        `principal / tenure` division (interest-free loan).
+
+        **Limits:**
+        - `principal` must be positive and ≤ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `tenure` must be positive; tenure in months must be ≤ 600.
+        - `tenureUnit` must be exactly `"months"` or `"years"`.
+      parameters:
+      - description: EMI Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.EMIRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: EMI Result
+          schema:
+            $ref: '#/definitions/converter.EMIResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Loan EMI Calculator
+      tags:
+      - Calculators
   /calculate-percentage:
     post:
       consumes:
@@ -708,6 +864,46 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-tax:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any tax calculation through a single `mode`-discriminated endpoint.
+
+        **Supported modes (`mode` field):**
+        - `add_tax`      (amount, taxRate)                       — exclusive → inclusive
+        - `remove_tax`   (amount, taxRate)                       — inclusive → exclusive
+        - `find_rate`    (netAmount, grossAmount)                — effective tax rate
+        - `split_gst`    (amount, taxRate, taxType)              — CGST+SGST or IGST breakdown
+        - `reverse_gst`  (taxPaid, taxRate)                      — recover net from tax paid
+        - `income_tax`   (income, slabs[], regime?)              — progressive slab tax
+
+        **Notes:**
+        - The endpoint is country-neutral: the client supplies the rate and, for income tax, the slab schedule.
+        - For `split_gst`, `taxType` must be `cgst_sgst` (default) or `igst`.
+        - For `income_tax`, slabs must be non-overlapping; at most one slab may have `to = 0` (open-ended).
+      parameters:
+      - description: Tax Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.TaxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tax Result
+          schema:
+            $ref: '#/definitions/converter.TaxResponse'
+        "400":
+          description: Bad Request - invalid mode or parameters
+          schema:
+            type: string
+      summary: Tax / VAT / GST Calculator
+      tags:
+      - Calculators
   /convert:
     post:
       consumes:

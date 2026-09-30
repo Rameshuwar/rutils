@@ -55,6 +55,10 @@ func main() {
 	// ⬅️ NEW: Percentage Calculator
 	apiMux.HandleFunc("/calculate-percentage", api.HandlePercentageCalculate)
 
+	// ⬅️ NEW: Loan EMI Calculator
+	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
+	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
+
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -114,6 +118,13 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/auth/reset-password   (Forced Password Reset)")
 	fmt.Println(" -> POST http://localhost:8080/auth/change-password  (Change Password)")
 	fmt.Println(" -> GET  http://localhost:8080/auth/me               (Current User Profile)")
+
+	// ⬅️ NEW: Loan EMI Calculator in startup banner
+	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+
+	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner
+	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")
 
 	fmt.Println(" -> GET  http://localhost:8080/swagger/doc.json       (Swagger JSON)")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/              (Swagger UI)")
