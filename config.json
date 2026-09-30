@@ -1,0 +1,9 @@
+{
+  "smtp_email": "",
+  "smtp_app_password": "",
+  "smtp_host": "",
+  "smtp_port": "",
+  "jwt_secret": "rutils-utility-jwt-secret-change-in-production-2026",
+  "jwt_expiration_hours": 24,
+  "data_dir": "data"
+}

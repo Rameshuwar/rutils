@@ -29,6 +29,18 @@ definitions:
       category:
         type: string
     type: object
+  api.EMIRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      principal:
+        type: number
+      tenure:
+        type: number
+      tenureUnit:
+        description: '"months" or "years"'
+        type: string
+    type: object
   api.MeasurementRequest:
     properties:
       category:
@@ -70,6 +82,124 @@ definitions:
       value3:
         type: number
     type: object
+  api.TaxRequest:
+    properties:
+      amount:
+        description: GST / VAT style
+        type: number
+      grossAmount:
+        type: number
+      income:
+        description: Income-tax style
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      regime:
+        type: string
+      slabs:
+        items:
+          $ref: '#/definitions/converter.TaxSlab'
+        type: array
+      taxPaid:
+        type: number
+      taxRate:
+        type: number
+      taxType:
+        type: string
+    type: object
+  auth.ChangePasswordRequest:
+    properties:
+      confirm_password:
+        example: BrandNewStrongP@ss2!
+        type: string
+      current_password:
+        example: CurrentStrongP@ss1!
+        type: string
+      new_password:
+        example: BrandNewStrongP@ss2!
+        type: string
+    type: object
+  auth.ForgotPasswordRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        example: jane@example.com
+        type: string
+      password:
+        example: StrongP@ssw0rd!
+        type: string
+    type: object
+  auth.LoginResponse:
+    properties:
+      message:
+        example: Login successful
+        type: string
+      must_reset_password:
+        example: false
+        type: boolean
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/auth.UserResponse'
+    type: object
+  auth.MessageResponse:
+    properties:
+      message:
+        example: Operation completed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  auth.RegisterRequest:
+    properties:
+      confirm_password:
+        example: StrongP@ssw0rd!
+        type: string
+      email:
+        example: jane@example.com
+        type: string
+      name:
+        example: Jane Doe
+        type: string
+      password:
+        example: StrongP@ssw0rd!
+        type: string
+    type: object
+  auth.ResetPasswordRequest:
+    properties:
+      confirm_password:
+        example: NewStrongP@ssw0rd123!
+        type: string
+      new_password:
+        example: NewStrongP@ssw0rd123!
+        type: string
+    type: object
+  auth.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        example: jane@example.com
+        type: string
+      id:
+        example: u_984f1a23
+        type: string
+      must_reset_password:
+        example: false
+        type: boolean
+      name:
+        example: Jane Doe
+        type: string
+    type: object
   converter.AgeCalculationResponse:
     properties:
       age:
@@ -87,6 +217,49 @@ definitions:
         type: integer
       years:
         type: integer
+    type: object
+  converter.AmortizationRow:
+    properties:
+      closingBalance:
+        type: number
+      interestPaid:
+        type: number
+      month:
+        type: integer
+      openingBalance:
+        type: number
+      principalPaid:
+        type: number
+      totalPaid:
+        type: number
+    type: object
+  converter.EMIBreakdown:
+    properties:
+      interestPercent:
+        type: number
+      principalPercent:
+        type: number
+    type: object
+  converter.EMIResponse:
+    properties:
+      amortization:
+        items:
+          $ref: '#/definitions/converter.AmortizationRow'
+        type: array
+      breakdown:
+        $ref: '#/definitions/converter.EMIBreakdown'
+      emi:
+        type: number
+      monthlyRatePercent:
+        type: number
+      principal:
+        type: number
+      tenureMonths:
+        type: integer
+      totalInterest:
+        type: number
+      totalPayment:
+        type: number
     type: object
   converter.ExtractResponse:
     properties:
@@ -191,6 +364,38 @@ definitions:
       years:
         type: integer
     type: object
+  converter.TaxResponse:
+    properties:
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      grossAmount:
+        type: number
+      mode:
+        type: string
+      netAmount:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      taxAmount:
+        type: number
+      taxRate:
+        type: number
+    type: object
+  converter.TaxSlab:
+    properties:
+      from:
+        type: number
+      rate:
+        type: number
+      to:
+        description: 0 == no upper bound
+        type: number
+    type: object
   converter.TimeConversionRequest:
     properties:
       ambiguous_policy:
@@ -266,10 +471,260 @@ definitions:
 host: localhost:8080
 info:
   contact: {}
-  description: Utility Microservice for converting files.
+  description: Utility Microservice for converting files and user authentication.
   title: File Converter API
   version: "1.0"
 paths:
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Changes the password for the currently authenticated user and sends
+        an email confirmation. Requires Bearer JWT.
+      parameters:
+      - description: Change Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Current password incorrect or unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password for logged-in user
+      tags:
+      - Authentication
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a temporary password to the user's email. When used to log
+        in, forces password reset.
+      parameters:
+      - description: Forgot Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Temporary password dispatched
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Account not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send temporary password via Google SMTP
+      tags:
+      - Authentication
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user credentials and returns a signed JWT token.
+        If logged in with a temporary password, must_reset_password will be true.
+      parameters:
+      - description: User Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login with email and password
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      description: Clears the user's authentication session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+      summary: Logout user
+      tags:
+      - Authentication
+  /auth/me:
+    get:
+      description: Returns the profile details for the authenticated user. Requires
+        Bearer JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get logged-in user profile
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with name, email, password, and confirm_password.
+        Requires strong password.
+      parameters:
+      - description: User Registration Information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Email already registered
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Authentication
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Sets a permanent password for a user logged in with a temporary
+        password. Requires Bearer JWT.
+      parameters:
+      - description: Reset Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated successfully
+          schema:
+            $ref: '#/definitions/auth.MessageResponse'
+        "400":
+          description: Validation error or weak password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reset password
+      tags:
+      - Authentication
   /calculate-age:
     post:
       consumes:
@@ -319,6 +774,48 @@ paths:
           schema:
             type: string
       summary: BMI Calculator
+  /calculate-emi:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the Equated Monthly Installment (EMI) for a loan along with
+        the total interest, total payment, principal/interest split, and a
+        month-by-month amortization schedule.
+
+        **Formula:** `EMI = [P × r × (1+r)^N] / [(1+r)^N − 1]`
+        where `r` is the monthly interest rate (annual / 12 / 100) and `N` is
+        the tenure in months.
+
+        **Special case:** an annual interest rate of `0` returns a simple
+        `principal / tenure` division (interest-free loan).
+
+        **Limits:**
+        - `principal` must be positive and ≤ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `tenure` must be positive; tenure in months must be ≤ 600.
+        - `tenureUnit` must be exactly `"months"` or `"years"`.
+      parameters:
+      - description: EMI Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.EMIRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: EMI Result
+          schema:
+            $ref: '#/definitions/converter.EMIResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Loan EMI Calculator
+      tags:
+      - Calculators
   /calculate-percentage:
     post:
       consumes:
@@ -367,6 +864,46 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-tax:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any tax calculation through a single `mode`-discriminated endpoint.
+
+        **Supported modes (`mode` field):**
+        - `add_tax`      (amount, taxRate)                       — exclusive → inclusive
+        - `remove_tax`   (amount, taxRate)                       — inclusive → exclusive
+        - `find_rate`    (netAmount, grossAmount)                — effective tax rate
+        - `split_gst`    (amount, taxRate, taxType)              — CGST+SGST or IGST breakdown
+        - `reverse_gst`  (taxPaid, taxRate)                      — recover net from tax paid
+        - `income_tax`   (income, slabs[], regime?)              — progressive slab tax
+
+        **Notes:**
+        - The endpoint is country-neutral: the client supplies the rate and, for income tax, the slab schedule.
+        - For `split_gst`, `taxType` must be `cgst_sgst` (default) or `igst`.
+        - For `income_tax`, slabs must be non-overlapping; at most one slab may have `to = 0` (open-ended).
+      parameters:
+      - description: Tax Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.TaxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tax Result
+          schema:
+            $ref: '#/definitions/converter.TaxResponse'
+        "400":
+          description: Bad Request - invalid mode or parameters
+          schema:
+            type: string
+      summary: Tax / VAT / GST Calculator
+      tags:
+      - Calculators
   /convert:
     post:
       consumes:
@@ -610,4 +1147,10 @@ paths:
       summary: Extract text from PDF or image
       tags:
       - Text Extraction
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
