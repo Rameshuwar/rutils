@@ -391,10 +391,8 @@ function initPasswordToggles(): void {
 }
 
 // ─── Modal open/close ─────────────────────────────────────
-let currentScreen: AuthScreen = 'login';
 
 function openModal(screen: AuthScreen = 'login'): void {
-  currentScreen = screen;
   const overlay = document.getElementById('auth-overlay')!;
   overlay.classList.remove('hidden');
   overlay.classList.add('flex');

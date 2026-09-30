@@ -798,12 +798,191 @@
                     <p class="text-xs text-teal-700 font-semibold uppercase tracking-wide mb-3">Calculation Steps</p>
                     <ol id="tax-steps-list" class="space-y-1 text-sm text-teal-800 font-mono list-decimal list-inside"></ol>
                   </div>
+
                 </div>
 
               </form>
             </div>
           </div>
           <!-- /TAX Calculator View -->
+
+          <!-- в¬…пёҸ NEW: SI / CI (Interest) Calculator View -->
+          <div id="interest-calculator-view" class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+            <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+              <h2 class="text-2xl md:text-3xl font-bold">Interest Calculator</h2>
+              <p class="text-teal-100 mt-2 text-sm md:text-base">Simple or compound interest at a glance.</p>
+            </header>
+            <div class="p-6 md:p-8 space-y-6">
+              <form id="interest-form" class="space-y-5">
+
+                <!-- Mode toggle -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Interest Type</label>
+                  <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg" role="tablist" aria-label="Interest type">
+                    <button type="button" id="interest-mode-simple" data-mode="simple"
+                      class="interest-mode-btn w-full py-2 px-3 rounded-md text-sm font-medium transition-colors bg-white text-teal-700 shadow-sm">
+                      Simple Interest
+                    </button>
+                    <button type="button" id="interest-mode-compound" data-mode="compound"
+                      class="interest-mode-btn w-full py-2 px-3 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-teal-700">
+                      Compound Interest
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Shared inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Principal Amount (вӮ№)</label>
+                    <input
+                      type="number"
+                      id="interest-principal"
+                      step="any"
+                      min="1"
+                      required
+                      placeholder="e.g. 100000"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Interest Rate (% p.a.)</label>
+                    <input
+                      type="number"
+                      id="interest-rate"
+                      step="any"
+                      min="0"
+                      max="100"
+                      required
+                      placeholder="e.g. 8.5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                    <input
+                      type="number"
+                      id="interest-time"
+                      step="any"
+                      min="1"
+                      required
+                      placeholder="e.g. 5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Time Unit</label>
+                    <select
+                      id="interest-time-unit"
+                      required
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="years" selected>Years</option>
+                      <option value="months">Months</option>
+                      <option value="days" id="interest-time-unit-days">Days</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- CI-only input -->
+                <div id="interest-frequency-wrap" class="hidden">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Compounding Frequency</label>
+                  <select
+                    id="interest-frequency"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="yearly" selected>Yearly</option>
+                    <option value="half_yearly">Half-Yearly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="daily">Daily</option>
+                  </select>
+                </div>
+
+                <button type="submit" class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                  Calculate Interest
+                </button>
+
+                <p id="interest-status-message" class="text-sm text-center hidden"></p>
+
+                <!-- Result card -->
+                <div id="interest-result-box" class="hidden mt-4 space-y-6">
+
+                  <!-- Big total -->
+                  <div class="p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
+                    <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Total Amount</span>
+                    <span id="interest-result-total" class="text-4xl font-extrabold text-teal-900 break-all">вӮ№0</span>
+                  </div>
+
+                  <!-- Chips -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-white border border-teal-100 rounded-lg p-4 text-center shadow-sm">
+                      <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-1">Principal</span>
+                      <span id="interest-result-principal" class="text-lg font-bold text-teal-800 break-all">вӮ№0</span>
+                    </div>
+                    <div class="bg-white border border-amber-100 rounded-lg p-4 text-center shadow-sm">
+                      <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-1">Interest</span>
+                      <span id="interest-result-interest" class="text-lg font-bold text-amber-700 break-all">вӮ№0</span>
+                    </div>
+                  </div>
+
+                  <!-- Split bar -->
+                  <div>
+                    <div class="flex w-full h-3 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                      <div id="interest-split-bar-principal" class="bg-teal-600 h-full transition-all" style="width: 0%"></div>
+                      <div id="interest-split-bar-interest" class="bg-amber-500 h-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs font-medium">
+                      <span id="interest-breakdown-principal-pct" class="text-teal-700">0% Principal</span>
+                      <span id="interest-breakdown-interest-pct" class="text-amber-700">0% Interest</span>
+                    </div>
+                  </div>
+
+                  <!-- Steps (collapsible) -->
+                  <div>
+                    <button
+                      type="button"
+                      id="interest-steps-toggle"
+                      class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span id="interest-steps-toggle-label">в–ё Calculation Steps</span>
+                    </button>
+                    <div id="interest-steps-box" class="hidden mt-3 border border-gray-200 rounded-lg p-4 bg-white">
+                      <ol id="interest-steps-list" class="space-y-1 text-sm text-gray-800 font-mono list-decimal list-inside"></ol>
+                    </div>
+                  </div>
+
+                  <!-- Yearly breakdown (CI only, collapsible) -->
+                  <div id="interest-yearly-wrap" class="hidden">
+                    <button
+                      type="button"
+                      id="interest-yearly-toggle"
+                      class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span id="interest-yearly-toggle-label">в–ё Yearly Breakdown</span>
+                      <span id="interest-yearly-count" class="text-xs text-gray-500"></span>
+                    </button>
+                    <div id="interest-yearly-box" class="hidden mt-3 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg">
+                      <table class="w-full text-sm">
+                        <thead class="bg-teal-50 text-teal-800 sticky top-0 z-10">
+                          <tr>
+                            <th class="px-3 py-2 text-left font-semibold">Year</th>
+                            <th class="px-3 py-2 text-right font-semibold">Opening</th>
+                            <th class="px-3 py-2 text-right font-semibold">Interest</th>
+                            <th class="px-3 py-2 text-right font-semibold">Closing</th>
+                          </tr>
+                        </thead>
+                        <tbody id="interest-yearly-body" class="divide-y divide-gray-100"></tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+                <!-- /Result card -->
+
+              </form>
+            </div>
+          </div>
+          <!-- /SI / CI (Interest) Calculator View -->
 
         </div>
       </div>

@@ -29,6 +29,21 @@ definitions:
       category:
         type: string
     type: object
+  api.CompoundInterestRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      compoundingFrequency:
+        description: '"yearly" | "half_yearly" | "quarterly" | "monthly" | "daily"'
+        type: string
+      principal:
+        type: number
+      time:
+        type: number
+      timeUnit:
+        description: '"years" | "months"'
+        type: string
+    type: object
   api.EMIRequest:
     properties:
       annualInterestRate:
@@ -81,6 +96,18 @@ definitions:
         type: number
       value3:
         type: number
+    type: object
+  api.SimpleInterestRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      principal:
+        type: number
+      time:
+        type: number
+      timeUnit:
+        description: '"years" | "months" | "days"'
+        type: string
     type: object
   api.TaxRequest:
     properties:
@@ -233,6 +260,35 @@ definitions:
       totalPaid:
         type: number
     type: object
+  converter.CompoundInterestResponse:
+    properties:
+      annualInterestRate:
+        type: number
+      breakdown:
+        $ref: '#/definitions/converter.InterestBreakdown'
+      compoundingFrequency:
+        type: string
+      compoundsPerYear:
+        type: integer
+      effectiveAnnualRate:
+        type: number
+      interest:
+        type: number
+      principal:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      timeYears:
+        type: number
+      totalAmount:
+        type: number
+      yearlyBreakdown:
+        items:
+          $ref: '#/definitions/converter.YearlyRow'
+        type: array
+    type: object
   converter.EMIBreakdown:
     properties:
       interestPercent:
@@ -286,6 +342,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  converter.InterestBreakdown:
+    properties:
+      interestPercent:
+        type: number
+      principalPercent:
+        type: number
     type: object
   converter.NextBirthday:
     properties:
@@ -348,6 +411,25 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  converter.SimpleInterestResponse:
+    properties:
+      annualInterestRate:
+        type: number
+      breakdown:
+        $ref: '#/definitions/converter.InterestBreakdown'
+      interest:
+        type: number
+      principal:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      timeYears:
+        type: number
+      totalAmount:
+        type: number
     type: object
   converter.Summary:
     properties:
@@ -468,6 +550,17 @@ definitions:
     - ResolutionNormal
     - ResolutionAmbiguous
     - ResolutionNonExistent
+  converter.YearlyRow:
+    properties:
+      closingBalance:
+        type: number
+      interestEarned:
+        type: number
+      openingBalance:
+        type: number
+      year:
+        type: integer
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -774,6 +867,46 @@ paths:
           schema:
             type: string
       summary: BMI Calculator
+  /calculate-compound-interest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the compound interest, total amount, effective annual rate,
+        and (for tenures вүҘ 1 year) a year-by-year growth schedule.
+
+        **Formula:** `A = P Г— (1 + r/n)^(nГ—t)`   and   `CI = A вҲ’ P`
+        where `r` is the annual rate in decimal form, `n` is the number of
+        compounding periods per year, and `t` is the tenure in years.
+
+        **Limits:**
+        - `principal` must be positive and вүӨ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `time` must be positive; tenure must be вүӨ 100 years.
+        - `timeUnit` must be `"years"` or `"months"` (day-based tenure is rejected).
+        - `compoundingFrequency` must be one of `yearly`, `half_yearly`,
+        `quarterly`, `monthly`, `daily` (defaults to `yearly`).
+      parameters:
+      - description: Compound Interest Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CompoundInterestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Compound Interest Result
+          schema:
+            $ref: '#/definitions/converter.CompoundInterestResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Compound Interest Calculator
+      tags:
+      - Calculators
   /calculate-emi:
     post:
       consumes:
@@ -864,6 +997,43 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-simple-interest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the simple interest and total amount for a loan or investment.
+
+        **Formula:** `SI = (P Г— R Г— T) / 100`
+        where `P` is the principal, `R` is the annual rate in percent,
+        and `T` is the tenure expressed in years.
+
+        **Limits:**
+        - `principal` must be positive and вүӨ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `time` must be positive; tenure must be вүӨ 100 years.
+        - `timeUnit` must be `"years"`, `"months"`, or `"days"`.
+      parameters:
+      - description: Simple Interest Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.SimpleInterestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Simple Interest Result
+          schema:
+            $ref: '#/definitions/converter.SimpleInterestResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Simple Interest Calculator
+      tags:
+      - Calculators
   /calculate-tax:
     post:
       consumes:

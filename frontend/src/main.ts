@@ -6,7 +6,7 @@ import { initAuth } from './auth-ui'
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
 type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway'
-             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax';
+             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest';
 type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
@@ -29,6 +29,7 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'percentage', label: 'Percentage', viewId: 'percentage-calculator-view' },
     { id: 'emi',        label: 'EMI',        viewId: 'emi-calculator-view' },
     { id: 'tax',        label: 'Tax / GST',  viewId: 'tax-calculator-view' },
+    { id: 'interest',   label: 'SI / CI',    viewId: 'interest-calculator-view' },
   ],
 };
 
@@ -1868,4 +1869,309 @@ if (taxForm) {
       taxStatus.classList.replace('text-gray-500', 'text-red-600');
     }
   });
+}
+
+// ----------------------------------------------------
+// INTEREST (SI / CI) CALCULATOR LOGIC  в¬…пёҸ NEW
+// ----------------------------------------------------
+const interestForm = document.getElementById('interest-form') as HTMLFormElement | null;
+
+if (interestForm) {
+  const modeSimpleBtn   = document.getElementById('interest-mode-simple')   as HTMLButtonElement;
+  const modeCompoundBtn = document.getElementById('interest-mode-compound') as HTMLButtonElement;
+
+  const principalInput  = document.getElementById('interest-principal')     as HTMLInputElement;
+  const rateInput       = document.getElementById('interest-rate')          as HTMLInputElement;
+  const timeInput       = document.getElementById('interest-time')          as HTMLInputElement;
+  const timeUnitInput   = document.getElementById('interest-time-unit')     as HTMLSelectElement;
+  const daysOption      = document.getElementById('interest-time-unit-days') as HTMLOptionElement;
+
+  const frequencyWrap   = document.getElementById('interest-frequency-wrap') as HTMLDivElement;
+  const frequencyInput  = document.getElementById('interest-frequency')      as HTMLSelectElement;
+
+  const statusMessage   = document.getElementById('interest-status-message') as HTMLParagraphElement;
+  const resultBox       = document.getElementById('interest-result-box')     as HTMLDivElement;
+
+  const resultTotal     = document.getElementById('interest-result-total')     as HTMLSpanElement;
+  const resultPrincipal = document.getElementById('interest-result-principal') as HTMLSpanElement;
+  const resultInterest  = document.getElementById('interest-result-interest')  as HTMLSpanElement;
+
+  const splitPrincipal  = document.getElementById('interest-split-bar-principal')     as HTMLDivElement;
+  const splitInterest   = document.getElementById('interest-split-bar-interest')      as HTMLDivElement;
+  const pctPrincipal    = document.getElementById('interest-breakdown-principal-pct') as HTMLSpanElement;
+  const pctInterest     = document.getElementById('interest-breakdown-interest-pct')  as HTMLSpanElement;
+
+  const stepsToggleBtn  = document.getElementById('interest-steps-toggle')       as HTMLButtonElement;
+  const stepsToggleLbl  = document.getElementById('interest-steps-toggle-label') as HTMLSpanElement;
+  const stepsBox        = document.getElementById('interest-steps-box')          as HTMLDivElement;
+  const stepsList       = document.getElementById('interest-steps-list')         as HTMLOListElement;
+
+  const yearlyWrap      = document.getElementById('interest-yearly-wrap')       as HTMLDivElement;
+  const yearlyToggleBtn = document.getElementById('interest-yearly-toggle')     as HTMLButtonElement;
+  const yearlyToggleLbl = document.getElementById('interest-yearly-toggle-label') as HTMLSpanElement;
+  const yearlyCount     = document.getElementById('interest-yearly-count')     as HTMLSpanElement;
+  const yearlyBox       = document.getElementById('interest-yearly-box')       as HTMLDivElement;
+  const yearlyBody      = document.getElementById('interest-yearly-body')      as HTMLTableSectionElement;
+
+  let currentMode: 'simple' | 'compound' = 'simple';
+  let stepsOpen = false;
+  let yearlyOpen = false;
+
+  // --------------------------------------------------
+  // Mode toggle
+  // --------------------------------------------------
+  function setMode(mode: 'simple' | 'compound') {
+    currentMode = mode;
+
+    const activeCls   = ['bg-white', 'text-teal-700', 'shadow-sm'];
+    const inactiveCls = ['text-gray-600', 'hover:text-teal-700'];
+
+    for (const btn of [modeSimpleBtn, modeCompoundBtn]) {
+      btn.classList.remove(...activeCls, ...inactiveCls);
+    }
+
+    if (mode === 'simple') {
+      modeSimpleBtn.classList.add(...activeCls);
+      modeCompoundBtn.classList.add(...inactiveCls);
+    } else {
+      modeCompoundBtn.classList.add(...activeCls);
+      modeSimpleBtn.classList.add(...inactiveCls);
+    }
+
+    // Show/hide frequency dropdown.
+    if (mode === 'compound') {
+      frequencyWrap.classList.remove('hidden');
+    } else {
+      frequencyWrap.classList.add('hidden');
+    }
+
+    // Days tenure is not supported for compound interest — hide the option
+    // and force the select back to "years" if "days" was selected.
+    if (mode === 'compound') {
+      daysOption.disabled = true;
+      if (timeUnitInput.value === 'days') {
+        timeUnitInput.value = 'years';
+      }
+    } else {
+      daysOption.disabled = false;
+    }
+
+    // Clear previous result — user must re-calculate after switching.
+    resultBox.classList.add('hidden');
+    statusMessage.classList.add('hidden');
+
+    setStepsOpen(false);
+    setYearlyOpen(false);
+  }
+
+  modeSimpleBtn.addEventListener('click', () => setMode('simple'));
+  modeCompoundBtn.addEventListener('click', () => setMode('compound'));
+
+  // --------------------------------------------------
+  // Steps / yearly accordions
+  // --------------------------------------------------
+  function setStepsOpen(open: boolean) {
+    stepsOpen = open;
+    if (open) {
+      stepsBox.classList.remove('hidden');
+      stepsToggleLbl.textContent = 'в–ҫ Calculation Steps';
+    } else {
+      stepsBox.classList.add('hidden');
+      stepsToggleLbl.textContent = 'в–ё Calculation Steps';
+    }
+  }
+
+  function setYearlyOpen(open: boolean) {
+    yearlyOpen = open;
+    if (open) {
+      yearlyBox.classList.remove('hidden');
+      yearlyToggleLbl.textContent = 'в–ҫ Yearly Breakdown';
+    } else {
+      yearlyBox.classList.add('hidden');
+      yearlyToggleLbl.textContent = 'в–ё Yearly Breakdown';
+    }
+  }
+
+  stepsToggleBtn.addEventListener('click', () => setStepsOpen(!stepsOpen));
+  yearlyToggleBtn.addEventListener('click', () => setYearlyOpen(!yearlyOpen));
+
+  // --------------------------------------------------
+  // Formatting helpers (local to this block)
+  // --------------------------------------------------
+  function formatINR2(amount: number): string {
+    if (!isFinite(amount)) return 'вӮ№0';
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      return 'вӮ№' + amount.toFixed(2);
+    }
+  }
+
+  function formatINRPlain2(amount: number): string {
+    if (!isFinite(amount)) return '0';
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      return amount.toFixed(2);
+    }
+  }
+
+  // --------------------------------------------------
+  // Submit handler
+  // --------------------------------------------------
+  interestForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    statusMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    statusMessage.classList.add('text-gray-500');
+    statusMessage.textContent = 'Calculating...';
+    resultBox.classList.add('hidden');
+    setStepsOpen(false);
+    setYearlyOpen(false);
+
+    const principal = parseFloat(principalInput.value);
+    const rate      = parseFloat(rateInput.value);
+    const time      = parseFloat(timeInput.value);
+    const timeUnit  = timeUnitInput.value;
+
+    // Client-side sanity checks — the API will validate authoritatively.
+    if (isNaN(principal) || principal <= 0) {
+      statusMessage.textContent = 'Please enter a valid principal amount.';
+      statusMessage.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      statusMessage.textContent = 'Please enter a valid interest rate (0вҖ“100).';
+      statusMessage.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+    if (isNaN(time) || time <= 0) {
+      statusMessage.textContent = 'Please enter a valid time.';
+      statusMessage.classList.replace('text-gray-500', 'text-red-600');
+      return;
+    }
+
+    let payload: Record<string, unknown>;
+    let apiPath: string;
+
+    if (currentMode === 'simple') {
+      payload = {
+        principal,
+        annualInterestRate: rate,
+        time,
+        timeUnit,
+      };
+      apiPath = '/calculate-simple-interest';
+    } else {
+      payload = {
+        principal,
+        annualInterestRate: rate,
+        time,
+        timeUnit,
+        compoundingFrequency: frequencyInput.value,
+      };
+      apiPath = '/calculate-compound-interest';
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? `http://localhost:8080${apiPath}`
+        : `https://utils.api.srilakshmiretail.in${apiPath}`;
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // ----- Big total -----
+      resultTotal.textContent = formatINR2(data.totalAmount);
+
+      // ----- Chips -----
+      resultPrincipal.textContent = formatINR2(data.principal);
+      resultInterest.textContent  = formatINR2(data.interest);
+
+      // ----- Split bar -----
+      const pPct = data.breakdown.principalPercent;
+      const iPct = data.breakdown.interestPercent;
+      splitPrincipal.style.width = `${pPct}%`;
+      splitInterest.style.width  = `${iPct}%`;
+      pctPrincipal.textContent = `${pPct.toFixed(2)}% Principal`;
+      pctInterest.textContent  = `${iPct.toFixed(2)}% Interest`;
+
+      // ----- Steps -----
+      stepsList.innerHTML = '';
+      const steps: string[] = Array.isArray(data.steps) ? data.steps : [];
+      if (steps.length > 0) {
+        for (const s of steps) {
+          const li = document.createElement('li');
+          li.textContent = s;
+          stepsList.appendChild(li);
+        }
+        stepsToggleBtn.classList.remove('hidden');
+      } else {
+        stepsToggleBtn.classList.add('hidden');
+      }
+
+      // ----- Yearly breakdown (CI only) -----
+      const yearlyRows: { year: number; openingBalance: number; interestEarned: number; closingBalance: number }[] =
+        Array.isArray(data.yearlyBreakdown) ? data.yearlyBreakdown : [];
+
+      if (currentMode === 'compound' && yearlyRows.length > 0) {
+        yearlyBody.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        for (const row of yearlyRows) {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50';
+
+          const cells: [string, string][] = [
+            [String(row.year),                        'text-left'],
+            [formatINRPlain2(row.openingBalance),     'text-right'],
+            [formatINRPlain2(row.interestEarned),     'text-right'],
+            [formatINRPlain2(row.closingBalance),     'text-right'],
+          ];
+          for (const [text, align] of cells) {
+            const td = document.createElement('td');
+            td.className = `px-3 py-2 ${align} tabular-nums text-gray-700`;
+            td.textContent = text;
+            tr.appendChild(td);
+          }
+          frag.appendChild(tr);
+        }
+        yearlyBody.appendChild(frag);
+        yearlyCount.textContent = `${yearlyRows.length} rows`;
+        yearlyWrap.classList.remove('hidden');
+      } else {
+        yearlyWrap.classList.add('hidden');
+      }
+
+      // ----- Reveal result -----
+      resultBox.classList.remove('hidden');
+      statusMessage.classList.add('hidden');
+
+    } catch (err) {
+      console.error('Interest calculation error:', err);
+      statusMessage.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      statusMessage.classList.replace('text-gray-500', 'text-red-600');
+    }
+  });
+
+  // Initial state
+  setMode('simple');
 }

@@ -461,6 +461,46 @@
                 }
             }
         },
+        "/calculate-compound-interest": {
+            "post": {
+                "description": "Calculates the compound interest, total amount, effective annual rate,\nand (for tenures вүҘ 1 year) a year-by-year growth schedule.\n\n**Formula:** `A = P Г— (1 + r/n)^(nГ—t)`   and   `CI = A вҲ’ P`\nwhere `r` is the annual rate in decimal form, `n` is the number of\ncompounding periods per year, and `t` is the tenure in years.\n\n**Limits:**\n- `principal` must be positive and вүӨ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `time` must be positive; tenure must be вүӨ 100 years.\n- `timeUnit` must be `\"years\"` or `\"months\"` (day-based tenure is rejected).\n- `compoundingFrequency` must be one of `yearly`, `half_yearly`,\n`quarterly`, `monthly`, `daily` (defaults to `yearly`).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Compound Interest Calculator",
+                "parameters": [
+                    {
+                        "description": "Compound Interest Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CompoundInterestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compound Interest Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.CompoundInterestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-emi": {
             "post": {
                 "description": "Calculates the Equated Monthly Installment (EMI) for a loan along with\nthe total interest, total payment, principal/interest split, and a\nmonth-by-month amortization schedule.\n\n**Formula:** `EMI = [P × r × (1+r)^N] / [(1+r)^N − 1]`\nwhere `r` is the monthly interest rate (annual / 12 / 100) and `N` is\nthe tenure in months.\n\n**Special case:** an annual interest rate of `0` returns a simple\n`principal / tenure` division (interest-free loan).\n\n**Limits:**\n- `principal` must be positive and ≤ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `tenure` must be positive; tenure in months must be ≤ 600.\n- `tenureUnit` must be exactly `\"months\"` or `\"years\"`.",
@@ -534,6 +574,46 @@
                     },
                     "400": {
                         "description": "Bad Request - invalid operation or parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/calculate-simple-interest": {
+            "post": {
+                "description": "Calculates the simple interest and total amount for a loan or investment.\n\n**Formula:** `SI = (P Г— R Г— T) / 100`\nwhere `P` is the principal, `R` is the annual rate in percent,\nand `T` is the tenure expressed in years.\n\n**Limits:**\n- `principal` must be positive and вүӨ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `time` must be positive; tenure must be вүӨ 100 years.\n- `timeUnit` must be `\"years\"`, `\"months\"`, or `\"days\"`.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Simple Interest Calculator",
+                "parameters": [
+                    {
+                        "description": "Simple Interest Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SimpleInterestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Simple Interest Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.SimpleInterestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input",
                         "schema": {
                             "type": "string"
                         }
@@ -950,6 +1030,28 @@
                 }
             }
         },
+        "api.CompoundInterestRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "compoundingFrequency": {
+                    "description": "\"yearly\" | \"half_yearly\" | \"quarterly\" | \"monthly\" | \"daily\"",
+                    "type": "string"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "time": {
+                    "type": "number"
+                },
+                "timeUnit": {
+                    "description": "\"years\" | \"months\"",
+                    "type": "string"
+                }
+            }
+        },
         "api.EMIRequest": {
             "type": "object",
             "properties": {
@@ -1029,6 +1131,24 @@
                 },
                 "value3": {
                     "type": "number"
+                }
+            }
+        },
+        "api.SimpleInterestRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "time": {
+                    "type": "number"
+                },
+                "timeUnit": {
+                    "description": "\"years\" | \"months\" | \"days\"",
+                    "type": "string"
                 }
             }
         },
@@ -1253,6 +1373,50 @@
                 }
             }
         },
+        "converter.CompoundInterestResponse": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.InterestBreakdown"
+                },
+                "compoundingFrequency": {
+                    "type": "string"
+                },
+                "compoundsPerYear": {
+                    "type": "integer"
+                },
+                "effectiveAnnualRate": {
+                    "type": "number"
+                },
+                "interest": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timeYears": {
+                    "type": "number"
+                },
+                "totalAmount": {
+                    "type": "number"
+                },
+                "yearlyBreakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.YearlyRow"
+                    }
+                }
+            }
+        },
         "converter.EMIBreakdown": {
             "type": "object",
             "properties": {
@@ -1330,6 +1494,17 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "converter.InterestBreakdown": {
+            "type": "object",
+            "properties": {
+                "interestPercent": {
+                    "type": "number"
+                },
+                "principalPercent": {
+                    "type": "number"
                 }
             }
         },
@@ -1424,6 +1599,35 @@
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.SimpleInterestResponse": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.InterestBreakdown"
+                },
+                "interest": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timeYears": {
+                    "type": "number"
+                },
+                "totalAmount": {
+                    "type": "number"
                 }
             }
         },
@@ -1596,6 +1800,23 @@
                 "ResolutionAmbiguous",
                 "ResolutionNonExistent"
             ]
+        },
+        "converter.YearlyRow": {
+            "type": "object",
+            "properties": {
+                "closingBalance": {
+                    "type": "number"
+                },
+                "interestEarned": {
+                    "type": "number"
+                },
+                "openingBalance": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
         }
     },
     "securityDefinitions": {

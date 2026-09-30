@@ -58,7 +58,8 @@ func main() {
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
-
+    	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
+	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -109,6 +110,8 @@ func main() {
 
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
+		fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest Calculator)")
 
 	// ⬅️ Authentication Endpoints in startup banner
 	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
