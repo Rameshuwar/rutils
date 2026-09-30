@@ -6,7 +6,7 @@ import { initAuth } from './auth-ui'
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
 type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway'
-             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest';
+             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest'| 'scientific';
 type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
@@ -30,6 +30,7 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'emi',        label: 'EMI',        viewId: 'emi-calculator-view' },
     { id: 'tax',        label: 'Tax / GST',  viewId: 'tax-calculator-view' },
     { id: 'interest',   label: 'SI / CI',    viewId: 'interest-calculator-view' },
+    { id: 'scientific', label: 'Scientific', viewId: 'scientific-calculator-view' },
   ],
 };
 
@@ -2174,4 +2175,311 @@ if (interestForm) {
 
   // Initial state
   setMode('simple');
+}
+
+// ----------------------------------------------------
+// SCIENTIFIC CALCULATOR LOGIC
+// ----------------------------------------------------
+const scientificForm = document.getElementById('scientific-form') as HTMLFormElement | null;
+
+if (scientificForm) {
+  // ─── 1. DOM references ─────────────────────────────
+  const sciOperation  = document.getElementById('scientific-operation') as HTMLSelectElement;
+
+  const sciAngleWrap  = document.getElementById('scientific-angle-wrap') as HTMLDivElement;
+  const sciAngleDeg   = document.getElementById('scientific-angle-degrees') as HTMLButtonElement;
+  const sciAngleRad   = document.getElementById('scientific-angle-radians') as HTMLButtonElement;
+
+  const sciV1Wrap     = document.getElementById('scientific-value1-wrap') as HTMLDivElement;
+  const sciV1Label    = document.getElementById('scientific-value1-label') as HTMLLabelElement;
+  const sciV1         = document.getElementById('scientific-value1') as HTMLInputElement;
+
+  const sciV2Wrap     = document.getElementById('scientific-value2-wrap') as HTMLDivElement;
+  const sciV2Label    = document.getElementById('scientific-value2-label') as HTMLLabelElement;
+  const sciV2         = document.getElementById('scientific-value2') as HTMLInputElement;
+
+  const sciStatus     = document.getElementById('scientific-status-message') as HTMLParagraphElement;
+  const sciResultBox  = document.getElementById('scientific-result-box') as HTMLDivElement;
+  const sciResultFmt  = document.getElementById('scientific-result-formatted') as HTMLSpanElement;
+  const sciStepsBox   = document.getElementById('scientific-steps-box') as HTMLDivElement;
+  const sciStepsList  = document.getElementById('scientific-steps-list') as HTMLOListElement;
+  const sciCopyBtn    = document.getElementById('scientific-copy-btn') as HTMLButtonElement;
+
+  // ─── 2. Per-operation config ───────────────────────
+  interface SciFieldConfig { label: string; placeholder: string; }
+  interface SciOpConfig {
+    value1?: SciFieldConfig;         // omitted for pi / e
+    value2?: SciFieldConfig;         // present for 2-arg ops
+    showAngleUnit?: boolean;         // true for trig / inverse-trig
+  }
+
+  const SCIENTIFIC_OPS: Record<string, SciOpConfig> = {
+    // Constants (0-arg)
+    pi: {},
+    e:  {},
+
+    // Trigonometric (1-arg, angle-aware)
+    sin:  { value1: { label: 'Angle', placeholder: 'e.g. 30' }, showAngleUnit: true },
+    cos:  { value1: { label: 'Angle', placeholder: 'e.g. 60' }, showAngleUnit: true },
+    tan:  { value1: { label: 'Angle', placeholder: 'e.g. 45' }, showAngleUnit: true },
+    csc:  { value1: { label: 'Angle', placeholder: 'e.g. 30' }, showAngleUnit: true },
+    sec:  { value1: { label: 'Angle', placeholder: 'e.g. 60' }, showAngleUnit: true },
+    cot:  { value1: { label: 'Angle', placeholder: 'e.g. 45' }, showAngleUnit: true },
+
+    // Inverse trig (1-arg, angle-aware output)
+    asin: { value1: { label: 'Ratio ([-1, 1])', placeholder: 'e.g. 0.5' }, showAngleUnit: true },
+    acos: { value1: { label: 'Ratio ([-1, 1])', placeholder: 'e.g. 0.5' }, showAngleUnit: true },
+    atan: { value1: { label: 'Ratio',           placeholder: 'e.g. 1'   }, showAngleUnit: true },
+
+    // atan2 (2-arg, angle-aware output)
+    atan2: {
+      value1: { label: 'Y', placeholder: 'e.g. 1' },
+      value2: { label: 'X', placeholder: 'e.g. 1' },
+      showAngleUnit: true,
+    },
+
+    // Hyperbolic (1-arg, radians only)
+    sinh:  { value1: { label: 'Value', placeholder: 'e.g. 1' } },
+    cosh:  { value1: { label: 'Value', placeholder: 'e.g. 0' } },
+    tanh:  { value1: { label: 'Value', placeholder: 'e.g. 0' } },
+    asinh: { value1: { label: 'Value', placeholder: 'e.g. 0' } },
+    acosh: { value1: { label: 'Value (≥ 1)', placeholder: 'e.g. 1' } },
+    atanh: { value1: { label: 'Value ((-1, 1))', placeholder: 'e.g. 0' } },
+
+    // Log / Exp
+    log:      { value1: { label: 'Number (> 0)', placeholder: 'e.g. 1000' } },
+    ln:       { value1: { label: 'Number (> 0)', placeholder: 'e.g. 2.718' } },
+    log_base: {
+      value1: { label: 'Argument (> 0)', placeholder: 'e.g. 1000' },
+      value2: { label: 'Base (> 0, ≠ 1)', placeholder: 'e.g. 10' },
+    },
+    exp: { value1: { label: 'Exponent', placeholder: 'e.g. 1' } },
+
+    // Powers / Roots
+    pow: {
+      value1: { label: 'Base',     placeholder: 'e.g. 2' },
+      value2: { label: 'Exponent', placeholder: 'e.g. 10' },
+    },
+    sqrt: { value1: { label: 'Number (≥ 0)', placeholder: 'e.g. 144' } },
+    cbrt: { value1: { label: 'Number',       placeholder: 'e.g. 27' } },
+    nth_root: {
+      value1: { label: 'Number', placeholder: 'e.g. 16' },
+      value2: { label: 'N (root degree)', placeholder: 'e.g. 4' },
+    },
+
+    // Rounding & Sign
+    abs:   { value1: { label: 'Number', placeholder: 'e.g. -7.5' } },
+    floor: { value1: { label: 'Number', placeholder: 'e.g. 3.7' } },
+    ceil:  { value1: { label: 'Number', placeholder: 'e.g. 3.2' } },
+    round: { value1: { label: 'Number', placeholder: 'e.g. 3.5' } },
+    trunc: { value1: { label: 'Number', placeholder: 'e.g. -3.9' } },
+    sign:  { value1: { label: 'Number', placeholder: 'e.g. -5' } },
+
+    // Combinatorics
+    factorial: { value1: { label: 'N (non-negative integer, ≤ 170)', placeholder: 'e.g. 5' } },
+    ncr: {
+      value1: { label: 'N (total items)', placeholder: 'e.g. 5' },
+      value2: { label: 'R (chosen)',      placeholder: 'e.g. 2' },
+    },
+    npr: {
+      value1: { label: 'N (total items)', placeholder: 'e.g. 5' },
+      value2: { label: 'R (chosen)',      placeholder: 'e.g. 2' },
+    },
+
+    // Misc
+    gcd:   {
+      value1: { label: 'First integer',  placeholder: 'e.g. 48' },
+      value2: { label: 'Second integer', placeholder: 'e.g. 18' },
+    },
+    lcm:   {
+      value1: { label: 'First integer',  placeholder: 'e.g. 4' },
+      value2: { label: 'Second integer', placeholder: 'e.g. 6' },
+    },
+    mod:   {
+      value1: { label: 'Dividend', placeholder: 'e.g. 10' },
+      value2: { label: 'Divisor (≠ 0)', placeholder: 'e.g. 3' },
+    },
+    hypot: {
+      value1: { label: 'Side A', placeholder: 'e.g. 3' },
+      value2: { label: 'Side B', placeholder: 'e.g. 4' },
+    },
+  };
+
+  // ─── 3. State ──────────────────────────────────────
+  let angleUnit: 'degrees' | 'radians' = 'degrees';
+
+  // ─── 4. Angle-unit toggle styling ──────────────────
+  function renderAngleUnitButtons(): void {
+    const activeCls   = ['bg-white', 'text-violet-700', 'shadow-sm'];
+    const inactiveCls = ['text-gray-600', 'hover:text-violet-700'];
+
+    for (const btn of [sciAngleDeg, sciAngleRad]) {
+      btn.classList.remove(...activeCls, ...inactiveCls);
+    }
+    if (angleUnit === 'degrees') {
+      sciAngleDeg.classList.add(...activeCls);
+      sciAngleRad.classList.add(...inactiveCls);
+    } else {
+      sciAngleRad.classList.add(...activeCls);
+      sciAngleDeg.classList.add(...inactiveCls);
+    }
+  }
+
+  sciAngleDeg.addEventListener('click', () => {
+    angleUnit = 'degrees';
+    renderAngleUnitButtons();
+  });
+  sciAngleRad.addEventListener('click', () => {
+    angleUnit = 'radians';
+    renderAngleUnitButtons();
+  });
+
+  // ─── 5. Dynamic form config ────────────────────────
+  function applyScientificOpConfig(op: string): void {
+    const cfg = SCIENTIFIC_OPS[op];
+    if (!cfg) return;
+
+    // value1
+    if (cfg.value1) {
+      sciV1Label.textContent = cfg.value1.label;
+      sciV1.placeholder      = cfg.value1.placeholder;
+      sciV1Wrap.classList.remove('hidden');
+      sciV1.required = true;
+    } else {
+      sciV1.value = '';
+      sciV1.required = false;
+      sciV1Wrap.classList.add('hidden');
+    }
+
+    // value2
+    if (cfg.value2) {
+      sciV2Label.textContent = cfg.value2.label;
+      sciV2.placeholder      = cfg.value2.placeholder;
+      sciV2Wrap.classList.remove('hidden');
+      sciV2.required = true;
+    } else {
+      sciV2.value = '';
+      sciV2.required = false;
+      sciV2Wrap.classList.add('hidden');
+    }
+
+    // angle unit
+    if (cfg.showAngleUnit) {
+      sciAngleWrap.classList.remove('hidden');
+    } else {
+      sciAngleWrap.classList.add('hidden');
+    }
+
+    // reset result
+    sciResultBox.classList.add('hidden');
+    sciStatus.classList.add('hidden');
+    sciStepsBox.classList.add('hidden');
+  }
+
+  sciOperation.addEventListener('change', () => {
+    applyScientificOpConfig(sciOperation.value);
+  });
+
+  // ─── 6. Copy button ────────────────────────────────
+  sciCopyBtn.addEventListener('click', async () => {
+    const text = sciResultFmt.textContent || '';
+    if (!text) return;
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      flashButtonLabel(sciCopyBtn, '✓ Copied');
+    } else {
+      flashButtonLabel(sciCopyBtn, '⚠ Failed');
+    }
+  });
+
+  // ─── 7. Submit handler ─────────────────────────────
+  scientificForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    sciStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
+    sciStatus.classList.add('text-gray-500');
+    sciStatus.textContent = 'Calculating...';
+    sciResultBox.classList.add('hidden');
+    sciStepsBox.classList.add('hidden');
+
+    const op  = sciOperation.value;
+    const cfg = SCIENTIFIC_OPS[op];
+
+    // Build payload — omit value2 / angleUnit when not applicable,
+    // so the backend's *float64 pointer stays nil for 1-arg ops and
+    // the "value2 is required" error fires correctly for 2-arg ops.
+    const payload: Record<string, unknown> = { operation: op };
+
+    if (cfg.value1) {
+      const v = parseFloat(sciV1.value);
+      if (isNaN(v)) {
+        sciStatus.textContent = `Please enter a valid number for ${cfg.value1.label}.`;
+        sciStatus.classList.replace('text-gray-500', 'text-red-600');
+        return;
+      }
+      payload.value1 = v;
+    }
+
+    if (cfg.value2) {
+      const v = parseFloat(sciV2.value);
+      if (isNaN(v)) {
+        sciStatus.textContent = `Please enter a valid number for ${cfg.value2.label}.`;
+        sciStatus.classList.replace('text-gray-500', 'text-red-600');
+        return;
+      }
+      payload.value2 = v;
+    }
+
+    if (cfg.showAngleUnit) {
+      payload.angleUnit = angleUnit;
+    }
+
+    try {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const apiUrl = isLocal
+        ? 'http://localhost:8080/calculate-scientific'
+        : 'https://utils.api.srilakshmiretail.in/calculate-scientific';
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Big formatted result
+      sciResultFmt.textContent = data.formatted ?? String(data.result);
+
+      // Steps accordion
+      sciStepsList.innerHTML = '';
+      const steps: string[] = Array.isArray(data.steps) ? data.steps : [];
+      if (steps.length > 0) {
+        for (const s of steps) {
+          const li = document.createElement('li');
+          li.textContent = s;
+          sciStepsList.appendChild(li);
+        }
+        sciStepsBox.classList.remove('hidden');
+      } else {
+        sciStepsBox.classList.add('hidden');
+      }
+
+      sciResultBox.classList.remove('hidden');
+      sciStatus.classList.add('hidden');
+    } catch (err) {
+      console.error('Scientific calculation error:', err);
+      sciStatus.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+      sciStatus.classList.replace('text-gray-500', 'text-red-600');
+    }
+  });
+
+  // ─── 8. Initial state ──────────────────────────────
+  renderAngleUnitButtons();
+  applyScientificOpConfig(sciOperation.value); // defaults to 'sin'
 }
