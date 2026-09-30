@@ -587,6 +587,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/calculate-scientific": {
+            "post": {
+                "description": "Performs any scientific / mathematical operation through a single ` + "`" + `operation` + "`" + `-discriminated endpoint.\n\n**Operation groups (` + "`" + `operation` + "`" + ` field):**\n- Constants:      ` + "`" + `pi` + "`" + `, ` + "`" + `e` + "`" + `\n- Trigonometric:  ` + "`" + `sin` + "`" + `, ` + "`" + `cos` + "`" + `, ` + "`" + `tan` + "`" + `, ` + "`" + `csc` + "`" + `, ` + "`" + `sec` + "`" + `, ` + "`" + `cot` + "`" + `\n- Inverse trig:   ` + "`" + `asin` + "`" + `, ` + "`" + `acos` + "`" + `, ` + "`" + `atan` + "`" + `, ` + "`" + `atan2` + "`" + ` (2-arg)\n- Hyperbolic:     ` + "`" + `sinh` + "`" + `, ` + "`" + `cosh` + "`" + `, ` + "`" + `tanh` + "`" + `, ` + "`" + `asinh` + "`" + `, ` + "`" + `acosh` + "`" + `, ` + "`" + `atanh` + "`" + `\n- Log / Exp:      ` + "`" + `log` + "`" + `, ` + "`" + `ln` + "`" + `, ` + "`" + `log_base` + "`" + ` (2-arg), ` + "`" + `exp` + "`" + `\n- Powers / Roots: ` + "`" + `pow` + "`" + ` (2-arg), ` + "`" + `sqrt` + "`" + `, ` + "`" + `cbrt` + "`" + `, ` + "`" + `nth_root` + "`" + ` (2-arg)\n- Rounding:       ` + "`" + `abs` + "`" + `, ` + "`" + `floor` + "`" + `, ` + "`" + `ceil` + "`" + `, ` + "`" + `round` + "`" + `, ` + "`" + `trunc` + "`" + `, ` + "`" + `sign` + "`" + `\n- Combinatorics:  ` + "`" + `factorial` + "`" + `, ` + "`" + `ncr` + "`" + ` (2-arg), ` + "`" + `npr` + "`" + ` (2-arg)\n- Misc:           ` + "`" + `gcd` + "`" + ` (2-arg), ` + "`" + `lcm` + "`" + ` (2-arg), ` + "`" + `mod` + "`" + ` (2-arg), ` + "`" + `hypot` + "`" + ` (2-arg)\n\n**Angle unit:** Trig and inverse-trig operations accept an optional\n` + "`" + `angleUnit` + "`" + ` field (` + "`" + `\"degrees\"` + "`" + ` or ` + "`" + `\"radians\"` + "`" + `, default ` + "`" + `\"radians\"` + "`" + `).\nThe same unit governs both the input of ` + "`" + `sin/cos/tan/...` + "`" + ` and the\noutput of ` + "`" + `asin/acos/atan/atan2` + "`" + `. Hyperbolic operations are unaffected.\n\n**Validation:** Domain violations (e.g. ` + "`" + `sqrt(-1)` + "`" + `, ` + "`" + `ln(0)` + "`" + `, ` + "`" + `asin(2)` + "`" + `,\n` + "`" + `tan(90°)` + "`" + `) return a 400 error with a descriptive message.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scientific Calculator"
+                ],
+                "summary": "Scientific Calculator",
+                "parameters": [
+                    {
+                        "description": "Scientific Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ScientificRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scientific Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.ScientificResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid operation, parameters, or domain error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-simple-interest": {
             "post": {
                 "description": "Calculates the simple interest and total amount for a loan or investment.\n\n**Formula:** ` + "`" + `SI = (P Г— R Г— T) / 100` + "`" + `\nwhere ` + "`" + `P` + "`" + ` is the principal, ` + "`" + `R` + "`" + ` is the annual rate in percent,\nand ` + "`" + `T` + "`" + ` is the tenure expressed in years.\n\n**Limits:**\n- ` + "`" + `principal` + "`" + ` must be positive and вүӨ 1 trillion.\n- ` + "`" + `annualInterestRate` + "`" + ` must be between 0 and 100.\n- ` + "`" + `time` + "`" + ` must be positive; tenure must be вүӨ 100 years.\n- ` + "`" + `timeUnit` + "`" + ` must be ` + "`" + `\"years\"` + "`" + `, ` + "`" + `\"months\"` + "`" + `, or ` + "`" + `\"days\"` + "`" + `.",
@@ -1140,6 +1180,23 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ScientificRequest": {
+            "type": "object",
+            "properties": {
+                "angleUnit": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "value1": {
+                    "type": "number"
+                },
+                "value2": {
+                    "type": "number"
+                }
+            }
+        },
         "api.SimpleInterestRequest": {
             "type": "object",
             "properties": {
@@ -1605,6 +1662,33 @@ const docTemplate = `{
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.ScientificResponse": {
+            "type": "object",
+            "properties": {
+                "angleUnit": {
+                    "type": "string"
+                },
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "formatted": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

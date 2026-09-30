@@ -58,8 +58,9 @@ func main() {
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
-    	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
+	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
+	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -110,9 +111,9 @@ func main() {
 
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
-		fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest Calculator)")
-
+	fmt.Println(" -> POST http://localhost:8080/calculate-scientific      (Scientific Calculator)")
 	// ⬅️ Authentication Endpoints in startup banner
 	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
 	fmt.Println(" -> POST http://localhost:8080/auth/login            (User Login - JWT)")

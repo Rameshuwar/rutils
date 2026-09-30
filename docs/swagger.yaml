@@ -97,6 +97,17 @@ definitions:
       value3:
         type: number
     type: object
+  api.ScientificRequest:
+    properties:
+      angleUnit:
+        type: string
+      operation:
+        type: string
+      value1:
+        type: number
+      value2:
+        type: number
+    type: object
   api.SimpleInterestRequest:
     properties:
       annualInterestRate:
@@ -411,6 +422,24 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  converter.ScientificResponse:
+    properties:
+      angleUnit:
+        type: string
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      operation:
+        type: string
+      result:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
     type: object
   converter.SimpleInterestResponse:
     properties:
@@ -997,6 +1026,52 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-scientific:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any scientific / mathematical operation through a single `operation`-discriminated endpoint.
+
+        **Operation groups (`operation` field):**
+        - Constants:      `pi`, `e`
+        - Trigonometric:  `sin`, `cos`, `tan`, `csc`, `sec`, `cot`
+        - Inverse trig:   `asin`, `acos`, `atan`, `atan2` (2-arg)
+        - Hyperbolic:     `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
+        - Log / Exp:      `log`, `ln`, `log_base` (2-arg), `exp`
+        - Powers / Roots: `pow` (2-arg), `sqrt`, `cbrt`, `nth_root` (2-arg)
+        - Rounding:       `abs`, `floor`, `ceil`, `round`, `trunc`, `sign`
+        - Combinatorics:  `factorial`, `ncr` (2-arg), `npr` (2-arg)
+        - Misc:           `gcd` (2-arg), `lcm` (2-arg), `mod` (2-arg), `hypot` (2-arg)
+
+        **Angle unit:** Trig and inverse-trig operations accept an optional
+        `angleUnit` field (`"degrees"` or `"radians"`, default `"radians"`).
+        The same unit governs both the input of `sin/cos/tan/...` and the
+        output of `asin/acos/atan/atan2`. Hyperbolic operations are unaffected.
+
+        **Validation:** Domain violations (e.g. `sqrt(-1)`, `ln(0)`, `asin(2)`,
+        `tan(90°)`) return a 400 error with a descriptive message.
+      parameters:
+      - description: Scientific Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ScientificRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Scientific Result
+          schema:
+            $ref: '#/definitions/converter.ScientificResponse'
+        "400":
+          description: Bad Request - invalid operation, parameters, or domain error
+          schema:
+            type: string
+      summary: Scientific Calculator
+      tags:
+      - Scientific Calculator
   /calculate-simple-interest:
     post:
       consumes:
