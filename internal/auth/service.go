@@ -10,10 +10,10 @@ import (
 
 // Common authentication errors
 var (
-	ErrInvalidCredentials     = errors.New("invalid email or password")
-	ErrPasswordMismatch       = errors.New("passwords do not match")
-	ErrInvalidEmail           = errors.New("invalid email address format")
-	ErrCurrentPasswordInvalid = errors.New("current password does not match")
+	ErrInvalidCredentials       = errors.New("invalid email or password")
+	ErrPasswordMismatch         = errors.New("passwords do not match")
+	ErrInvalidEmail             = errors.New("invalid email address format")
+	ErrCurrentPasswordInvalid   = errors.New("current password does not match")
 	ErrTemporaryPasswordExpired = errors.New("temporary password has expired, please request a new one")
 )
 

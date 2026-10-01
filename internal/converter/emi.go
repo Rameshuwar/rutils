@@ -37,14 +37,14 @@ type AmortizationRow struct {
 
 // EMIResponse is the unified result returned by /calculate-emi.
 type EMIResponse struct {
-	EMI                 float64           `json:"emi"`
-	Principal           float64           `json:"principal"`
-	TotalInterest       float64           `json:"totalInterest"`
-	TotalPayment        float64           `json:"totalPayment"`
-	TenureMonths        int               `json:"tenureMonths"`
-	MonthlyRatePercent  float64           `json:"monthlyRatePercent"`
-	Breakdown           EMIBreakdown      `json:"breakdown"`
-	Amortization        []AmortizationRow `json:"amortization"`
+	EMI                float64           `json:"emi"`
+	Principal          float64           `json:"principal"`
+	TotalInterest      float64           `json:"totalInterest"`
+	TotalPayment       float64           `json:"totalPayment"`
+	TenureMonths       int               `json:"tenureMonths"`
+	MonthlyRatePercent float64           `json:"monthlyRatePercent"`
+	Breakdown          EMIBreakdown      `json:"breakdown"`
+	Amortization       []AmortizationRow `json:"amortization"`
 }
 
 // ============================================================

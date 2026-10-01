@@ -10,6 +10,7 @@ require (
 	github.com/swaggo/http-swagger v1.3.3
 	github.com/swaggo/swag v1.16.2
 	golang.org/x/crypto v0.55.0
+	golang.org/x/image v0.46.0
 )
 
 require (

@@ -1024,6 +1024,64 @@
                     }
                 }
             }
+        },
+        "/formats": {
+            "get": {
+                "description": "Returns every supported source format plus every directed conversion edge. Intended for the frontend to populate dropdowns at runtime.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Format Registry"
+                ],
+                "summary": "List supported file formats",
+                "responses": {
+                    "200": {
+                        "description": "Conversion matrix",
+                        "schema": {
+                            "$ref": "#/definitions/formatters.FormatListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/formats/{type}": {
+            "get": {
+                "description": "Returns the MIME type, extension, category, and reachable conversions for one format (e.g. \"jpg\"). Path is /formats/{type}.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Format Registry"
+                ],
+                "summary": "Describe a single format",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Format identifier (e.g. jpg, pdf, csv)",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Format detail",
+                        "schema": {
+                            "$ref": "#/definitions/formatters.FormatDetail"
+                        }
+                    },
+                    "404": {
+                        "description": "Unknown format",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1899,6 +1957,100 @@
                 },
                 "year": {
                     "type": "integer"
+                }
+            }
+        },
+        "formatters.Category": {
+            "type": "string",
+            "enum": [
+                "image",
+                "document",
+                "data",
+                "spreadsheet",
+                "markup"
+            ],
+            "x-enum-varnames": [
+                "CategoryImage",
+                "CategoryDocument",
+                "CategoryData",
+                "CategorySpreadsheet",
+                "CategoryMarkup"
+            ]
+        },
+        "formatters.ConversionEntry": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatDetail": {
+            "type": "object",
+            "properties": {
+                "canConvertFrom": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "canConvertTo": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "mime": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatInfo": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "mime": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatListResponse": {
+            "type": "object",
+            "properties": {
+                "conversions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/formatters.ConversionEntry"
+                    }
+                },
+                "sources": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/formatters.FormatInfo"
+                    }
                 }
             }
         }

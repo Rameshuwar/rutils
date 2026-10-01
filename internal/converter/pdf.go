@@ -54,8 +54,8 @@ type PDFConversionResult struct {
 
 // rasterQualityStep describes one attempt in the rasterization ladder.
 type rasterQualityStep struct {
-	DPI           int // Dots-per-inch used when rendering pages.
-	JPEGQuality   int // JPEG encoder quality (1..100).
+	DPI         int // Dots-per-inch used when rendering pages.
+	JPEGQuality int // JPEG encoder quality (1..100).
 }
 
 // rasterLadder is the ordered list of quality steps tried during

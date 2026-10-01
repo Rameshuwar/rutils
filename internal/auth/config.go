@@ -9,7 +9,7 @@ import (
 // Config holds application configuration for auth and mail services
 type Config struct {
 	SMTPEmail          string `json:"smtp_email"`
-	SMTPAppPassword     string `json:"smtp_app_password"`
+	SMTPAppPassword    string `json:"smtp_app_password"`
 	SMTPHost           string `json:"smtp_host"`
 	SMTPPort           string `json:"smtp_port"`
 	JWTSecret          string `json:"jwt_secret"`
@@ -21,7 +21,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		SMTPEmail:          "",
-		SMTPAppPassword:     "",
+		SMTPAppPassword:    "",
 		SMTPHost:           "smtp.gmail.com",
 		SMTPPort:           "587",
 		JWTSecret:          "rutils-utility-jwt-secret-change-in-production-2026",

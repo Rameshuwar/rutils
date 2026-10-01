@@ -732,9 +732,9 @@ func TestScientific_Sign(t *testing.T) {
 
 func TestScientific_Factorial(t *testing.T) {
 	cases := map[float64]float64{
-		0: 1,
-		1: 1,
-		5: 120,
+		0:  1,
+		1:  1,
+		5:  120,
 		10: 3628800,
 	}
 	for in, want := range cases {

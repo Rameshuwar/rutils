@@ -181,8 +181,8 @@ func TestCompoundInterest_YearlyBasic(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8.5,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -206,8 +206,8 @@ func TestCompoundInterest_Quarterly(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8,
 		Time:                 1,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "quarterly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "quarterly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -227,8 +227,8 @@ func TestCompoundInterest_Monthly(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   12,
 		Time:                 1,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "monthly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "monthly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -246,8 +246,8 @@ func TestCompoundInterest_ZeroRate(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   0,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -281,8 +281,8 @@ func TestCompoundInterest_YearlyBreakdownLength(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -302,8 +302,8 @@ func TestCompoundInterest_BreakdownSumsTo100(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -320,8 +320,8 @@ func TestCompoundInterest_EffectiveAnnualRate(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   12,
 		Time:                 1,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "monthly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "monthly",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -340,8 +340,8 @@ func TestCompoundInterest_InvalidFrequency(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "hourly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "hourly",
 	})
 	if err == nil {
 		t.Fatal("expected error for invalid compoundingFrequency")
@@ -353,8 +353,8 @@ func TestCompoundInterest_RejectsDaysTenure(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   8,
 		Time:                 365,
-		TimeUnit:              "days",
-		CompoundingFrequency:  "daily",
+		TimeUnit:             "days",
+		CompoundingFrequency: "daily",
 	})
 	if err == nil {
 		t.Fatal("expected error for day-based tenure")
@@ -366,8 +366,8 @@ func TestCompoundInterest_NegativePrincipal(t *testing.T) {
 		Principal:            -1,
 		AnnualInterestRate:   8,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err == nil {
 		t.Fatal("expected error for negative principal")
@@ -379,8 +379,8 @@ func TestCompoundInterest_RateTooHigh(t *testing.T) {
 		Principal:            100000,
 		AnnualInterestRate:   150,
 		Time:                 5,
-		TimeUnit:              "years",
-		CompoundingFrequency:  "yearly",
+		TimeUnit:             "years",
+		CompoundingFrequency: "yearly",
 	})
 	if err == nil {
 		t.Fatal("expected error for rate > 100%")

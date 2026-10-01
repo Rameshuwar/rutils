@@ -111,35 +111,35 @@ func CalculateSimpleInterest(req SimpleInterestRequest) (*SimpleInterestResponse
 // CompoundInterestRequest carries the validated parameters for a
 // compound interest calculation.
 type CompoundInterestRequest struct {
-	Principal             float64 // Must be > 0
-	AnnualInterestRate    float64 // Annual rate in percent (>= 0)
-	Time                  float64 // Duration (> 0)
-	TimeUnit              string  // "years" | "months"
-	CompoundingFrequency  string  // "yearly" | "half_yearly" | "quarterly" | "monthly" | "daily"
+	Principal            float64 // Must be > 0
+	AnnualInterestRate   float64 // Annual rate in percent (>= 0)
+	Time                 float64 // Duration (> 0)
+	TimeUnit             string  // "years" | "months"
+	CompoundingFrequency string  // "yearly" | "half_yearly" | "quarterly" | "monthly" | "daily"
 }
 
 // YearlyRow is one row of the year-by-year growth schedule.
 type YearlyRow struct {
-	Year            int     `json:"year"`
-	OpeningBalance  float64 `json:"openingBalance"`
-	InterestEarned  float64 `json:"interestEarned"`
-	ClosingBalance  float64 `json:"closingBalance"`
+	Year           int     `json:"year"`
+	OpeningBalance float64 `json:"openingBalance"`
+	InterestEarned float64 `json:"interestEarned"`
+	ClosingBalance float64 `json:"closingBalance"`
 }
 
 // CompoundInterestResponse is the unified result returned by
 // /calculate-compound-interest.
 type CompoundInterestResponse struct {
-	Principal             float64           `json:"principal"`
-	Interest              float64           `json:"interest"`
-	TotalAmount           float64           `json:"totalAmount"`
-	AnnualInterestRate    float64           `json:"annualInterestRate"`
-	TimeYears             float64           `json:"timeYears"`
-	CompoundingFrequency  string            `json:"compoundingFrequency"`
-	CompoundsPerYear      int               `json:"compoundsPerYear"`
-	EffectiveAnnualRate   float64           `json:"effectiveAnnualRate"`
-	Breakdown             InterestBreakdown `json:"breakdown"`
-	YearlyBreakdown       []YearlyRow       `json:"yearlyBreakdown,omitempty"`
-	Steps                 []string          `json:"steps"`
+	Principal            float64           `json:"principal"`
+	Interest             float64           `json:"interest"`
+	TotalAmount          float64           `json:"totalAmount"`
+	AnnualInterestRate   float64           `json:"annualInterestRate"`
+	TimeYears            float64           `json:"timeYears"`
+	CompoundingFrequency string            `json:"compoundingFrequency"`
+	CompoundsPerYear     int               `json:"compoundsPerYear"`
+	EffectiveAnnualRate  float64           `json:"effectiveAnnualRate"`
+	Breakdown            InterestBreakdown `json:"breakdown"`
+	YearlyBreakdown      []YearlyRow       `json:"yearlyBreakdown,omitempty"`
+	Steps                []string          `json:"steps"`
 }
 
 // compoundsPerYearMap maps a frequency name to compounds per year.

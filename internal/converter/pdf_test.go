@@ -185,10 +185,10 @@ func TestFormatPDFSize(t *testing.T) {
 
 func TestEnsurePDFOutputPath(t *testing.T) {
 	tests := []struct {
-		name             string
-		originalName     string
-		conversionType   string
-		wantSuffix       string
+		name           string
+		originalName   string
+		conversionType string
+		wantSuffix     string
 	}{
 		{"compression", "file.pdf", "compression", "_compressed.pdf"},
 		{"expand", "file.pdf", "expand", "_expanded.pdf"},

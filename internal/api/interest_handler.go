@@ -81,7 +81,7 @@ type CompoundInterestRequest struct {
 	Principal            float64 `json:"principal"`
 	AnnualInterestRate   float64 `json:"annualInterestRate"`
 	Time                 float64 `json:"time"`
-	TimeUnit             string  `json:"timeUnit"`            // "years" | "months"
+	TimeUnit             string  `json:"timeUnit"`             // "years" | "months"
 	CompoundingFrequency string  `json:"compoundingFrequency"` // "yearly" | "half_yearly" | "quarterly" | "monthly" | "daily"
 }
 

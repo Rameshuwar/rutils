@@ -9,7 +9,7 @@ import (
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
-
+	_ "file-converter/internal/formatters"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -61,6 +61,8 @@ func main() {
 	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
 	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
+	apiMux.HandleFunc("/formats", api.HandleListFormats)
+	apiMux.HandleFunc("/formats/", api.HandleFormatDetail)
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================

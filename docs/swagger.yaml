@@ -590,6 +590,70 @@ definitions:
       year:
         type: integer
     type: object
+  formatters.Category:
+    enum:
+    - image
+    - document
+    - data
+    - spreadsheet
+    - markup
+    type: string
+    x-enum-varnames:
+    - CategoryImage
+    - CategoryDocument
+    - CategoryData
+    - CategorySpreadsheet
+    - CategoryMarkup
+  formatters.ConversionEntry:
+    properties:
+      category:
+        $ref: '#/definitions/formatters.Category'
+      from:
+        type: string
+      to:
+        type: string
+    type: object
+  formatters.FormatDetail:
+    properties:
+      canConvertFrom:
+        items:
+          type: string
+        type: array
+      canConvertTo:
+        items:
+          type: string
+        type: array
+      category:
+        $ref: '#/definitions/formatters.Category'
+      ext:
+        type: string
+      mime:
+        type: string
+      type:
+        type: string
+    type: object
+  formatters.FormatInfo:
+    properties:
+      category:
+        $ref: '#/definitions/formatters.Category'
+      ext:
+        type: string
+      mime:
+        type: string
+      type:
+        type: string
+    type: object
+  formatters.FormatListResponse:
+    properties:
+      conversions:
+        items:
+          $ref: '#/definitions/formatters.ConversionEntry'
+        type: array
+      sources:
+        additionalProperties:
+          $ref: '#/definitions/formatters.FormatInfo'
+        type: object
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -1392,6 +1456,46 @@ paths:
       summary: Extract text from PDF or image
       tags:
       - Text Extraction
+  /formats:
+    get:
+      description: Returns every supported source format plus every directed conversion
+        edge. Intended for the frontend to populate dropdowns at runtime.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversion matrix
+          schema:
+            $ref: '#/definitions/formatters.FormatListResponse'
+      summary: List supported file formats
+      tags:
+      - Format Registry
+  /formats/{type}:
+    get:
+      description: Returns the MIME type, extension, category, and reachable conversions
+        for one format (e.g. "jpg"). Path is /formats/{type}.
+      parameters:
+      - description: Format identifier (e.g. jpg, pdf, csv)
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Format detail
+          schema:
+            $ref: '#/definitions/formatters.FormatDetail'
+        "404":
+          description: Unknown format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Describe a single format
+      tags:
+      - Format Registry
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
