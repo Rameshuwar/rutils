@@ -23,6 +23,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/nifty50': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 });

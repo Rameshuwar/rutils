@@ -1,13 +1,15 @@
 import './style.css'
-import { initAuth } from './auth-ui'
+import { initAuth, openModal } from './auth-ui'
+import { getAuthState, isLoggedIn, clearAuth, apiGetNiftyCompanies, NiftyCompany } from './auth'
 
 
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
 type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway'
-             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax';
-type CategoryId = 'conversion' | 'calculations';
+             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax'
+             | 'nifty50';
+type CategoryId = 'conversion' | 'calculations' | 'markets';
 
 interface ToolDef {
   id: ToolId;
@@ -30,11 +32,15 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'emi',        label: 'EMI',        viewId: 'emi-calculator-view' },
     { id: 'tax',        label: 'Tax / GST',  viewId: 'tax-calculator-view' },
   ],
+  markets: [
+    { id: 'nifty50',    label: 'NIFTY 50',   viewId: 'nifty50-view' },
+  ],
 };
 
 const CATEGORY_LABELS: Record<CategoryId, string> = {
   conversion: 'Conversion',
   calculations: 'Calculations',
+  markets: 'Markets',
 };
 
 // ============================================================
@@ -47,6 +53,7 @@ const mobileOverlay       = document.getElementById('mobile-overlay') as HTMLDiv
 
 const btnCategoryConversion   = document.getElementById('btn-category-conversion') as HTMLButtonElement;
 const btnCategoryCalculations = document.getElementById('btn-category-calculations') as HTMLButtonElement;
+const btnCategoryMarkets      = document.getElementById('btn-category-markets') as HTMLButtonElement;
 const categoryTitle           = document.getElementById('category-title') as HTMLHeadingElement;
 const breadcrumbTool          = document.getElementById('breadcrumb-tool') as HTMLSpanElement;
 const tabStrip                = document.getElementById('tab-strip') as HTMLDivElement;
@@ -82,7 +89,8 @@ mobileMenuBtn?.addEventListener('click', openMobileMenu);
 mobileMenuClose?.addEventListener('click', closeMobileMenu);
 mobileOverlay?.addEventListener('click', closeMobileMenu);
 
-[btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
+[btnCategoryConversion, btnCategoryCalculations, btnCategoryMarkets].forEach(btn => {
+  if (!btn) return;
   btn.addEventListener('click', () => {
     if (window.innerWidth < 768) {
       setTimeout(closeMobileMenu, 150);
@@ -132,10 +140,12 @@ function highlightCategoryButtons() {
   const activeClasses = ['bg-indigo-800', 'text-white'];
   const inactiveClasses = ['text-indigo-200', 'hover:bg-indigo-800', 'hover:text-white'];
 
-  [btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
+  [btnCategoryConversion, btnCategoryCalculations, btnCategoryMarkets].forEach(btn => {
+    if (!btn) return;
     const isActive =
       (btn === btnCategoryConversion && currentCategory === 'conversion') ||
-      (btn === btnCategoryCalculations && currentCategory === 'calculations');
+      (btn === btnCategoryCalculations && currentCategory === 'calculations') ||
+      (btn === btnCategoryMarkets && currentCategory === 'markets');
 
     btn.classList.remove(...activeClasses, ...inactiveClasses);
     if (isActive) {
@@ -184,6 +194,10 @@ function setTool(toolId: ToolId) {
 
   const viewport = document.querySelector('main > .flex-1.overflow-y-auto');
   viewport?.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (toolId === 'nifty50') {
+    onNiftySelected();
+  }
 }
 
 function setCategory(category: CategoryId, preserveTool = true) {
@@ -206,18 +220,29 @@ function setCategory(category: CategoryId, preserveTool = true) {
 // ============================================================
 btnCategoryConversion.addEventListener('click', () => setCategory('conversion'));
 btnCategoryCalculations.addEventListener('click', () => setCategory('calculations'));
+btnCategoryMarkets.addEventListener('click', () => setCategory('markets'));
 
 document.querySelector('#breadcrumb > span:first-child')?.addEventListener('click', () => {
   setCategory(currentCategory, true);
 });
 
 // ============================================================
-// INITIAL RENDER
+// INITIAL RENDER & ROUTE HANDLING
 // ============================================================
-setCategory('conversion', false);
-
 // ─── Initialise authentication system ────────────────────
 initAuth();
+
+const path = window.location.pathname.toLowerCase();
+const hash = window.location.hash.toLowerCase();
+
+if (path === '/nifty50' || hash === '#nifty50' || hash === '#markets') {
+  setCategory('markets', true);
+  if (!isLoggedIn()) {
+    openModal('login');
+  }
+} else {
+  setCategory('conversion', false);
+}
 
 
 // ============================================================
@@ -1869,3 +1894,330 @@ if (taxForm) {
     }
   });
 }
+
+// ----------------------------------------------------
+// NIFTY 50 CONSTITUENTS LOGIC  ⬅️ NEW
+// ----------------------------------------------------
+let niftyCompaniesList: NiftyCompany[] = [];
+let niftyLastLoadedAt = 0;
+
+const niftyMetaCount        = document.getElementById('nifty-meta-count')        as HTMLSpanElement | null;
+const niftyMetaUpdated      = document.getElementById('nifty-meta-updated')      as HTMLSpanElement | null;
+const niftyRefreshBtn       = document.getElementById('nifty-refresh-btn')       as HTMLButtonElement | null;
+const niftyRefreshIcon      = document.getElementById('nifty-refresh-icon')      as HTMLElement | null;
+
+const niftyUnauthCard       = document.getElementById('nifty-unauth-card')       as HTMLDivElement | null;
+const niftyUnauthLoginBtn   = document.getElementById('nifty-unauth-login-btn')   as HTMLButtonElement | null;
+const niftyLoadingCard      = document.getElementById('nifty-loading-card')      as HTMLDivElement | null;
+const niftyErrorCard        = document.getElementById('nifty-error-card')        as HTMLDivElement | null;
+const niftyErrorMessage     = document.getElementById('nifty-error-message')     as HTMLParagraphElement | null;
+const niftyRetryBtn         = document.getElementById('nifty-retry-btn')         as HTMLButtonElement | null;
+
+const niftyTableCard        = document.getElementById('nifty-table-card')        as HTMLDivElement | null;
+const niftyTableBody        = document.getElementById('nifty-table-body')        as HTMLTableSectionElement | null;
+const niftySearchInput      = document.getElementById('nifty-search-input')      as HTMLInputElement | null;
+const niftyIndustrySelect   = document.getElementById('nifty-industry-select')   as HTMLSelectElement | null;
+const niftyMatchCount       = document.getElementById('nifty-match-count')       as HTMLSpanElement | null;
+const niftyExportCsvBtn     = document.getElementById('nifty-export-csv-btn')     as HTMLButtonElement | null;
+const niftyEmptySearch      = document.getElementById('nifty-empty-search')      as HTMLDivElement | null;
+const niftyClearFilterBtn   = document.getElementById('nifty-clear-filter-btn')   as HTMLButtonElement | null;
+
+function formatUpdatedTimestamp(isoStr: string): string {
+  if (!isoStr) return 'N/A';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    // Format in IST (Asia/Kolkata)
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(d) + ' IST';
+  } catch {
+    return isoStr;
+  }
+}
+
+function renderNiftyTable(companies: NiftyCompany[]) {
+  if (!niftyTableBody) return;
+  niftyTableBody.innerHTML = '';
+
+  if (companies.length === 0) {
+    niftyEmptySearch?.classList.remove('hidden');
+    return;
+  }
+  niftyEmptySearch?.classList.add('hidden');
+
+  const frag = document.createDocumentFragment();
+
+  companies.forEach((company, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-indigo-50/40 transition-colors group';
+
+    // Index
+    const tdIdx = document.createElement('td');
+    tdIdx.className = 'py-3.5 px-4 text-center text-xs font-semibold text-gray-400 tabular-nums';
+    tdIdx.textContent = String(idx + 1);
+    tr.appendChild(tdIdx);
+
+    // Company Name
+    const tdName = document.createElement('td');
+    tdName.className = 'py-3.5 px-4 font-semibold text-gray-900';
+    tdName.innerHTML = `<span class="group-hover:text-indigo-900 transition-colors">${escapeHtml(company.company_name)}</span>`;
+    tr.appendChild(tdName);
+
+    // Industry
+    const tdInd = document.createElement('td');
+    tdInd.className = 'py-3.5 px-4';
+    tdInd.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">${escapeHtml(company.industry)}</span>`;
+    tr.appendChild(tdInd);
+
+    // Symbol
+    const tdSym = document.createElement('td');
+    tdSym.className = 'py-3.5 px-4';
+    tdSym.innerHTML = `<span class="font-mono font-bold text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 tracking-wider">${escapeHtml(company.symbol)}</span>`;
+    tr.appendChild(tdSym);
+
+    // Series
+    const tdSer = document.createElement('td');
+    tdSer.className = 'py-3.5 px-4';
+    tdSer.innerHTML = `<span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">${escapeHtml(company.series)}</span>`;
+    tr.appendChild(tdSer);
+
+    // ISIN Code
+    const tdISIN = document.createElement('td');
+    tdISIN.className = 'py-3.5 px-4 font-mono text-xs text-gray-600';
+    tdISIN.innerHTML = `
+      <div class="inline-flex items-center gap-1.5">
+        <span class="select-all tracking-wider">${escapeHtml(company.isin)}</span>
+        <button
+          type="button"
+          class="nifty-copy-isin-btn p-1 text-gray-400 hover:text-indigo-600 rounded hover:bg-indigo-50 transition-colors"
+          data-isin="${escapeHtml(company.isin)}"
+          title="Copy ISIN Code"
+          aria-label="Copy ISIN Code"
+        >
+          <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    tr.appendChild(tdISIN);
+
+    frag.appendChild(tr);
+  });
+
+  niftyTableBody.appendChild(frag);
+
+  // Attach copy listeners
+  niftyTableBody.querySelectorAll<HTMLButtonElement>('.nifty-copy-isin-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const isin = btn.dataset.isin || '';
+      if (!isin) return;
+      const ok = await copyToClipboard(isin);
+      if (ok) {
+        btn.innerHTML = `<svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+        setTimeout(() => {
+          btn.innerHTML = `<svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>`;
+        }, 1500);
+      }
+    });
+  });
+}
+
+function escapeHtml(str: string): string {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function populateIndustryDropdown(companies: NiftyCompany[]) {
+  if (!niftyIndustrySelect) return;
+  const currentVal = niftyIndustrySelect.value;
+  niftyIndustrySelect.innerHTML = '<option value="">All Industries</option>';
+
+  const industries = Array.from(new Set(companies.map(c => c.industry))).filter(Boolean).sort();
+  industries.forEach(ind => {
+    const opt = document.createElement('option');
+    opt.value = ind;
+    opt.textContent = ind;
+    niftyIndustrySelect.appendChild(opt);
+  });
+
+  if (currentVal && industries.includes(currentVal)) {
+    niftyIndustrySelect.value = currentVal;
+  }
+}
+
+function filterAndRenderNifty() {
+  const query = (niftySearchInput?.value || '').trim().toLowerCase();
+  const selectedIndustry = niftyIndustrySelect?.value || '';
+
+  const filtered = niftyCompaniesList.filter(c => {
+    const matchesIndustry = !selectedIndustry || c.industry === selectedIndustry;
+    if (!matchesIndustry) return false;
+
+    if (!query) return true;
+    return (
+      c.company_name.toLowerCase().includes(query) ||
+      c.symbol.toLowerCase().includes(query) ||
+      c.industry.toLowerCase().includes(query) ||
+      c.isin.toLowerCase().includes(query)
+    );
+  });
+
+  if (niftyMatchCount) {
+    if (filtered.length === niftyCompaniesList.length) {
+      niftyMatchCount.textContent = `${niftyCompaniesList.length} companies`;
+    } else {
+      niftyMatchCount.textContent = `Showing ${filtered.length} of ${niftyCompaniesList.length}`;
+    }
+  }
+
+  renderNiftyTable(filtered);
+}
+
+async function loadNiftyData(force = false) {
+  if (!isLoggedIn()) {
+    // Unauthenticated state
+    niftyUnauthCard?.classList.remove('hidden');
+    niftyLoadingCard?.classList.add('hidden');
+    niftyErrorCard?.classList.add('hidden');
+    niftyTableCard?.classList.add('hidden');
+    if (niftyMetaUpdated) niftyMetaUpdated.textContent = 'Sign in required';
+    return;
+  }
+
+  // Check cached data freshness (e.g. if loaded within last 30s and not forced)
+  const now = Date.now();
+  if (!force && niftyCompaniesList.length === 50 && (now - niftyLastLoadedAt < 30000)) {
+    niftyUnauthCard?.classList.add('hidden');
+    niftyLoadingCard?.classList.add('hidden');
+    niftyErrorCard?.classList.add('hidden');
+    niftyTableCard?.classList.remove('hidden');
+    return;
+  }
+
+  niftyUnauthCard?.classList.add('hidden');
+  niftyLoadingCard?.classList.remove('hidden');
+  niftyErrorCard?.classList.add('hidden');
+  niftyTableCard?.classList.add('hidden');
+
+  niftyRefreshIcon?.classList.add('animate-spin');
+
+  try {
+    const { token } = getAuthState();
+    if (!token) throw new Error('Authentication token not found');
+
+    const res = await apiGetNiftyCompanies(token);
+
+    niftyCompaniesList = res.companies || [];
+    niftyLastLoadedAt = Date.now();
+
+    if (niftyMetaCount) {
+      niftyMetaCount.textContent = String(res.count ?? niftyCompaniesList.length);
+    }
+    if (niftyMetaUpdated) {
+      niftyMetaUpdated.textContent = formatUpdatedTimestamp(res.updated_at);
+    }
+
+    populateIndustryDropdown(niftyCompaniesList);
+    filterAndRenderNifty();
+
+    niftyLoadingCard?.classList.add('hidden');
+    niftyTableCard?.classList.remove('hidden');
+  } catch (err) {
+    console.error('NIFTY 50 load error:', err);
+    niftyLoadingCard?.classList.add('hidden');
+    
+    const msg = (err as Error).message || '';
+    if (msg.includes('401') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('token')) {
+      clearAuth();
+      niftyUnauthCard?.classList.remove('hidden');
+      openModal('login');
+    } else {
+      if (niftyErrorMessage) {
+        niftyErrorMessage.textContent = msg.includes('503') || msg.toLowerCase().includes('unavailable')
+          ? 'NIFTY 50 market data is currently unavailable on the server.'
+          : `Failed to load NIFTY 50 data: ${msg}`;
+      }
+      niftyErrorCard?.classList.remove('hidden');
+    }
+  } finally {
+    niftyRefreshIcon?.classList.remove('animate-spin');
+  }
+}
+
+function onNiftySelected() {
+  if (!isLoggedIn()) {
+    loadNiftyData();
+    openModal('login');
+  } else {
+    loadNiftyData();
+  }
+}
+
+// Attach event listeners
+niftyUnauthLoginBtn?.addEventListener('click', () => openModal('login'));
+niftyRetryBtn?.addEventListener('click', () => loadNiftyData(true));
+niftyRefreshBtn?.addEventListener('click', () => loadNiftyData(true));
+
+niftySearchInput?.addEventListener('input', filterAndRenderNifty);
+niftyIndustrySelect?.addEventListener('change', filterAndRenderNifty);
+
+niftyClearFilterBtn?.addEventListener('click', () => {
+  if (niftySearchInput) niftySearchInput.value = '';
+  if (niftyIndustrySelect) niftyIndustrySelect.value = '';
+  filterAndRenderNifty();
+});
+
+niftyExportCsvBtn?.addEventListener('click', () => {
+  if (niftyCompaniesList.length === 0) return;
+
+  const headers = ['Company Name', 'Industry', 'Symbol', 'Series', 'ISIN Code'];
+  const lines = [headers.join(',')];
+
+  const query = (niftySearchInput?.value || '').trim().toLowerCase();
+  const selectedIndustry = niftyIndustrySelect?.value || '';
+
+  const exportList = niftyCompaniesList.filter(c => {
+    const matchesIndustry = !selectedIndustry || c.industry === selectedIndustry;
+    if (!matchesIndustry) return false;
+    if (!query) return true;
+    return (
+      c.company_name.toLowerCase().includes(query) ||
+      c.symbol.toLowerCase().includes(query) ||
+      c.industry.toLowerCase().includes(query) ||
+      c.isin.toLowerCase().includes(query)
+    );
+  });
+
+  exportList.forEach(c => {
+    const name = `"${c.company_name.replace(/"/g, '""')}"`;
+    const ind = `"${c.industry.replace(/"/g, '""')}"`;
+    lines.push([name, ind, c.symbol, c.series, c.isin].join(','));
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = `nifty50-constituents-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+});
+
+// React to auth changes across tabs/modals
+window.addEventListener('auth-changed', () => {
+  if (currentTool === 'nifty50' || currentCategory === 'markets') {
+    loadNiftyData(true);
+  }
+});

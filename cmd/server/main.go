@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
+	"file-converter/internal/nifty"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -85,6 +87,17 @@ func main() {
 	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
 
+	// ⬅️ NEW: NIFTY 50 Market Data Service & Endpoint (Authenticated)
+	niftyStorage := nifty.NewFileStorage("data/nifty50.json")
+	niftyClient := nifty.NewNSEClient()
+	niftyService := nifty.NewService(niftyStorage, niftyClient)
+	niftyHandler := api.NewNiftyHandler(niftyService)
+
+	// Infuse in-process daily cron scheduler (10:00 AM IST with catch-up on boot)
+	niftyService.StartScheduler(context.Background())
+
+	apiMux.HandleFunc("/nifty50/companies", api.RequireAuth(cfg, niftyHandler.GetCompanies))
+
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// UI Server
@@ -119,8 +132,10 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/auth/change-password  (Change Password)")
 	fmt.Println(" -> GET  http://localhost:8080/auth/me               (Current User Profile)")
 
+	// ⬅️ NEW: NIFTY 50 Market Data in startup banner
+	fmt.Println(" -> GET  http://localhost:8080/nifty50/companies      (NIFTY 50 Constituents - Authenticated)")
+
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
-	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
 
 	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner

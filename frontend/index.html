@@ -73,6 +73,17 @@
           </svg>
           Calculations
         </button>
+
+        <button
+          id="btn-category-markets"
+          data-category="markets"
+          class="category-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors font-medium text-indigo-200 hover:bg-indigo-800 hover:text-white"
+        >
+          <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          Markets
+        </button>
       </nav>
 
       <!-- ── Sign In / User button (bottom of sidebar) ── -->
@@ -804,6 +815,208 @@
             </div>
           </div>
           <!-- /TAX Calculator View -->
+
+          <!-- ============================================================ -->
+          <!-- ⬅️ NEW: NIFTY 50 Market Constituents View                    -->
+          <!-- ============================================================ -->
+          <div id="nifty50-view" class="tool-view max-w-5xl w-full mx-auto space-y-6 hidden transition-opacity duration-300">
+            
+            <!-- Header Card (Sleek Slate & Indigo Dark Theme) -->
+            <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl shadow-xl p-6 md:p-8 relative overflow-hidden border border-slate-750">
+              <div class="relative z-10">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                      NSE Benchmark Index
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-300 border border-white/10">
+                      Daily Auto-Sync (10:00 AM IST)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    id="nifty-refresh-btn"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-200 transition-all border border-slate-600 shadow-sm"
+                    title="Refresh constituents from server"
+                  >
+                    <svg id="nifty-refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span>Refresh Data</span>
+                  </button>
+                </div>
+
+                <h2 class="text-2xl md:text-4xl font-extrabold tracking-tight text-white">NIFTY 50</h2>
+                <p class="text-slate-300 text-sm md:text-base mt-1 max-w-2xl">
+                  Official constituent companies of the National Stock Exchange of India (NSE) NIFTY 50 index.
+                </p>
+
+                <!-- Key Metrics Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+                  <div class="bg-slate-800/80 rounded-xl p-3.5 border border-slate-700">
+                    <span class="text-xs text-slate-400 font-medium block uppercase tracking-wider">Total Companies</span>
+                    <span id="nifty-meta-count" class="text-2xl font-bold tracking-tight text-white">50</span>
+                  </div>
+                  <div class="bg-slate-800/80 rounded-xl p-3.5 border border-slate-700">
+                    <span class="text-xs text-slate-400 font-medium block uppercase tracking-wider">Last Synced</span>
+                    <span id="nifty-meta-updated" class="text-sm md:text-base font-semibold text-white truncate block">Loading...</span>
+                  </div>
+                  <div class="bg-slate-800/80 rounded-xl p-3.5 border border-slate-700 col-span-2 sm:col-span-1">
+                    <span class="text-xs text-slate-400 font-medium block uppercase tracking-wider">Data Source</span>
+                    <a
+                      href="https://www.nseindia.com/static/products-services/indices-nifty50-index"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-sm font-semibold text-indigo-400 hover:text-indigo-300 underline inline-flex items-center gap-1 mt-0.5"
+                    >
+                      <span>NSE Official (.csv)</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <!-- State 1: Unauthenticated Card -->
+            <div id="nifty-unauth-card" class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center max-w-lg mx-auto space-y-4">
+              <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">Authentication Required</h3>
+                <p class="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                  Live NIFTY 50 market constituent data is available exclusively to registered users. Please sign in to view the constituent list.
+                </p>
+              </div>
+              <button
+                type="button"
+                id="nifty-unauth-login-btn"
+                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold shadow-md transition-all text-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                Sign In to View Constituents
+              </button>
+            </div>
+
+            <!-- State 2: Loading State -->
+            <div id="nifty-loading-card" class="bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center hidden">
+              <div class="flex flex-col items-center justify-center space-y-3">
+                <svg class="animate-spin h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <p class="text-sm font-medium text-gray-600">Loading NIFTY 50 constituent companies...</p>
+              </div>
+            </div>
+
+            <!-- State 3: Error / 503 State -->
+            <div id="nifty-error-card" class="bg-white rounded-2xl shadow-xl border border-red-200 p-8 text-center max-w-lg mx-auto space-y-4 hidden">
+              <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl mx-auto flex items-center justify-center">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Unable to Load Data</h3>
+                <p id="nifty-error-message" class="text-sm text-gray-500 mt-1">
+                  NIFTY 50 data is currently unavailable.
+                </p>
+              </div>
+              <button
+                type="button"
+                id="nifty-retry-btn"
+                class="px-5 py-2.5 bg-gray-900 hover:bg-black text-white font-medium text-sm rounded-lg transition-colors"
+              >
+                Retry Request
+              </button>
+            </div>
+
+            <!-- State 4: Data Table Card -->
+            <div id="nifty-table-card" class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden hidden">
+              
+              <!-- Search, Filter & Actions Toolbar -->
+              <div class="p-4 sm:p-6 border-b border-gray-100 bg-gray-50/70 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <div class="flex-1 flex flex-col sm:flex-row gap-3">
+                  <!-- Search input -->
+                  <div class="relative flex-1">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input
+                      type="text"
+                      id="nifty-search-input"
+                      placeholder="Search company, symbol, industry, ISIN..."
+                      class="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                  </div>
+                  <!-- Industry filter -->
+                  <div class="w-full sm:w-56">
+                    <select
+                      id="nifty-industry-select"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="">All Industries</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Match count & export buttons -->
+                <div class="flex items-center gap-2 justify-between sm:justify-end">
+                  <span id="nifty-match-count" class="text-xs font-semibold text-gray-500 px-2.5 py-1 bg-gray-200/80 rounded-full">
+                    50 companies
+                  </span>
+                  <button
+                    type="button"
+                    id="nifty-export-csv-btn"
+                    class="px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Export CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Table -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-gray-100/80 text-gray-700 border-b border-gray-200 uppercase tracking-wider text-xs font-bold">
+                    <tr>
+                      <th scope="col" class="py-3.5 px-4 w-12 text-center text-gray-500">#</th>
+                      <th scope="col" class="py-3.5 px-4">Company Name</th>
+                      <th scope="col" class="py-3.5 px-4">Industry</th>
+                      <th scope="col" class="py-3.5 px-4">Symbol</th>
+                      <th scope="col" class="py-3.5 px-4">Series</th>
+                      <th scope="col" class="py-3.5 px-4">ISIN Code</th>
+                    </tr>
+                  </thead>
+                  <tbody id="nifty-table-body" class="divide-y divide-gray-100">
+                    <!-- Rows injected by JavaScript -->
+                  </tbody>
+                </table>
+
+                <!-- Empty Search Fallback -->
+                <div id="nifty-empty-search" class="p-8 text-center hidden">
+                  <p class="text-gray-500 text-sm">No companies match the current search / filter criteria.</p>
+                  <button
+                    type="button"
+                    id="nifty-clear-filter-btn"
+                    class="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+                  >
+                    Clear search filter
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+          <!-- /NIFTY 50 View -->
 
         </div>
       </div>

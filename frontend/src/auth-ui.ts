@@ -393,7 +393,7 @@ function initPasswordToggles(): void {
 // ─── Modal open/close ─────────────────────────────────────
 let currentScreen: AuthScreen = 'login';
 
-function openModal(screen: AuthScreen = 'login'): void {
+export function openModal(screen: AuthScreen = 'login'): void {
   currentScreen = screen;
   const overlay = document.getElementById('auth-overlay')!;
   overlay.classList.remove('hidden');
@@ -408,7 +408,7 @@ function openModal(screen: AuthScreen = 'login'): void {
   }, 50);
 }
 
-function closeModal(): void {
+export function closeModal(): void {
   const overlay = document.getElementById('auth-overlay')!;
   overlay.classList.add('hidden');
   overlay.classList.remove('flex');
@@ -438,6 +438,7 @@ async function handleLogin(e: Event): Promise<void> {
     const res = await apiLogin(email, password);
     saveAuth(res.token, res.user);
     updateNavButton();
+    window.dispatchEvent(new CustomEvent('auth-changed'));
 
     if (res.must_reset_password) {
       // Store token for reset use, go to reset screen
@@ -471,6 +472,7 @@ async function handleRegister(e: Event): Promise<void> {
     const res = await apiLogin(email, password);
     saveAuth(res.token, res.user);
     updateNavButton();
+    window.dispatchEvent(new CustomEvent('auth-changed'));
     closeModal();
     showToast(`Account created! Welcome to Rutils, ${res.user.name} 🎉`);
   } catch (err) {
@@ -637,6 +639,7 @@ function createUserMenu(): void {
     } catch { /* ignore logout errors */ }
     clearAuth();
     updateNavButton();
+    window.dispatchEvent(new CustomEvent('auth-changed'));
     showToast('Signed out successfully 👋');
   });
 }

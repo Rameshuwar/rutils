@@ -45,7 +45,11 @@ function getApiBase(): string {
   const isLocal =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
-  return isLocal ? '' : 'https://utils.api.srilakshmiretail.in';
+  if (isLocal) {
+    if (window.location.port === '3000') return 'http://localhost:8080';
+    return '';
+  }
+  return 'https://utils.api.srilakshmiretail.in';
 }
 
 async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
@@ -121,4 +125,25 @@ export async function apiChangePassword(token: string, currentPassword: string, 
 
 export async function apiGetMe(token: string): Promise<UserResponse> {
   return apiGet<UserResponse>('/auth/me', token);
+}
+
+// ─── Markets API calls ───────────────────────────────────────
+export interface NiftyCompany {
+  company_name: string;
+  industry: string;
+  symbol: string;
+  series: string;
+  isin: string;
+}
+
+export interface NiftyResponse {
+  success: boolean;
+  updated_at: string;
+  count: number;
+  companies: NiftyCompany[];
+  error?: string;
+}
+
+export async function apiGetNiftyCompanies(token: string): Promise<NiftyResponse> {
+  return apiGet<NiftyResponse>('/nifty50/companies', token);
 }
