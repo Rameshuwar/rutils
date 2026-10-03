@@ -283,11 +283,11 @@ interface ScreenConfig {
 }
 
 const SCREEN_CONFIG: Record<AuthScreen, ScreenConfig> = {
-  login:    { title: 'Welcome back',        subtitle: 'Sign in to your Rutils account' },
-  register: { title: 'Create account',      subtitle: 'Join Rutils — it\'s free' },
-  forgot:   { title: 'Forgot password?',    subtitle: 'We\'ll email you a temporary password' },
-  reset:    { title: 'Set new password',    subtitle: 'Choose a strong permanent password' },
-  change:   { title: 'Change password',     subtitle: 'Update your account password' },
+  login: { title: 'Welcome back', subtitle: 'Sign in to your Rutils account' },
+  register: { title: 'Create account', subtitle: 'Join Rutils — it\'s free' },
+  forgot: { title: 'Forgot password?', subtitle: 'We\'ll email you a temporary password' },
+  reset: { title: 'Set new password', subtitle: 'Choose a strong permanent password' },
+  change: { title: 'Change password', subtitle: 'Update your account password' },
 };
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -332,27 +332,27 @@ function showScreen(screen: AuthScreen): void {
 // ─── Password strength meter ──────────────────────────────
 function measureStrength(pw: string): { score: number; label: string; color: string; width: string } {
   let score = 0;
-  if (pw.length >= 8)                   score++;
-  if (/[A-Z]/.test(pw))                 score++;
-  if (/[a-z]/.test(pw))                 score++;
-  if (/\d/.test(pw))                    score++;
-  if (/[^A-Za-z0-9]/.test(pw))         score++;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
 
   const map: [number, string, string, string][] = [
-    [0, '',        '',              '0%'],
-    [1, 'Weak',    'bg-red-400',    '20%'],
-    [2, 'Fair',    'bg-orange-400', '40%'],
-    [3, 'Good',    'bg-yellow-400', '60%'],
-    [4, 'Strong',  'bg-blue-500',   '80%'],
-    [5, 'Excellent', 'bg-green-500','100%'],
+    [0, '', '', '0%'],
+    [1, 'Weak', 'bg-red-400', '20%'],
+    [2, 'Fair', 'bg-orange-400', '40%'],
+    [3, 'Good', 'bg-yellow-400', '60%'],
+    [4, 'Strong', 'bg-blue-500', '80%'],
+    [5, 'Excellent', 'bg-green-500', '100%'],
   ];
   const [, label, color, width] = map[score];
   return { score, label, color, width };
 }
 
 function updateStrengthUI(pw: string): void {
-  const bar   = document.getElementById('pw-strength-bar')!;
-  const lbl   = document.getElementById('pw-strength-label')!;
+  const bar = document.getElementById('pw-strength-bar')!;
+  const lbl = document.getElementById('pw-strength-label')!;
   const { label, color, width } = measureStrength(pw);
 
   bar.className = `h-full rounded-full transition-all duration-300 ${color}`;
@@ -360,10 +360,10 @@ function updateStrengthUI(pw: string): void {
   lbl.textContent = label ? `Strength: ${label}` : '';
 
   const checks: [string, boolean][] = [
-    ['req-len',     pw.length >= 8],
-    ['req-upper',   /[A-Z]/.test(pw)],
-    ['req-lower',   /[a-z]/.test(pw)],
-    ['req-digit',   /\d/.test(pw)],
+    ['req-len', pw.length >= 8],
+    ['req-upper', /[A-Z]/.test(pw)],
+    ['req-lower', /[a-z]/.test(pw)],
+    ['req-digit', /\d/.test(pw)],
     ['req-special', /[^A-Za-z0-9]/.test(pw)],
   ];
   checks.forEach(([id, ok]) => {
@@ -401,167 +401,167 @@ export function openModal(screen: AuthScreen = 'login'): void {
   showScreen(screen);
   document.body.style.overflow = 'hidden';
 
-  // Focus first input
-  setTimeout(() => {
-    const input = document.querySelector<HTMLInputElement>(`#auth-form-${screen} input`);
-    input?.focus();
-  }, 50);
-}
+    // Focus first input
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(`#auth-form-${screen} input`);
+      input?.focus();
+    }, 50);
+  }
 
-export function closeModal(): void {
-  const overlay = document.getElementById('auth-overlay')!;
-  overlay.classList.add('hidden');
-  overlay.classList.remove('flex');
-  document.body.style.overflow = '';
-  hideBanner();
+  export function closeModal(): void {
+    const overlay = document.getElementById('auth-overlay')!;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    document.body.style.overflow = '';
+    hideBanner();
 
-  // Reset all forms
-  document.querySelectorAll<HTMLFormElement>('.auth-form').forEach(f => f.reset());
-  // Reset strength bar
-  const bar = document.getElementById('pw-strength-bar');
-  if (bar) { bar.style.width = '0%'; bar.className = 'h-full rounded-full transition-all duration-300'; }
-  const lbl = document.getElementById('pw-strength-label');
-  if (lbl) lbl.textContent = '';
-}
+    // Reset all forms
+    document.querySelectorAll<HTMLFormElement>('.auth-form').forEach(f => f.reset());
+    // Reset strength bar
+    const bar = document.getElementById('pw-strength-bar');
+    if (bar) { bar.style.width = '0%'; bar.className = 'h-full rounded-full transition-all duration-300'; }
+    const lbl = document.getElementById('pw-strength-label');
+    if (lbl) lbl.textContent = '';
+  }
 
-// ─── Form submissions ─────────────────────────────────────
-async function handleLogin(e: Event): Promise<void> {
-  e.preventDefault();
-  const form = document.getElementById('auth-form-login') as HTMLFormElement;
-  const email    = (document.getElementById('login-email') as HTMLInputElement).value.trim();
-  const password = (document.getElementById('login-password') as HTMLInputElement).value;
+  // ─── Form submissions ─────────────────────────────────────
+  async function handleLogin(e: Event): Promise<void> {
+    e.preventDefault();
+    const form = document.getElementById('auth-form-login') as HTMLFormElement;
+    const email = (document.getElementById('login-email') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('login-password') as HTMLInputElement).value;
 
-  hideBanner();
-  setLoading(form, true);
+    hideBanner();
+    setLoading(form, true);
 
-  try {
-    const res = await apiLogin(email, password);
-    saveAuth(res.token, res.user);
-    updateNavButton();
-    window.dispatchEvent(new CustomEvent('auth-changed'));
+    try {
+      const res = await apiLogin(email, password);
+      saveAuth(res.token, res.user);
+      updateNavButton();
+      window.dispatchEvent(new CustomEvent('auth-changed'));
 
-    if (res.must_reset_password) {
-      // Store token for reset use, go to reset screen
-      showScreen('reset');
-      showBanner('Temporary password accepted. Please set a new permanent password.', false);
-    } else {
-      closeModal();
-      showToast(`Welcome back, ${res.user.name}! 👋`);
+      if (res.must_reset_password) {
+        // Store token for reset use, go to reset screen
+        showScreen('reset');
+        showBanner('Temporary password accepted. Please set a new permanent password.', false);
+      } else {
+        closeModal();
+        showToast(`Welcome back, ${res.user.name}! 👋`);
+      }
+    } catch (err) {
+      showBanner((err as Error).message, true);
+    } finally {
+      setLoading(form, false);
     }
-  } catch (err) {
-    showBanner((err as Error).message, true);
-  } finally {
-    setLoading(form, false);
   }
-}
 
-async function handleRegister(e: Event): Promise<void> {
-  e.preventDefault();
-  const form = document.getElementById('auth-form-register') as HTMLFormElement;
-  const name     = (document.getElementById('reg-name') as HTMLInputElement).value.trim();
-  const email    = (document.getElementById('reg-email') as HTMLInputElement).value.trim();
-  const password = (document.getElementById('reg-password') as HTMLInputElement).value;
-  const confirm  = (document.getElementById('reg-confirm') as HTMLInputElement).value;
+  async function handleRegister(e: Event): Promise<void> {
+    e.preventDefault();
+    const form = document.getElementById('auth-form-register') as HTMLFormElement;
+    const name = (document.getElementById('reg-name') as HTMLInputElement).value.trim();
+    const email = (document.getElementById('reg-email') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('reg-password') as HTMLInputElement).value;
+    const confirm = (document.getElementById('reg-confirm') as HTMLInputElement).value;
 
-  hideBanner();
-  setLoading(form, true);
+    hideBanner();
+    setLoading(form, true);
 
-  try {
-    await apiRegister(name, email, password, confirm);
-    // Auto-login after register
-    const res = await apiLogin(email, password);
-    saveAuth(res.token, res.user);
-    updateNavButton();
-    window.dispatchEvent(new CustomEvent('auth-changed'));
-    closeModal();
-    showToast(`Account created! Welcome to Rutils, ${res.user.name} 🎉`);
-  } catch (err) {
-    showBanner((err as Error).message, true);
-  } finally {
-    setLoading(form, false);
-  }
-}
-
-async function handleForgotPassword(e: Event): Promise<void> {
-  e.preventDefault();
-  const form = document.getElementById('auth-form-forgot') as HTMLFormElement;
-  const email = (document.getElementById('forgot-email') as HTMLInputElement).value.trim();
-
-  hideBanner();
-  setLoading(form, true);
-
-  try {
-    await apiForgotPassword(email);
-    showBanner('A temporary password has been sent to your email. Use it to log in.', false);
-    setTimeout(() => showScreen('login'), 3000);
-  } catch (err) {
-    showBanner((err as Error).message, true);
-  } finally {
-    setLoading(form, false);
-  }
-}
-
-async function handleResetPassword(e: Event): Promise<void> {
-  e.preventDefault();
-  const form      = document.getElementById('auth-form-reset') as HTMLFormElement;
-  const newPw     = (document.getElementById('reset-new-password') as HTMLInputElement).value;
-  const confirmPw = (document.getElementById('reset-confirm-password') as HTMLInputElement).value;
-
-  hideBanner();
-  setLoading(form, true);
-
-  try {
-    const { token } = getAuthState();
-    if (!token) throw new Error('No active session. Please log in again.');
-    await apiResetPassword(token, newPw, confirmPw);
-    showBanner('Password updated successfully!', false);
-    setTimeout(() => {
+    try {
+      await apiRegister(name, email, password, confirm);
+      // Auto-login after register
+      const res = await apiLogin(email, password);
+      saveAuth(res.token, res.user);
+      updateNavButton();
+      window.dispatchEvent(new CustomEvent('auth-changed'));
       closeModal();
-      showToast('Your password has been set. You\'re all set! ✅');
-    }, 1500);
-  } catch (err) {
-    showBanner((err as Error).message, true);
-  } finally {
-    setLoading(form, false);
+      showToast(`Account created! Welcome to Rutils, ${res.user.name} 🎉`);
+    } catch (err) {
+      showBanner((err as Error).message, true);
+    } finally {
+      setLoading(form, false);
+    }
   }
-}
 
-async function handleChangePassword(e: Event): Promise<void> {
-  e.preventDefault();
-  const form      = document.getElementById('auth-form-change') as HTMLFormElement;
-  const current   = (document.getElementById('change-current') as HTMLInputElement).value;
-  const newPw     = (document.getElementById('change-new') as HTMLInputElement).value;
-  const confirmPw = (document.getElementById('change-confirm') as HTMLInputElement).value;
+  async function handleForgotPassword(e: Event): Promise<void> {
+    e.preventDefault();
+    const form = document.getElementById('auth-form-forgot') as HTMLFormElement;
+    const email = (document.getElementById('forgot-email') as HTMLInputElement).value.trim();
 
-  hideBanner();
-  setLoading(form, true);
+    hideBanner();
+    setLoading(form, true);
 
-  try {
-    const { token } = getAuthState();
-    if (!token) throw new Error('You must be logged in to change your password.');
-    await apiChangePassword(token, current, newPw, confirmPw);
-    showBanner('Password changed! A confirmation email has been sent.', false);
-    setTimeout(() => {
-      closeModal();
-      showToast('Password changed successfully ✅');
-    }, 1800);
-  } catch (err) {
-    showBanner((err as Error).message, true);
-  } finally {
-    setLoading(form, false);
+    try {
+      await apiForgotPassword(email);
+      showBanner('A temporary password has been sent to your email. Use it to log in.', false);
+      setTimeout(() => showScreen('login'), 3000);
+    } catch (err) {
+      showBanner((err as Error).message, true);
+    } finally {
+      setLoading(form, false);
+    }
   }
-}
 
-// ─── Sidebar / Header login button ───────────────────────
-function updateNavButton(): void {
-  const { user } = getAuthState();
-  const loggedIn = isLoggedIn();
+  async function handleResetPassword(e: Event): Promise<void> {
+    e.preventDefault();
+    const form = document.getElementById('auth-form-reset') as HTMLFormElement;
+    const newPw = (document.getElementById('reset-new-password') as HTMLInputElement).value;
+    const confirmPw = (document.getElementById('reset-confirm-password') as HTMLInputElement).value;
 
-  // Update all [data-auth-btn] elements
-  document.querySelectorAll<HTMLElement>('[data-auth-btn]').forEach(el => {
-    if (loggedIn && user) {
-      // Show user avatar / name button
-      el.innerHTML = `
+    hideBanner();
+    setLoading(form, true);
+
+    try {
+      const { token } = getAuthState();
+      if (!token) throw new Error('No active session. Please log in again.');
+      await apiResetPassword(token, newPw, confirmPw);
+      showBanner('Password updated successfully!', false);
+      setTimeout(() => {
+        closeModal();
+        showToast('Your password has been set. You\'re all set! ✅');
+      }, 1500);
+    } catch (err) {
+      showBanner((err as Error).message, true);
+    } finally {
+      setLoading(form, false);
+    }
+  }
+
+  async function handleChangePassword(e: Event): Promise<void> {
+    e.preventDefault();
+    const form = document.getElementById('auth-form-change') as HTMLFormElement;
+    const current = (document.getElementById('change-current') as HTMLInputElement).value;
+    const newPw = (document.getElementById('change-new') as HTMLInputElement).value;
+    const confirmPw = (document.getElementById('change-confirm') as HTMLInputElement).value;
+
+    hideBanner();
+    setLoading(form, true);
+
+    try {
+      const { token } = getAuthState();
+      if (!token) throw new Error('You must be logged in to change your password.');
+      await apiChangePassword(token, current, newPw, confirmPw);
+      showBanner('Password changed! A confirmation email has been sent.', false);
+      setTimeout(() => {
+        closeModal();
+        showToast('Password changed successfully ✅');
+      }, 1800);
+    } catch (err) {
+      showBanner((err as Error).message, true);
+    } finally {
+      setLoading(form, false);
+    }
+  }
+
+  // ─── Sidebar / Header login button ───────────────────────
+  function updateNavButton(): void {
+    const { user } = getAuthState();
+    const loggedIn = isLoggedIn();
+
+    // Update all [data-auth-btn] elements
+    document.querySelectorAll<HTMLElement>('[data-auth-btn]').forEach(el => {
+      if (loggedIn && user) {
+        // Show user avatar / name button
+        el.innerHTML = `
         <div class="flex items-center gap-2 w-full text-left">
           <div class="w-8 h-8 rounded-full bg-indigo-400 flex items-center justify-center text-white font-bold text-xs shrink-0">
             ${user.name.charAt(0).toUpperCase()}
@@ -572,36 +572,36 @@ function updateNavButton(): void {
           </div>
         </div>
       `;
-      el.setAttribute('data-logged-in', 'true');
-    } else {
-      el.innerHTML = `
+        el.setAttribute('data-logged-in', 'true');
+      } else {
+        el.innerHTML = `
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
         <span class="font-semibold">Sign In</span>
       `;
-      el.setAttribute('data-logged-in', 'false');
-    }
-  });
+        el.setAttribute('data-logged-in', 'false');
+      }
+    });
 
-  // Update user action menu visibility
-  document.querySelectorAll<HTMLElement>('[data-auth-menu]').forEach(el => {
-    el.classList.toggle('hidden', !loggedIn);
-  });
-}
+    // Update user action menu visibility
+    document.querySelectorAll<HTMLElement>('[data-auth-menu]').forEach(el => {
+      el.classList.toggle('hidden', !loggedIn);
+    });
+  }
 
-// ─── User action menu ─────────────────────────────────────
-let menuOpen = false;
+  // ─── User action menu ─────────────────────────────────────
+  let menuOpen = false;
 
-function createUserMenu(): void {
-  const existing = document.getElementById('auth-user-menu');
-  if (existing) existing.remove();
+  function createUserMenu(): void {
+    const existing = document.getElementById('auth-user-menu');
+    if (existing) existing.remove();
 
-  const menu = document.createElement('div');
-  menu.id = 'auth-user-menu';
-  menu.className = 'hidden absolute bottom-20 left-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[100] md:left-auto md:right-auto md:w-56';
-  menu.innerHTML = `
+    const menu = document.createElement('div');
+    menu.id = 'auth-user-menu';
+    menu.className = 'hidden absolute bottom-20 left-4 right-4 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[100] md:left-auto md:right-auto md:w-56';
+    menu.innerHTML = `
     <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
       <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">Account</p>
     </div>
@@ -624,130 +624,130 @@ function createUserMenu(): void {
     </button>
   `;
 
-  document.getElementById('sidebar')!.appendChild(menu);
+    document.getElementById('sidebar')!.appendChild(menu);
 
-  document.getElementById('menu-change-pw')!.addEventListener('click', () => {
-    closeUserMenu();
-    openModal('change');
-  });
-
-  document.getElementById('menu-logout')!.addEventListener('click', async () => {
-    closeUserMenu();
-    try {
-      const { token } = getAuthState();
-      if (token) await apiLogout(token);
-    } catch { /* ignore logout errors */ }
-    clearAuth();
-    updateNavButton();
-    window.dispatchEvent(new CustomEvent('auth-changed'));
-    showToast('Signed out successfully 👋');
-  });
-}
-
-function openUserMenu(): void {
-  const menu = document.getElementById('auth-user-menu');
-  if (menu) {
-    menuOpen = !menuOpen;
-    menu.classList.toggle('hidden', !menuOpen);
-  }
-}
-
-function closeUserMenu(): void {
-  menuOpen = false;
-  document.getElementById('auth-user-menu')?.classList.add('hidden');
-}
-
-// ─── Toast notifications ──────────────────────────────────
-function showToast(message: string): void {
-  const existing = document.getElementById('auth-toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'auth-toast';
-  toast.className = [
-    'fixed bottom-6 left-1/2 -translate-x-1/2 z-[300]',
-    'bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-full shadow-2xl',
-    'flex items-center gap-2',
-    'opacity-0 translate-y-4 transition-all duration-300',
-  ].join(' ');
-  toast.innerHTML = `<svg class="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>${message}</span>`;
-  document.body.appendChild(toast);
-
-  // Animate in
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      toast.classList.remove('opacity-0', 'translate-y-4');
+    document.getElementById('menu-change-pw')!.addEventListener('click', () => {
+      closeUserMenu();
+      openModal('change');
     });
-  });
 
-  setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-4');
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
+    document.getElementById('menu-logout')!.addEventListener('click', async () => {
+      closeUserMenu();
+      try {
+        const { token } = getAuthState();
+        if (token) await apiLogout(token);
+      } catch { /* ignore logout errors */ }
+      clearAuth();
+      updateNavButton();
+      window.dispatchEvent(new CustomEvent('auth-changed'));
+      showToast('Signed out successfully 👋');
+    });
+  }
 
-// ─── Init ─────────────────────────────────────────────────
-export function initAuth(): void {
-  injectModal();
+  function openUserMenu(): void {
+    const menu = document.getElementById('auth-user-menu');
+    if (menu) {
+      menuOpen = !menuOpen;
+      menu.classList.toggle('hidden', !menuOpen);
+    }
+  }
 
-  // ─ Overlay close on backdrop click ─
-  const overlay = document.getElementById('auth-overlay')!;
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal();
-  });
-  document.getElementById('auth-close-btn')!.addEventListener('click', closeModal);
+  function closeUserMenu(): void {
+    menuOpen = false;
+    document.getElementById('auth-user-menu')?.classList.add('hidden');
+  }
 
-  // ─ Keyboard close ─
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeModal(); closeUserMenu(); }
-  });
+  // ─── Toast notifications ──────────────────────────────────
+  function showToast(message: string): void {
+    const existing = document.getElementById('auth-toast');
+    if (existing) existing.remove();
 
-  // ─ Screen navigation links ─
-  document.getElementById('goto-register')!.addEventListener('click', () => openModal('register'));
-  document.getElementById('goto-forgot')!.addEventListener('click', () => openModal('forgot'));
-  document.getElementById('goto-login-from-register')!.addEventListener('click', () => openModal('login'));
-  document.getElementById('goto-login-from-forgot')!.addEventListener('click', () => openModal('login'));
+    const toast = document.createElement('div');
+    toast.id = 'auth-toast';
+    toast.className = [
+      'fixed bottom-6 left-1/2 -translate-x-1/2 z-[300]',
+      'bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-full shadow-2xl',
+      'flex items-center gap-2',
+      'opacity-0 translate-y-4 transition-all duration-300',
+    ].join(' ');
+    toast.innerHTML = `<svg class="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>${message}</span>`;
+    document.body.appendChild(toast);
 
-  // ─ Form submissions ─
-  document.getElementById('auth-form-login')!.addEventListener('submit', handleLogin);
-  document.getElementById('auth-form-register')!.addEventListener('submit', handleRegister);
-  document.getElementById('auth-form-forgot')!.addEventListener('submit', handleForgotPassword);
-  document.getElementById('auth-form-reset')!.addEventListener('submit', handleResetPassword);
-  document.getElementById('auth-form-change')!.addEventListener('submit', handleChangePassword);
+    // Animate in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-4');
+      });
+    });
 
-  // ─ Password strength on register ─
-  document.getElementById('reg-password')!.addEventListener('input', (e) => {
-    updateStrengthUI((e.target as HTMLInputElement).value);
-  });
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-4');
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
 
-  // ─ Password visibility toggles ─
-  initPasswordToggles();
+  // ─── Init ─────────────────────────────────────────────────
+  export function initAuth(): void {
+    injectModal();
 
-  // ─ Sidebar sign-in button ─
-  document.querySelectorAll<HTMLElement>('[data-auth-btn]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.getAttribute('data-logged-in') === 'true') {
-        openUserMenu();
-      } else {
-        openModal('login');
+    // ─ Overlay close on backdrop click ─
+    const overlay = document.getElementById('auth-overlay')!;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+    document.getElementById('auth-close-btn')!.addEventListener('click', closeModal);
+
+    // ─ Keyboard close ─
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeModal(); closeUserMenu(); }
+    });
+
+    // ─ Screen navigation links ─
+    document.getElementById('goto-register')!.addEventListener('click', () => openModal('register'));
+    document.getElementById('goto-forgot')!.addEventListener('click', () => openModal('forgot'));
+    document.getElementById('goto-login-from-register')!.addEventListener('click', () => openModal('login'));
+    document.getElementById('goto-login-from-forgot')!.addEventListener('click', () => openModal('login'));
+
+    // ─ Form submissions ─
+    document.getElementById('auth-form-login')!.addEventListener('submit', handleLogin);
+    document.getElementById('auth-form-register')!.addEventListener('submit', handleRegister);
+    document.getElementById('auth-form-forgot')!.addEventListener('submit', handleForgotPassword);
+    document.getElementById('auth-form-reset')!.addEventListener('submit', handleResetPassword);
+    document.getElementById('auth-form-change')!.addEventListener('submit', handleChangePassword);
+
+    // ─ Password strength on register ─
+    document.getElementById('reg-password')!.addEventListener('input', (e) => {
+      updateStrengthUI((e.target as HTMLInputElement).value);
+    });
+
+    // ─ Password visibility toggles ─
+    initPasswordToggles();
+
+    // ─ Sidebar sign-in button ─
+    document.querySelectorAll<HTMLElement>('[data-auth-btn]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.getAttribute('data-logged-in') === 'true') {
+          openUserMenu();
+        } else {
+          openModal('login');
+        }
+      });
+    });
+
+    // ─ Create user dropdown menu ─
+    createUserMenu();
+
+    // ─ Close menu when clicking outside ─
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('auth-user-menu');
+      const btns = document.querySelectorAll('[data-auth-btn]');
+      let clickedBtn = false;
+      btns.forEach(b => { if (b.contains(e.target as Node)) clickedBtn = true; });
+      if (!clickedBtn && menu && !menu.contains(e.target as Node)) {
+        closeUserMenu();
       }
     });
-  });
 
-  // ─ Create user dropdown menu ─
-  createUserMenu();
-
-  // ─ Close menu when clicking outside ─
-  document.addEventListener('click', (e) => {
-    const menu = document.getElementById('auth-user-menu');
-    const btns = document.querySelectorAll('[data-auth-btn]');
-    let clickedBtn = false;
-    btns.forEach(b => { if (b.contains(e.target as Node)) clickedBtn = true; });
-    if (!clickedBtn && menu && !menu.contains(e.target as Node)) {
-      closeUserMenu();
-    }
-  });
-
-  // ─ Initial state ─
-  updateNavButton();
-}
+    // ─ Initial state ─
+    updateNavButton();
+  }

@@ -20,9 +20,9 @@ type TaxRequest struct {
 	TaxPaid   float64 `json:"taxPaid,omitempty"`
 
 	// Income-tax style
-	Income float64                `json:"income,omitempty"`
-	Regime string                 `json:"regime,omitempty"`
-	Slabs  []converter.TaxSlab    `json:"slabs,omitempty"`
+	Income float64             `json:"income,omitempty"`
+	Regime string              `json:"regime,omitempty"`
+	Slabs  []converter.TaxSlab `json:"slabs,omitempty"`
 }
 
 // HandleTaxCalculate handles HTTP requests for all tax / VAT / GST calculations.

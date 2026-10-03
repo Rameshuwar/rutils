@@ -4,20 +4,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
-	"file-converter/internal/converter"
+	"file-converter/internal/formatters"
 )
 
-// HandleConvert is the universal HTTP handler for file conversions
+// HandleConvert is the universal HTTP handler for file conversions.
+// It delegates to the format registry (internal/formatters) instead of
+// a hardcoded switch, so any registered (fromType, toType) pair is
+// automatically reachable. The full set of supported pairs is
+// discoverable at GET /formats.
+//
 // @Summary Universal File Converter
-// @Description Converts any supported file type to another supported file type dynamically.
+// @Description Converts any supported file type to another supported file type dynamically. The set of supported (fromType, toType) pairs is discoverable at GET /formats.
 // @Accept multipart/form-data
 // @Produce application/octet-stream
-// @Param fromType formData string true "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)"
-// @Param toType formData string true "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)"
+// @Param fromType formData string true "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)"
+// @Param toType formData string true "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)"
 // @Param file formData file true "The file to convert"
 // @Success 200 {file} file "The converted file"
-// @Failure 400 {string} string "Bad Request or unsupported combination"
+// @Failure 400 {string} string "Bad Request or unsupported conversion pair"
+// @Failure 405 {string} string "Method Not Allowed"
 // @Router /convert [post]
 func HandleConvert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -25,133 +32,50 @@ func HandleConvert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Limit upload size to 10 MB for safety
+	// Limit upload size to 10 MB for safety.
 	r.ParseMultipartForm(10 << 20)
 
-	fromType := r.FormValue("fromType")
-	toType := r.FormValue("toType")
+	fromType := strings.ToLower(strings.TrimSpace(r.FormValue("fromType")))
+	toType := strings.ToLower(strings.TrimSpace(r.FormValue("toType")))
 
 	if fromType == "" || toType == "" {
 		http.Error(w, "Missing fromType or toType in form data", http.StatusBadRequest)
 		return
 	}
 
-	file, fileHeader, err := r.FormFile("file")
+	// Look up the registered formatter for this directed pair.
+	formatter, ok := formatters.Lookup(fromType, toType)
+	if !ok {
+		http.Error(
+			w,
+			fmt.Sprintf("Conversion from %s to %s is not yet supported. Please choose a different combination.", fromType, toType),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	// Pull the file out of the multipart form.
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Failed to get file from request. Ensure form-data key is 'file'", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// Default disposition
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"converted.%s\"", toType))
+	// Write the response headers up front so the client always sees
+	// the correct MIME and filename, even if the conversion later fails.
+	w.Header().Set("Content-Type", formatter.OutputMIME)
+	w.Header().Set(
+		"Content-Disposition",
+		fmt.Sprintf("attachment; filename=\"converted%s\"", formatter.OutputExt),
+	)
 
-	conversionPath := fmt.Sprintf("%s-to-%s", fromType, toType)
-
-	switch conversionPath {
-	case "jpg-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = converter.ConvertJPGtoPNG(file, w)
-	case "csv-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = converter.ConvertCSVtoPDF(file, w)
-	case "csv-to-json":
-		w.Header().Set("Content-Type", "application/json")
-		err = converter.ConvertCSVtoJSON(file, w)
-	case "json-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = converter.ConvertJSONtoCSV(file, w)
-	case "json-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = converter.ConvertJSONtoTXT(file, w)
-	case "txt-to-docx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		err = converter.ConvertTXTtoDOCX(file, w)
-	case "pdf-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = converter.ConvertPDFtoTXT(file, fileHeader.Size, w)
-	case "txt-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = converter.ConvertTXTtoPDF(file, w)
-	case "png-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertPNGtoJPG(file, w)
-	case "csv-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = converter.ConvertCSVtoTXT(file, w)
-	case "docx-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = converter.ConvertDOCXtoCSV(file, w)
-	case "docx-to-txt":
-		w.Header().Set("Content-Type", "text/plain")
-		err = converter.ConvertDOCXtoCSV(file, w)
-	case "csv-to-docx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		err = converter.ConvertCSVtoDOCX(file, w)
-	case "txt-to-json":
-		w.Header().Set("Content-Type", "application/json")
-		err = converter.ConvertTXTtoJSON(file, w)
-	case "txt-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = converter.ConvertTXTtoCSV(file, w)
-	case "pdf-to-docx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		err = converter.ConvertPDFtoDOCX(file, fileHeader.Size, w)
-	case "pdf-to-csv":
-		w.Header().Set("Content-Type", "text/csv")
-		err = converter.ConvertPDFtoCSV(file, fileHeader.Size, w)
-	case "pdf-to-json":
-		w.Header().Set("Content-Type", "application/json")
-		err = converter.ConvertPDFtoJSON(file, fileHeader.Size, w)
-	case "json-to-docx":
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-		err = converter.ConvertJSONtoDOCX(file, w)
-	case "json-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = converter.ConvertJSONtoPDF(file, w)
-	case "docx-to-json":
-		w.Header().Set("Content-Type", "application/json")
-		err = converter.ConvertDOCXtoJSON(file, w)
-	case "docx-to-pdf":
-		w.Header().Set("Content-Type", "application/pdf")
-		err = converter.ConvertDOCXtoPDF(file, w)
-	case "pdf-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertPDFtoJPG(file, w)
-	case "txt-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertTXTtoJPG(file, w)
-	case "txt-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = converter.ConvertTXTtoPNG(file, w)
-	case "docx-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertDOCXtoJPG(file, w)
-	case "docx-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = converter.ConvertDOCXtoPNG(file, w)
-	case "csv-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertCSVtoJPG(file, w)
-	case "csv-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = converter.ConvertCSVtoPNG(file, w)
-	case "json-to-jpg":
-		w.Header().Set("Content-Type", "image/jpeg")
-		err = converter.ConvertJSONtoJPG(file, w)
-	case "json-to-png":
-		w.Header().Set("Content-Type", "image/png")
-		err = converter.ConvertJSONtoPNG(file, w)
-	default:
-		http.Error(w, fmt.Sprintf("Conversion from %s to %s is not yet supported. Please choose a different combination.", fromType, toType), http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
+	if err := formatter.Convert(r.Context(), file, w); err != nil {
+		// Undo the success headers and replace with an error.
 		w.Header().Del("Content-Disposition")
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		http.Error(w, fmt.Sprintf("Conversion failed: %v", err), http.StatusBadRequest)
-		log.Printf("Conversion error (%s): %v", conversionPath, err)
+		log.Printf("Conversion error (%s→%s): %v", fromType, toType, err)
 		return
 	}
 }

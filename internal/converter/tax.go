@@ -52,14 +52,14 @@ type TaxRequest struct {
 
 // TaxResponse is the unified output for all tax operations.
 type TaxResponse struct {
-	Mode       string                 `json:"mode"`
-	NetAmount  float64                `json:"netAmount"`
-	TaxAmount  float64                `json:"taxAmount"`
-	GrossAmount float64               `json:"grossAmount"`
-	TaxRate    float64                `json:"taxRate"`
-	Formatted  string                 `json:"formatted"`
-	Steps      []string               `json:"steps,omitempty"`
-	Extra      map[string]interface{} `json:"extra,omitempty"`
+	Mode        string                 `json:"mode"`
+	NetAmount   float64                `json:"netAmount"`
+	TaxAmount   float64                `json:"taxAmount"`
+	GrossAmount float64                `json:"grossAmount"`
+	TaxRate     float64                `json:"taxRate"`
+	Formatted   string                 `json:"formatted"`
+	Steps       []string               `json:"steps,omitempty"`
+	Extra       map[string]interface{} `json:"extra,omitempty"`
 }
 
 // ============================================================
@@ -312,9 +312,9 @@ func CalculateTax(req TaxRequest) (*TaxResponse, error) {
 			Formatted:   formatNumber(totalTax),
 			Steps:       steps,
 			Extra: map[string]interface{}{
-				"regime":         req.Regime,
-				"effectiveRate":  effectiveRate,
-				"slabBreakdown":  breakdown,
+				"regime":        req.Regime,
+				"effectiveRate": effectiveRate,
+				"slabBreakdown": breakdown,
 			},
 		}, nil
 

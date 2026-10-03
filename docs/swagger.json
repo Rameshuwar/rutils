@@ -461,6 +461,46 @@
                 }
             }
         },
+        "/calculate-compound-interest": {
+            "post": {
+                "description": "Calculates the compound interest, total amount, effective annual rate,\nand (for tenures вүҘ 1 year) a year-by-year growth schedule.\n\n**Formula:** `A = P Г— (1 + r/n)^(nГ—t)`   and   `CI = A вҲ’ P`\nwhere `r` is the annual rate in decimal form, `n` is the number of\ncompounding periods per year, and `t` is the tenure in years.\n\n**Limits:**\n- `principal` must be positive and вүӨ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `time` must be positive; tenure must be вүӨ 100 years.\n- `timeUnit` must be `\"years\"` or `\"months\"` (day-based tenure is rejected).\n- `compoundingFrequency` must be one of `yearly`, `half_yearly`,\n`quarterly`, `monthly`, `daily` (defaults to `yearly`).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Compound Interest Calculator",
+                "parameters": [
+                    {
+                        "description": "Compound Interest Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CompoundInterestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compound Interest Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.CompoundInterestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-emi": {
             "post": {
                 "description": "Calculates the Equated Monthly Installment (EMI) for a loan along with\nthe total interest, total payment, principal/interest split, and a\nmonth-by-month amortization schedule.\n\n**Formula:** `EMI = [P × r × (1+r)^N] / [(1+r)^N − 1]`\nwhere `r` is the monthly interest rate (annual / 12 / 100) and `N` is\nthe tenure in months.\n\n**Special case:** an annual interest rate of `0` returns a simple\n`principal / tenure` division (interest-free loan).\n\n**Limits:**\n- `principal` must be positive and ≤ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `tenure` must be positive; tenure in months must be ≤ 600.\n- `tenureUnit` must be exactly `\"months\"` or `\"years\"`.",
@@ -541,6 +581,86 @@
                 }
             }
         },
+        "/calculate-scientific": {
+            "post": {
+                "description": "Performs any scientific / mathematical operation through a single `operation`-discriminated endpoint.\n\n**Operation groups (`operation` field):**\n- Constants:      `pi`, `e`\n- Trigonometric:  `sin`, `cos`, `tan`, `csc`, `sec`, `cot`\n- Inverse trig:   `asin`, `acos`, `atan`, `atan2` (2-arg)\n- Hyperbolic:     `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`\n- Log / Exp:      `log`, `ln`, `log_base` (2-arg), `exp`\n- Powers / Roots: `pow` (2-arg), `sqrt`, `cbrt`, `nth_root` (2-arg)\n- Rounding:       `abs`, `floor`, `ceil`, `round`, `trunc`, `sign`\n- Combinatorics:  `factorial`, `ncr` (2-arg), `npr` (2-arg)\n- Misc:           `gcd` (2-arg), `lcm` (2-arg), `mod` (2-arg), `hypot` (2-arg)\n\n**Angle unit:** Trig and inverse-trig operations accept an optional\n`angleUnit` field (`\"degrees\"` or `\"radians\"`, default `\"radians\"`).\nThe same unit governs both the input of `sin/cos/tan/...` and the\noutput of `asin/acos/atan/atan2`. Hyperbolic operations are unaffected.\n\n**Validation:** Domain violations (e.g. `sqrt(-1)`, `ln(0)`, `asin(2)`,\n`tan(90°)`) return a 400 error with a descriptive message.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scientific Calculator"
+                ],
+                "summary": "Scientific Calculator",
+                "parameters": [
+                    {
+                        "description": "Scientific Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ScientificRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scientific Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.ScientificResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid operation, parameters, or domain error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/calculate-simple-interest": {
+            "post": {
+                "description": "Calculates the simple interest and total amount for a loan or investment.\n\n**Formula:** `SI = (P Г— R Г— T) / 100`\nwhere `P` is the principal, `R` is the annual rate in percent,\nand `T` is the tenure expressed in years.\n\n**Limits:**\n- `principal` must be positive and вүӨ 1 trillion.\n- `annualInterestRate` must be between 0 and 100.\n- `time` must be positive; tenure must be вүӨ 100 years.\n- `timeUnit` must be `\"years\"`, `\"months\"`, or `\"days\"`.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Simple Interest Calculator",
+                "parameters": [
+                    {
+                        "description": "Simple Interest Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SimpleInterestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Simple Interest Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.SimpleInterestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-tax": {
             "post": {
                 "description": "Performs any tax calculation through a single `mode`-discriminated endpoint.\n\n**Supported modes (`mode` field):**\n- `add_tax`      (amount, taxRate)                       — exclusive → inclusive\n- `remove_tax`   (amount, taxRate)                       — inclusive → exclusive\n- `find_rate`    (netAmount, grossAmount)                — effective tax rate\n- `split_gst`    (amount, taxRate, taxType)              — CGST+SGST or IGST breakdown\n- `reverse_gst`  (taxPaid, taxRate)                      — recover net from tax paid\n- `income_tax`   (income, slabs[], regime?)              — progressive slab tax\n\n**Notes:**\n- The endpoint is country-neutral: the client supplies the rate and, for income tax, the slab schedule.\n- For `split_gst`, `taxType` must be `cgst_sgst` (default) or `igst`.\n- For `income_tax`, slabs must be non-overlapping; at most one slab may have `to = 0` (open-ended).",
@@ -583,7 +703,7 @@
         },
         "/convert": {
             "post": {
-                "description": "Converts any supported file type to another supported file type dynamically.",
+                "description": "Converts any supported file type to another supported file type dynamically. The set of supported (fromType, toType) pairs is discoverable at GET /formats.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -594,14 +714,14 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "description": "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)",
                         "name": "fromType",
                         "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "description": "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)",
                         "name": "toType",
                         "in": "formData",
                         "required": true
@@ -622,7 +742,13 @@
                         }
                     },
                     "400": {
-                        "description": "Bad Request or unsupported combination",
+                        "description": "Bad Request or unsupported conversion pair",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
                         "schema": {
                             "type": "string"
                         }
@@ -905,6 +1031,64 @@
                 }
             }
         },
+        "/formats": {
+            "get": {
+                "description": "Returns every supported source format plus every directed conversion edge. Intended for the frontend to populate dropdowns at runtime.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Format Registry"
+                ],
+                "summary": "List supported file formats",
+                "responses": {
+                    "200": {
+                        "description": "Conversion matrix",
+                        "schema": {
+                            "$ref": "#/definitions/formatters.FormatListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/formats/{type}": {
+            "get": {
+                "description": "Returns the MIME type, extension, category, and reachable conversions for one format (e.g. \"jpg\"). Path is /formats/{type}.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Format Registry"
+                ],
+                "summary": "Describe a single format",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Format identifier (e.g. jpg, pdf, csv)",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Format detail",
+                        "schema": {
+                            "$ref": "#/definitions/formatters.FormatDetail"
+                        }
+                    },
+                    "404": {
+                        "description": "Unknown format",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/nifty50/companies": {
             "get": {
                 "security": [
@@ -1001,6 +1185,28 @@
                 }
             }
         },
+        "api.CompoundInterestRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "compoundingFrequency": {
+                    "description": "\"yearly\" | \"half_yearly\" | \"quarterly\" | \"monthly\" | \"daily\"",
+                    "type": "string"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "time": {
+                    "type": "number"
+                },
+                "timeUnit": {
+                    "description": "\"years\" | \"months\"",
+                    "type": "string"
+                }
+            }
+        },
         "api.EMIRequest": {
             "type": "object",
             "properties": {
@@ -1080,6 +1286,41 @@
                 },
                 "value3": {
                     "type": "number"
+                }
+            }
+        },
+        "api.ScientificRequest": {
+            "type": "object",
+            "properties": {
+                "angleUnit": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "value1": {
+                    "type": "number"
+                },
+                "value2": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.SimpleInterestRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "time": {
+                    "type": "number"
+                },
+                "timeUnit": {
+                    "description": "\"years\" | \"months\" | \"days\"",
+                    "type": "string"
                 }
             }
         },
@@ -1304,6 +1545,50 @@
                 }
             }
         },
+        "converter.CompoundInterestResponse": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.InterestBreakdown"
+                },
+                "compoundingFrequency": {
+                    "type": "string"
+                },
+                "compoundsPerYear": {
+                    "type": "integer"
+                },
+                "effectiveAnnualRate": {
+                    "type": "number"
+                },
+                "interest": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timeYears": {
+                    "type": "number"
+                },
+                "totalAmount": {
+                    "type": "number"
+                },
+                "yearlyBreakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.YearlyRow"
+                    }
+                }
+            }
+        },
         "converter.EMIBreakdown": {
             "type": "object",
             "properties": {
@@ -1381,6 +1666,17 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "converter.InterestBreakdown": {
+            "type": "object",
+            "properties": {
+                "interestPercent": {
+                    "type": "number"
+                },
+                "principalPercent": {
+                    "type": "number"
                 }
             }
         },
@@ -1475,6 +1771,62 @@
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "converter.ScientificResponse": {
+            "type": "object",
+            "properties": {
+                "angleUnit": {
+                    "type": "string"
+                },
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "formatted": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "converter.SimpleInterestResponse": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.InterestBreakdown"
+                },
+                "interest": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "timeYears": {
+                    "type": "number"
+                },
+                "totalAmount": {
+                    "type": "number"
                 }
             }
         },
@@ -1647,6 +1999,117 @@
                 "ResolutionAmbiguous",
                 "ResolutionNonExistent"
             ]
+        },
+        "converter.YearlyRow": {
+            "type": "object",
+            "properties": {
+                "closingBalance": {
+                    "type": "number"
+                },
+                "interestEarned": {
+                    "type": "number"
+                },
+                "openingBalance": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "formatters.Category": {
+            "type": "string",
+            "enum": [
+                "image",
+                "document",
+                "data",
+                "spreadsheet",
+                "markup"
+            ],
+            "x-enum-varnames": [
+                "CategoryImage",
+                "CategoryDocument",
+                "CategoryData",
+                "CategorySpreadsheet",
+                "CategoryMarkup"
+            ]
+        },
+        "formatters.ConversionEntry": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatDetail": {
+            "type": "object",
+            "properties": {
+                "canConvertFrom": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "canConvertTo": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "mime": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatInfo": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/formatters.Category"
+                },
+                "ext": {
+                    "type": "string"
+                },
+                "mime": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "formatters.FormatListResponse": {
+            "type": "object",
+            "properties": {
+                "conversions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/formatters.ConversionEntry"
+                    }
+                },
+                "sources": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/formatters.FormatInfo"
+                    }
+                }
+            }
         },
         "nifty.CompaniesResponse": {
             "type": "object",

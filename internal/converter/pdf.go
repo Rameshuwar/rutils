@@ -54,10 +54,17 @@ type PDFConversionResult struct {
 
 // rasterQualityStep describes one attempt in the rasterization ladder.
 type rasterQualityStep struct {
-	DPI           int // Dots-per-inch used when rendering pages.
-	JPEGQuality   int // JPEG encoder quality (1..100).
+	DPI         int // Dots-per-inch used when rendering pages.
+	JPEGQuality int // JPEG encoder quality (1..100).
 }
-
+// rasterResult pairs a ladder step with the actual output size that
+// step produced. Used by the refined search to pick the smallest
+// result that still sits at or below the target.
+type rasterResult struct {
+	Step   rasterQualityStep
+	Bytes  int64
+	Output []byte
+}
 // rasterLadder is the ordered list of quality steps tried during
 // compression. Higher quality is attempted first; the ladder ends at
 // the lowest acceptable quality floor.
@@ -206,16 +213,28 @@ func targetSizeToBytes(targetSize float64, dataType string) (int64, error) {
 // ============================================================
 // COMPRESSION — rasterization pipeline (iLovePDF/PI7 style)
 // ============================================================
-
-// compressPDF converts the input PDF to the smallest possible file
-// using page rasterization + JPEG re-encoding, walking down a quality
-// ladder until either the target is met or the quality floor is reached.
+// compressPDF converts the input PDF to a file at or just below
+// targetBytes, using a two-phase search:
 //
-// If the target is never met, the smallest (floor) result is returned
-// with TargetMet=false so the caller can still deliver a useful file.
+//   Phase 1 — walk the rasterLadder from highest quality downward.
+//             Record every (step, outputSize) pair until we find the
+//             first step whose output is ≤ targetBytes. That step is
+//             the "upper bracket" (highest-quality acceptable output).
+//             The step just before it (if any) is the "lower bracket"
+//             (smallest output that was still > targetBytes).
+//
+//   Phase 2 — if both brackets exist, binary-search the (DPI, quality)
+//             space between them for a step that produces an output
+//             as close to targetBytes as possible without exceeding
+//             it. This turns "45 KB when 100 KB was requested" into
+//             "~95 KB when 100 KB was requested".
+//
+// If no step ever gets below the target, the smallest attempt is
+// returned with TargetMet=false so the caller can still hand the user
+// something useful.
 func compressPDF(input []byte, targetBytes int64) (*PDFConversionResult, error) {
+	// Already small enough — return the original.
 	if int64(len(input)) <= targetBytes {
-		// Already smaller than or equal to target — nothing to do.
 		return &PDFConversionResult{
 			Output:     input,
 			TargetSize: targetBytes,
@@ -231,7 +250,7 @@ func compressPDF(input []byte, targetBytes int64) (*PDFConversionResult, error) 
 		)
 	}
 
-	// Write input to a temp file once, reuse for every attempt.
+	// Write the input to a temp file once, reuse for every attempt.
 	inputFile, err := os.CreateTemp("", "pdf-compress-in-*.pdf")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp input file: %w", err)
@@ -247,33 +266,55 @@ func compressPDF(input []byte, targetBytes int64) (*PDFConversionResult, error) 
 		return nil, fmt.Errorf("failed to close temp PDF: %w", err)
 	}
 
-	var smallest *PDFConversionResult
+	// ---- Phase 1: coarse walk down the ladder ----
+	var (
+		tooBig    *rasterResult // last step that was still > target (lower bracket)
+		justRight *rasterResult // first step that was ≤ target (upper bracket)
+		smallest  *rasterResult // absolute smallest seen, in case we never hit target
+	)
 
 	for _, step := range rasterLadder {
-		result, err := rasterizeToPDF(
-			pdftoppmPath,
-			inputPath,
-			step.DPI,
-			step.JPEGQuality,
-		)
+		result, err := rasterizeToPDF(pdftoppmPath, inputPath, step.DPI, step.JPEGQuality)
 		if err != nil {
-			// If a step fails (e.g. pdftoppm errors), try the next.
 			continue
 		}
 
-		result.TargetSize = targetBytes
-		result.ActualSize = int64(len(result.Output))
-		result.TargetMet = result.ActualSize <= targetBytes
+		size := int64(len(result.Output))
+		rr := &rasterResult{Step: step, Bytes: size, Output: result.Output}
 
-		// Remember the smallest so far.
-		if smallest == nil || result.ActualSize < smallest.ActualSize {
-			smallest = result
+		if smallest == nil || size < smallest.Bytes {
+			smallest = rr
 		}
 
-		// First attempt that meets the target wins (best quality).
-		if result.TargetMet {
-			return result, nil
+		if size > targetBytes {
+			// Still too big — remember as the lower bracket.
+			tooBig = rr
+			continue
 		}
+
+		// First step that fits. Record it and stop the coarse walk.
+		justRight = rr
+		break
+	}
+
+	// ---- Phase 2: refine between the two brackets ----
+	if justRight != nil && tooBig != nil {
+		refined := refineCompression(
+			pdftoppmPath, inputPath, targetBytes, tooBig, justRight,
+		)
+		if refined != nil && refined.Bytes > justRight.Bytes {
+			justRight = refined
+		}
+	}
+
+	// ---- Pick the best result ----
+	if justRight != nil {
+		return &PDFConversionResult{
+			Output:     justRight.Output,
+			TargetSize: targetBytes,
+			ActualSize: justRight.Bytes,
+			TargetMet:  true,
+		}, nil
 	}
 
 	if smallest == nil {
@@ -282,8 +323,107 @@ func compressPDF(input []byte, targetBytes int64) (*PDFConversionResult, error) 
 		)
 	}
 
-	// Best-effort: return the smallest even though target was not met.
-	return smallest, nil
+	// Best-effort: target was never reached, return the smallest.
+	return &PDFConversionResult{
+		Output:     smallest.Output,
+		TargetSize: targetBytes,
+		ActualSize: smallest.Bytes,
+		TargetMet:  false,
+	}, nil
+}
+
+// refineCompression performs a binary search over the (DPI, JPEG quality)
+// space between two bracketing results to find an output as close to
+// targetBytes as possible without exceeding it.
+//
+// tooBig    — a (DPI, q) pair whose output size was > targetBytes
+// justRight — a (DPI, q) pair whose output size was ≤ targetBytes
+//
+// pdftoppm output size is monotonically increasing in both DPI and JPEG
+// quality (for a fixed input), so we can safely halve the gap between
+// the two brackets.
+//
+// Returns the best refined result (≤ target, closest to target), or nil
+// if refinement could not find anything better than justRight.
+func refineCompression(
+	pdftoppmPath string,
+	inputPath string,
+	targetBytes int64,
+	tooBig *rasterResult,
+	justRight *rasterResult,
+) *rasterResult {
+
+	// Quantize each bracket into a single scalar so we can bisect.
+	// Higher DPI matters more than higher JPEG quality for file size,
+	// so weight DPI 10x relative to quality.
+	const dpiWeight = 10
+	score := func(s rasterQualityStep) int {
+		return s.DPI*dpiWeight + s.JPEGQuality
+	}
+
+	// Ensure lo (the big one) has the higher score and hi (the small one)
+	// has the lower score. If not, the caller passed them the wrong way
+	// round — swap internally.
+	loStep, hiStep := tooBig.Step, justRight.Step
+	if score(loStep) < score(hiStep) {
+		loStep, hiStep = hiStep, loStep
+	}
+
+	best := justRight
+
+	// Bisect at most 6 times — each iteration costs a full pdftoppm run.
+	// 6 iterations shrinks the search interval by 64x, which is enough
+	// to land well inside the target for typical documents.
+	for i := 0; i < 6; i++ {
+		loScore := score(loStep)
+		hiScore := score(hiStep)
+		if loScore-hiScore <= 1 {
+			break // brackets adjacent — nothing left to explore
+		}
+
+		mid := (loScore + hiScore) / 2
+		midDPI := mid / dpiWeight
+		midQ := mid % dpiWeight
+
+		// Clamp to valid ranges before invoking pdftoppm.
+		if midDPI < 10 {
+			midDPI = 10
+		}
+		if midDPI > 200 {
+			midDPI = 200
+		}
+		if midQ < 1 {
+			midQ = 1
+		}
+		if midQ > 100 {
+			midQ = 100
+		}
+
+		step := rasterQualityStep{DPI: midDPI, JPEGQuality: midQ}
+		result, err := rasterizeToPDF(pdftoppmPath, inputPath, step.DPI, step.JPEGQuality)
+		if err != nil {
+			// If the intermediate step failed, shrink the upper bracket
+			// from the lo side and try again.
+			loStep = step
+			continue
+		}
+
+		size := int64(len(result.Output))
+		rr := &rasterResult{Step: step, Bytes: size, Output: result.Output}
+
+		if size > targetBytes {
+			// Still too big → tighten the upper bound.
+			loStep = step
+		} else {
+			// Fits → this is a better candidate than the previous best.
+			if size > best.Bytes {
+				best = rr
+			}
+			hiStep = step
+		}
+	}
+
+	return best
 }
 
 // rasterizeToPDF renders every page of inputPath as a JPEG at the given

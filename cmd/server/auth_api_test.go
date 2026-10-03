@@ -25,7 +25,7 @@ func setupTestServer(t *testing.T) (*httptest.Server, *auth.Store, *auth.Config)
 
 	cfg := &auth.Config{
 		SMTPEmail:          "",
-		SMTPAppPassword:     "",
+		SMTPAppPassword:    "",
 		SMTPHost:           "smtp.gmail.com",
 		SMTPPort:           "587",
 		JWTSecret:          "test-secret-key-1234567890",

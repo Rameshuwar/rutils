@@ -10,6 +10,7 @@ import (
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
+	_ "file-converter/internal/formatters"
 	"file-converter/internal/nifty"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -60,7 +61,11 @@ func main() {
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
-
+	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
+	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
+	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
+	apiMux.HandleFunc("/formats", api.HandleListFormats)
+	apiMux.HandleFunc("/formats/", api.HandleFormatDetail)
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -97,6 +102,8 @@ func main() {
 	niftyService.StartScheduler(context.Background())
 
 	apiMux.HandleFunc("/nifty50/companies", api.RequireAuth(cfg, niftyHandler.GetCompanies))
+	// ── Repair engine ─────────────────────────────────────────
+	apiMux.HandleFunc("/repair", api.HandleRepair)
 
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
@@ -119,10 +126,12 @@ func main() {
 
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
-
+	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
-
+	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-scientific      (Scientific Calculator)")
 	// ⬅️ Authentication Endpoints in startup banner
 	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
 	fmt.Println(" -> POST http://localhost:8080/auth/login            (User Login - JWT)")

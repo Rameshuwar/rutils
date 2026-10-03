@@ -20,7 +20,8 @@ FROM alpine:latest
 WORKDIR /app
 
 # Install poppler-utils for PDF to Image conversion
-RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng tzdata ca-certificates
+# and tzdata for timezone support in the Go application.
+RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng tzdata
 
 # Copy backend binary
 COPY --from=backend-builder /app/server .
