@@ -709,7 +709,7 @@ const docTemplate = `{
         },
         "/convert": {
             "post": {
-                "description": "Converts any supported file type to another supported file type dynamically.",
+                "description": "Converts any supported file type to another supported file type dynamically. The set of supported (fromType, toType) pairs is discoverable at GET /formats.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -720,14 +720,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "description": "Source file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)",
                         "name": "fromType",
                         "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)",
+                        "description": "Target file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp, tiff, bmp)",
                         "name": "toType",
                         "in": "formData",
                         "required": true
@@ -748,7 +748,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request or unsupported combination",
+                        "description": "Bad Request or unsupported conversion pair",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
                         "schema": {
                             "type": "string"
                         }
@@ -1084,6 +1090,62 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/repair": {
+            "post": {
+                "description": "Detects the input format and applies a staged, rules-based repair pipeline.\nValues are never silently changed at normal level; every applied fix is\nreported in the X-Repair-Applied response header and (when describe=true)\nin the JSON response body.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Repair"
+                ],
+                "summary": "Repair a malformed file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Malformed file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Force a format (json, csv, xml, yaml)",
+                        "name": "format",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "strict, normal, or lenient (default normal)",
+                        "name": "repairLevel",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "If true, wrap the response in JSON with a report",
+                        "name": "describe",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Repaired file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }

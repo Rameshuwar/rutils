@@ -88,6 +88,8 @@ func main() {
 	apiMux.HandleFunc("/auth/reset-password", api.RequireAuth(cfg, authHandler.ResetPassword))
 	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
+	// ── Repair engine ─────────────────────────────────────────
+	apiMux.HandleFunc("/repair", api.HandleRepair)
 
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
@@ -110,7 +112,7 @@ func main() {
 
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
-
+	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")

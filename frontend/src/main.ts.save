@@ -1,16 +1,13 @@
 import './style.css'
 import { initAuth } from './auth-ui'
-import { initFormatters, renderFormattersCategory } from './formatters'
+
 
 // ============================================================
-// TOOL REGISTRY вҖ” single source of truth for navigation
+// TOOL REGISTRY — single source of truth for navigation
 // ============================================================
-type ToolId =
-  | 'file' | 'pdf' | 'measure' | 'time' | 'railway'
-  | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest' | 'scientific'
-  | 'formatters';
-
-type CategoryId = 'conversion' | 'calculations' | 'formatters';
+type ToolId = 'file' | 'pdf' | 'measure' | 'time' | 'railway'
+             | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest'| 'scientific';
+type CategoryId = 'conversion' | 'calculations';
 
 interface ToolDef {
   id: ToolId;
@@ -35,28 +32,23 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'interest',   label: 'SI / CI',    viewId: 'interest-calculator-view' },
     { id: 'scientific', label: 'Scientific', viewId: 'scientific-calculator-view' },
   ],
-  formatters: [
-    { id: 'formatters', label: 'Formatter', viewId: 'formatters-view' },
-  ],
 };
 
 const CATEGORY_LABELS: Record<CategoryId, string> = {
-  conversion:   'Conversion',
+  conversion: 'Conversion',
   calculations: 'Calculations',
-  formatters:   'Formatter',
 };
 
 // ============================================================
-// DOM REFERENCES вҖ” navigation
+// DOM REFERENCES — navigation
 // ============================================================
-const sidebar         = document.getElementById('sidebar') as HTMLElement | null;
-const mobileMenuBtn   = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
-const mobileMenuClose = document.getElementById('mobile-menu-close') as HTMLButtonElement | null;
-const mobileOverlay   = document.getElementById('mobile-overlay') as HTMLDivElement | null;
+const sidebar             = document.getElementById('sidebar') as HTMLElement | null;
+const mobileMenuBtn       = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null;
+const mobileMenuClose     = document.getElementById('mobile-menu-close') as HTMLButtonElement | null;
+const mobileOverlay       = document.getElementById('mobile-overlay') as HTMLDivElement | null;
 
 const btnCategoryConversion   = document.getElementById('btn-category-conversion') as HTMLButtonElement;
 const btnCategoryCalculations = document.getElementById('btn-category-calculations') as HTMLButtonElement;
-const btnCategoryFormatters   = document.getElementById('btn-category-formatters') as HTMLButtonElement;
 const categoryTitle           = document.getElementById('category-title') as HTMLHeadingElement;
 const breadcrumbTool          = document.getElementById('breadcrumb-tool') as HTMLSpanElement;
 const tabStrip                = document.getElementById('tab-strip') as HTMLDivElement;
@@ -92,8 +84,8 @@ mobileMenuBtn?.addEventListener('click', openMobileMenu);
 mobileMenuClose?.addEventListener('click', closeMobileMenu);
 mobileOverlay?.addEventListener('click', closeMobileMenu);
 
-[btnCategoryConversion, btnCategoryCalculations, btnCategoryFormatters].forEach(btn => {
-  btn?.addEventListener('click', () => {
+[btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
+  btn.addEventListener('click', () => {
     if (window.innerWidth < 768) {
       setTimeout(closeMobileMenu, 150);
     }
@@ -101,7 +93,7 @@ mobileOverlay?.addEventListener('click', closeMobileMenu);
 });
 
 // ============================================================
-// NAVIGATION вҖ” categories & tabs
+// NAVIGATION — categories & tabs
 // ============================================================
 function renderTabs(category: CategoryId) {
   tabStrip.innerHTML = '';
@@ -139,18 +131,14 @@ function renderTabs(category: CategoryId) {
 }
 
 function highlightCategoryButtons() {
-  const activeClasses   = ['bg-indigo-800', 'text-white'];
+  const activeClasses = ['bg-indigo-800', 'text-white'];
   const inactiveClasses = ['text-indigo-200', 'hover:bg-indigo-800', 'hover:text-white'];
 
-  const pairs: [HTMLButtonElement | null, CategoryId][] = [
-    [btnCategoryConversion,   'conversion'],
-    [btnCategoryCalculations, 'calculations'],
-    [btnCategoryFormatters,   'formatters'],
-  ];
+  [btnCategoryConversion, btnCategoryCalculations].forEach(btn => {
+    const isActive =
+      (btn === btnCategoryConversion && currentCategory === 'conversion') ||
+      (btn === btnCategoryCalculations && currentCategory === 'calculations');
 
-  pairs.forEach(([btn, cat]) => {
-    if (!btn) return;
-    const isActive = currentCategory === cat;
     btn.classList.remove(...activeClasses, ...inactiveClasses);
     if (isActive) {
       btn.classList.add(...activeClasses);
@@ -161,7 +149,6 @@ function highlightCategoryButtons() {
 }
 
 function setTool(toolId: ToolId) {
-  // Ensure the tool belongs to the current category; if not, switch.
   const toolsInCategory = TOOLS[currentCategory];
   const toolExists = toolsInCategory.some(t => t.id === toolId);
 
@@ -182,7 +169,6 @@ function setTool(toolId: ToolId) {
 
   renderTabs(currentCategory);
 
-  // Show the correct tool view, hide all others.
   allToolViews.forEach(view => {
     if (view.id === toolDef.viewId) {
       view.classList.remove('hidden');
@@ -192,12 +178,6 @@ function setTool(toolId: ToolId) {
   });
 
   highlightCategoryButtons();
-
-  // в¬…пёҸ Initialize / render the formatters view when it becomes visible.
-  if (toolDef.viewId === 'formatters-view') {
-    initFormatters();          // idempotent вҖ” safe to call every time
-    renderFormattersCategory();
-  }
 
   const activeTab = tabStrip.querySelector<HTMLButtonElement>(
     `button[data-tool="${currentTool}"]`
@@ -228,7 +208,6 @@ function setCategory(category: CategoryId, preserveTool = true) {
 // ============================================================
 btnCategoryConversion.addEventListener('click', () => setCategory('conversion'));
 btnCategoryCalculations.addEventListener('click', () => setCategory('calculations'));
-btnCategoryFormatters.addEventListener('click', () => setCategory('formatters'));
 
 document.querySelector('#breadcrumb > span:first-child')?.addEventListener('click', () => {
   setCategory(currentCategory, true);
@@ -239,18 +218,14 @@ document.querySelector('#breadcrumb > span:first-child')?.addEventListener('clic
 // ============================================================
 setCategory('conversion', false);
 
-// Initialize the Formatters module once at boot so its DOM refs are
-// resolved before the user first clicks the sidebar entry.
-initFormatters();
-
-// в”Җв”Җв”Җ Initialise authentication system в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+// ─── Initialise authentication system ────────────────────
 initAuth();
 
 
 // ============================================================
 // ------------------------------------------------------------
-// EVERYTHING BELOW IS EXISTING CONVERTER LOGIC вҖ” UNCHANGED.
-// ------------------------------------------------------------
+// EVERYTHING BELOW IS EXISTING CONVERTER LOGIC — UNCHANGED.
+-----------------------
 // ============================================================
 
 // ----------------------------------------------------
@@ -659,8 +634,8 @@ timeForm.addEventListener('submit', async (e) => {
     timeResultLocal.textContent = `${destDate} ${destTime12}`;
 
     let zoneText = `${data.dest_zone_name} (UTC ${data.dest_offset})`;
-    if (data.is_next_day) zoneText += ' вҖў Next Day';
-    if (data.is_prev_day) zoneText += ' вҖў Previous Day';
+    if (data.is_next_day) zoneText += ' • Next Day';
+    if (data.is_prev_day) zoneText += ' • Previous Day';
 
     timeResultZone.textContent = zoneText;
 
@@ -1045,12 +1020,12 @@ const PERCENTAGE_OP_NAMES: Record<string, string> = {
   discount:                'Discount',
   markup:                  'Markup',
   profit_loss:             'Profit / Loss %',
-  percent_to_fraction:     'Percent вҶ’ Fraction',
-  fraction_to_percent:     'Fraction вҶ’ Percent',
-  decimal_to_percent:      'Decimal вҶ’ Percent',
+  percent_to_fraction:     'Percent → Fraction',
+  fraction_to_percent:     'Fraction → Percent',
+  decimal_to_percent:      'Decimal → Percent',
   compound_percent:        'Compound percentage',
   marks_percentage:        'Marks percentage',
-  cgpa_to_percent:         'CGPA вҶ’ Percent',
+  cgpa_to_percent:         'CGPA → Percent',
 };
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -1174,16 +1149,16 @@ if (percentageForm) {
     if (!text) return;
     const ok = await copyToClipboard(text);
     if (ok) {
-      flashButtonLabel(pctCopyBtn, 'вң“ Result Copied');
+      flashButtonLabel(pctCopyBtn, '✓ Result Copied');
     } else {
-      flashButtonLabel(pctCopyBtn, 'вҡ Copy failed');
+      flashButtonLabel(pctCopyBtn, '⚠ Copy failed');
     }
   });
 
   pctCopyFullBtn.addEventListener('click', async () => {
     if (!lastCalculation) return;
 
-    const line = 'в”Ғ'.repeat(44);
+    const line = '━'.repeat(44);
     const buf: string[] = [];
     buf.push(line);
     buf.push('  PERCENTAGE CALCULATION');
@@ -1214,9 +1189,9 @@ if (percentageForm) {
 
     const ok = await copyToClipboard(buf.join('\n'));
     if (ok) {
-      flashButtonLabel(pctCopyFullBtn, 'вң“ Full Copied');
+      flashButtonLabel(pctCopyFullBtn, '✓ Full Copied');
     } else {
-      flashButtonLabel(pctCopyFullBtn, 'вҡ Copy failed');
+      flashButtonLabel(pctCopyFullBtn, '⚠ Copy failed');
     }
   });
 
@@ -1341,7 +1316,7 @@ if (percentageForm) {
 // ----------------------------------------------------
 
 function formatINR(amount: number): string {
-  if (!isFinite(amount)) return 'вӮ№0';
+  if (!isFinite(amount)) return '₹0';
   try {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -1350,7 +1325,7 @@ function formatINR(amount: number): string {
       minimumFractionDigits: 2,
     }).format(amount);
   } catch {
-    return 'вӮ№' + amount.toFixed(2);
+    return '₹' + amount.toFixed(2);
   }
 }
 
@@ -1426,10 +1401,10 @@ if (emiForm) {
     amortizationOpen = open;
     if (open) {
       emiAmortBox.classList.remove('hidden');
-      emiToggleLabel.textContent = 'в–ҫ Amortization Schedule';
+      emiToggleLabel.textContent = '▾ Amortization Schedule';
     } else {
       emiAmortBox.classList.add('hidden');
-      emiToggleLabel.textContent = 'в–ё Amortization Schedule';
+      emiToggleLabel.textContent = '▸ Amortization Schedule';
     }
   }
 
@@ -1470,7 +1445,7 @@ if (emiForm) {
   emiCopyBtn.addEventListener('click', async () => {
     if (!lastEMI) return;
 
-    const line = 'в”Ғ'.repeat(52);
+    const line = '━'.repeat(52);
     const buf: string[] = [];
     buf.push(line);
     buf.push('  LOAN EMI CALCULATION');
@@ -1495,9 +1470,9 @@ if (emiForm) {
 
     const ok = await copyToClipboard(buf.join('\n'));
     if (ok) {
-      flashButtonLabel(emiCopyBtn, 'вң“ Full Copied');
+      flashButtonLabel(emiCopyBtn, '✓ Full Copied');
     } else {
-      flashButtonLabel(emiCopyBtn, 'вҡ Copy failed');
+      flashButtonLabel(emiCopyBtn, '⚠ Copy failed');
     }
   });
 
@@ -1530,7 +1505,7 @@ if (emiForm) {
     URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    flashButtonLabel(emiDownloadBtn, 'вң“ Downloaded');
+    flashButtonLabel(emiDownloadBtn, '✓ Downloaded');
   });
 
   emiForm.addEventListener('submit', async (e) => {
@@ -1629,7 +1604,7 @@ if (emiForm) {
 }
 
 // ----------------------------------------------------
-// TAX / VAT / GST CALCULATOR LOGIC
+// TAX / VAT / GST CALCULATOR LOGIC  ⬅️ NEW
 // ----------------------------------------------------
 
 interface TaxModeConfig {
@@ -1898,7 +1873,7 @@ if (taxForm) {
 }
 
 // ----------------------------------------------------
-// INTEREST (SI / CI) CALCULATOR LOGIC
+// INTEREST (SI / CI) CALCULATOR LOGIC  в¬…пёҸ NEW
 // ----------------------------------------------------
 const interestForm = document.getElementById('interest-form') as HTMLFormElement | null;
 
@@ -1971,7 +1946,7 @@ if (interestForm) {
       frequencyWrap.classList.add('hidden');
     }
 
-    // Days tenure is not supported for compound interest вҖ” hide the option
+    // Days tenure is not supported for compound interest — hide the option
     // and force the select back to "years" if "days" was selected.
     if (mode === 'compound') {
       daysOption.disabled = true;
@@ -1982,7 +1957,7 @@ if (interestForm) {
       daysOption.disabled = false;
     }
 
-    // Clear previous result вҖ” user must re-calculate after switching.
+    // Clear previous result — user must re-calculate after switching.
     resultBox.classList.add('hidden');
     statusMessage.classList.add('hidden');
 
@@ -2068,7 +2043,7 @@ if (interestForm) {
     const time      = parseFloat(timeInput.value);
     const timeUnit  = timeUnitInput.value;
 
-    // Client-side sanity checks вҖ” the API will validate authoritatively.
+    // Client-side sanity checks — the API will validate authoritatively.
     if (isNaN(principal) || principal <= 0) {
       statusMessage.textContent = 'Please enter a valid principal amount.';
       statusMessage.classList.replace('text-gray-500', 'text-red-600');
@@ -2208,7 +2183,7 @@ if (interestForm) {
 const scientificForm = document.getElementById('scientific-form') as HTMLFormElement | null;
 
 if (scientificForm) {
-  // в”Җв”Җв”Җ 1. DOM references в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 1. DOM references ─────────────────────────────
   const sciOperation  = document.getElementById('scientific-operation') as HTMLSelectElement;
 
   const sciAngleWrap  = document.getElementById('scientific-angle-wrap') as HTMLDivElement;
@@ -2230,7 +2205,7 @@ if (scientificForm) {
   const sciStepsList  = document.getElementById('scientific-steps-list') as HTMLOListElement;
   const sciCopyBtn    = document.getElementById('scientific-copy-btn') as HTMLButtonElement;
 
-  // в”Җв”Җв”Җ 2. Per-operation config в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 2. Per-operation config ───────────────────────
   interface SciFieldConfig { label: string; placeholder: string; }
   interface SciOpConfig {
     value1?: SciFieldConfig;         // omitted for pi / e
@@ -2268,7 +2243,7 @@ if (scientificForm) {
     cosh:  { value1: { label: 'Value', placeholder: 'e.g. 0' } },
     tanh:  { value1: { label: 'Value', placeholder: 'e.g. 0' } },
     asinh: { value1: { label: 'Value', placeholder: 'e.g. 0' } },
-    acosh: { value1: { label: 'Value (вүҘ 1)', placeholder: 'e.g. 1' } },
+    acosh: { value1: { label: 'Value (≥ 1)', placeholder: 'e.g. 1' } },
     atanh: { value1: { label: 'Value ((-1, 1))', placeholder: 'e.g. 0' } },
 
     // Log / Exp
@@ -2276,7 +2251,7 @@ if (scientificForm) {
     ln:       { value1: { label: 'Number (> 0)', placeholder: 'e.g. 2.718' } },
     log_base: {
       value1: { label: 'Argument (> 0)', placeholder: 'e.g. 1000' },
-      value2: { label: 'Base (> 0, вү  1)', placeholder: 'e.g. 10' },
+      value2: { label: 'Base (> 0, ≠ 1)', placeholder: 'e.g. 10' },
     },
     exp: { value1: { label: 'Exponent', placeholder: 'e.g. 1' } },
 
@@ -2285,7 +2260,7 @@ if (scientificForm) {
       value1: { label: 'Base',     placeholder: 'e.g. 2' },
       value2: { label: 'Exponent', placeholder: 'e.g. 10' },
     },
-    sqrt: { value1: { label: 'Number (вүҘ 0)', placeholder: 'e.g. 144' } },
+    sqrt: { value1: { label: 'Number (≥ 0)', placeholder: 'e.g. 144' } },
     cbrt: { value1: { label: 'Number',       placeholder: 'e.g. 27' } },
     nth_root: {
       value1: { label: 'Number', placeholder: 'e.g. 16' },
@@ -2301,7 +2276,7 @@ if (scientificForm) {
     sign:  { value1: { label: 'Number', placeholder: 'e.g. -5' } },
 
     // Combinatorics
-    factorial: { value1: { label: 'N (non-negative integer, вүӨ 170)', placeholder: 'e.g. 5' } },
+    factorial: { value1: { label: 'N (non-negative integer, ≤ 170)', placeholder: 'e.g. 5' } },
     ncr: {
       value1: { label: 'N (total items)', placeholder: 'e.g. 5' },
       value2: { label: 'R (chosen)',      placeholder: 'e.g. 2' },
@@ -2322,7 +2297,7 @@ if (scientificForm) {
     },
     mod:   {
       value1: { label: 'Dividend', placeholder: 'e.g. 10' },
-      value2: { label: 'Divisor (вү  0)', placeholder: 'e.g. 3' },
+      value2: { label: 'Divisor (≠ 0)', placeholder: 'e.g. 3' },
     },
     hypot: {
       value1: { label: 'Side A', placeholder: 'e.g. 3' },
@@ -2330,10 +2305,10 @@ if (scientificForm) {
     },
   };
 
-  // в”Җв”Җв”Җ 3. State в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 3. State ──────────────────────────────────────
   let angleUnit: 'degrees' | 'radians' = 'degrees';
 
-  // в”Җв”Җв”Җ 4. Angle-unit toggle styling в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 4. Angle-unit toggle styling ──────────────────
   function renderAngleUnitButtons(): void {
     const activeCls   = ['bg-white', 'text-violet-700', 'shadow-sm'];
     const inactiveCls = ['text-gray-600', 'hover:text-violet-700'];
@@ -2359,7 +2334,7 @@ if (scientificForm) {
     renderAngleUnitButtons();
   });
 
-  // в”Җв”Җв”Җ 5. Dynamic form config в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 5. Dynamic form config ────────────────────────
   function applyScientificOpConfig(op: string): void {
     const cfg = SCIENTIFIC_OPS[op];
     if (!cfg) return;
@@ -2405,19 +2380,19 @@ if (scientificForm) {
     applyScientificOpConfig(sciOperation.value);
   });
 
-  // в”Җв”Җв”Җ 6. Copy button в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 6. Copy button ────────────────────────────────
   sciCopyBtn.addEventListener('click', async () => {
     const text = sciResultFmt.textContent || '';
     if (!text) return;
     const ok = await copyToClipboard(text);
     if (ok) {
-      flashButtonLabel(sciCopyBtn, 'вң“ Copied');
+      flashButtonLabel(sciCopyBtn, '✓ Copied');
     } else {
-      flashButtonLabel(sciCopyBtn, 'вҡ Failed');
+      flashButtonLabel(sciCopyBtn, '⚠ Failed');
     }
   });
 
-  // в”Җв”Җв”Җ 7. Submit handler в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 7. Submit handler ─────────────────────────────
   scientificForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -2430,7 +2405,7 @@ if (scientificForm) {
     const op  = sciOperation.value;
     const cfg = SCIENTIFIC_OPS[op];
 
-    // Build payload вҖ” omit value2 / angleUnit when not applicable,
+    // Build payload — omit value2 / angleUnit when not applicable,
     // so the backend's *float64 pointer stays nil for 1-arg ops and
     // the "value2 is required" error fires correctly for 2-arg ops.
     const payload: Record<string, unknown> = { operation: op };
@@ -2504,213 +2479,7 @@ if (scientificForm) {
     }
   });
 
-  // в”Җв”Җв”Җ 8. Initial state в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+  // ─── 8. Initial state ──────────────────────────────
   renderAngleUnitButtons();
   applyScientificOpConfig(sciOperation.value); // defaults to 'sin'
-}
-
-// ----------------------------------------------------
-// FILE REPAIR / FORMATTER LOGIC
-// ----------------------------------------------------
-const repairForm = document.getElementById('repair-form') as HTMLFormElement | null;
-
-if (repairForm) {
-  const repairFileInput    = document.getElementById('repair-file-input') as HTMLInputElement;
-  const repairLevel        = document.getElementById('repair-level') as HTMLSelectElement;
-  const repairDescribe     = document.getElementById('repair-describe') as HTMLInputElement;
-
-  const repairDetectionBox   = document.getElementById('repair-detection-box') as HTMLDivElement;
-  const repairDetectedFormat = document.getElementById('repair-detected-format-text') as HTMLSpanElement;
-
-  const repairStatus        = document.getElementById('repair-status-message') as HTMLParagraphElement;
-  const repairReportBox     = document.getElementById('repair-report-box') as HTMLDivElement;
-  const repairResultFormat  = document.getElementById('repair-result-format') as HTMLSpanElement;
-  const repairResultLevel   = document.getElementById('repair-result-level') as HTMLSpanElement;
-  const repairResultChanged = document.getElementById('repair-result-changed') as HTMLSpanElement;
-  const repairFixesChips    = document.getElementById('repair-fixes-chips') as HTMLDivElement;
-  const repairWarningsWrap  = document.getElementById('repair-warnings-wrap') as HTMLDivElement;
-  const repairWarningsList  = document.getElementById('repair-warnings-list') as HTMLUListElement;
-
-  let detectedRepairFormat = '';
-
-  // ---- Auto-detect format on file selection ----
-  repairFileInput.addEventListener('change', () => {
-    if (repairFileInput.files && repairFileInput.files.length > 0) {
-      const file = repairFileInput.files[0];
-      const ext = file.name.split('.').pop()?.toLowerCase();
-
-      if (ext) {
-        detectedRepairFormat = ext;
-        repairDetectedFormat.textContent = ext.toUpperCase() + ' (Detected)';
-        repairDetectionBox.classList.replace('bg-gray-100', 'bg-amber-50');
-        repairDetectionBox.classList.replace('border-gray-200', 'border-amber-200');
-        repairDetectedFormat.classList.replace('text-gray-500', 'text-amber-700');
-      } else {
-        resetRepairDetectionBox();
-      }
-    } else {
-      resetRepairDetectionBox();
-    }
-  });
-
-  function resetRepairDetectionBox() {
-    detectedRepairFormat = '';
-    repairDetectedFormat.textContent = 'Auto-detected on upload';
-    repairDetectionBox.classList.replace('bg-amber-50', 'bg-gray-100');
-    repairDetectionBox.classList.replace('border-amber-200', 'border-gray-200');
-    repairDetectedFormat.classList.replace('text-amber-700', 'text-gray-500');
-  }
-
-  // ---- Submit handler ----
-  repairForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    repairStatus.classList.remove('hidden', 'text-red-600', 'text-green-600');
-    repairStatus.classList.add('text-gray-500');
-    repairReportBox.classList.add('hidden');
-
-    if (!repairFileInput.files || repairFileInput.files.length === 0) {
-      repairStatus.textContent = 'Please select a file to repair.';
-      repairStatus.classList.replace('text-gray-500', 'text-red-600');
-      return;
-    }
-
-    const file = repairFileInput.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('repairLevel', repairLevel.value);
-    if (repairDescribe.checked) {
-      formData.append('describe', 'true');
-    }
-
-    try {
-      repairStatus.textContent = 'Repairing file...';
-
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const apiUrl = isLocal
-        ? 'http://localhost:8080/repair'
-        : 'https://utils.api.srilakshmiretail.in/repair';
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || `Server error: ${response.status}`);
-      }
-
-      const contentType = response.headers.get('content-type') || '';
-
-      if (contentType.includes('application/json')) {
-        const json = await response.json();
-
-        // ---- Populate the report card ----
-        repairResultFormat.textContent  = json.format ?? 'вҖ”';
-        repairResultLevel.textContent   = json.level ?? 'вҖ”';
-        repairResultChanged.textContent = json.changed ? 'Yes' : 'No';
-
-        repairFixesChips.innerHTML = '';
-        if (Array.isArray(json.applied) && json.applied.length > 0) {
-          json.applied.forEach((fix: string) => {
-            const chip = document.createElement('span');
-            chip.className = 'inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs font-medium px-3 py-1 rounded-full';
-            chip.textContent = fix;
-            repairFixesChips.appendChild(chip);
-          });
-        } else {
-          const chip = document.createElement('span');
-          chip.className = 'inline-flex items-center gap-1 bg-white border border-gray-200 text-gray-500 text-xs font-medium px-3 py-1 rounded-full';
-          chip.textContent = 'No fixes applied';
-          repairFixesChips.appendChild(chip);
-        }
-
-        repairWarningsList.innerHTML = '';
-        if (Array.isArray(json.warnings) && json.warnings.length > 0) {
-          json.warnings.forEach((w: string) => {
-            const li = document.createElement('li');
-            li.textContent = w;
-            repairWarningsList.appendChild(li);
-          });
-          repairWarningsWrap.classList.remove('hidden');
-        } else {
-          repairWarningsWrap.classList.add('hidden');
-        }
-
-        repairReportBox.classList.remove('hidden');
-
-        // ---- Download the repaired file ----
-        const repairedContent = json.output ?? '';
-        const outExt = detectedRepairFormat || json.format || 'txt';
-        const blob = new Blob([repairedContent], { type: 'text/plain;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `repaired.${outExt}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        repairStatus.textContent = json.changed
-          ? 'Repair complete! File downloaded.'
-          : 'File was already valid вҖ” downloaded unchanged.';
-        repairStatus.classList.replace('text-gray-500', 'text-green-600');
-
-      } else {
-        // describe=false path: raw binary download
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `repaired.${detectedRepairFormat || 'txt'}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        // Populate the report card from the X-Repair-* headers.
-        repairResultFormat.textContent  = response.headers.get('X-Repair-Format')  ?? 'вҖ”';
-        repairResultLevel.textContent   = response.headers.get('X-Repair-Level')   ?? 'вҖ”';
-        repairResultChanged.textContent = response.headers.get('X-Repair-Changed') === 'true' ? 'Yes' : 'No';
-
-        const applied = response.headers.get('X-Repair-Applied') || '';
-        repairFixesChips.innerHTML = '';
-        if (applied && applied !== 'none') {
-          applied.split(';').forEach(part => {
-            part.split(',').forEach(fix => {
-              const trimmed = fix.trim();
-              if (!trimmed) return;
-              if (trimmed.startsWith('level=') ||
-                  trimmed.startsWith('changed=') ||
-                  trimmed.startsWith('fixed=')) return;
-              const chip = document.createElement('span');
-              chip.className = 'inline-flex items-center gap-1 bg-white border border-amber-200 text-amber-800 text-xs font-medium px-3 py-1 rounded-full';
-              chip.textContent = trimmed;
-              repairFixesChips.appendChild(chip);
-            });
-          });
-        }
-        if (repairFixesChips.children.length === 0) {
-          const chip = document.createElement('span');
-          chip.className = 'inline-flex items-center gap-1 bg-white border border-gray-200 text-gray-500 text-xs font-medium px-3 py-1 rounded-full';
-          chip.textContent = 'No fixes applied';
-          repairFixesChips.appendChild(chip);
-        }
-
-        repairWarningsWrap.classList.add('hidden');
-        repairReportBox.classList.remove('hidden');
-        repairStatus.textContent = 'Repair complete! File downloaded.';
-        repairStatus.classList.replace('text-gray-500', 'text-green-600');
-      }
-
-    } catch (error) {
-      console.error('Repair error:', error);
-      repairStatus.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`;
-      repairStatus.classList.replace('text-gray-500', 'text-red-600');
-    }
-  });
 }

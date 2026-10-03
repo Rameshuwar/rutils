@@ -1218,14 +1218,17 @@ paths:
       consumes:
       - multipart/form-data
       description: Converts any supported file type to another supported file type
-        dynamically.
+        dynamically. The set of supported (fromType, toType) pairs is discoverable
+        at GET /formats.
       parameters:
-      - description: Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+      - description: Source file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp,
+          tiff, bmp)
         in: formData
         name: fromType
         required: true
         type: string
-      - description: Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+      - description: Target file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp,
+          tiff, bmp)
         in: formData
         name: toType
         required: true
@@ -1243,7 +1246,11 @@ paths:
           schema:
             type: file
         "400":
-          description: Bad Request or unsupported combination
+          description: Bad Request or unsupported conversion pair
+          schema:
+            type: string
+        "405":
+          description: Method Not Allowed
           schema:
             type: string
       summary: Universal File Converter
@@ -1496,6 +1503,47 @@ paths:
       summary: Describe a single format
       tags:
       - Format Registry
+  /repair:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        Detects the input format and applies a staged, rules-based repair pipeline.
+        Values are never silently changed at normal level; every applied fix is
+        reported in the X-Repair-Applied response header and (when describe=true)
+        in the JSON response body.
+      parameters:
+      - description: Malformed file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Force a format (json, csv, xml, yaml)
+        in: formData
+        name: format
+        type: string
+      - description: strict, normal, or lenient (default normal)
+        in: formData
+        name: repairLevel
+        type: string
+      - description: If true, wrap the response in JSON with a report
+        in: formData
+        name: describe
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Repaired file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Repair a malformed file
+      tags:
+      - Repair
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
