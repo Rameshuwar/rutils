@@ -5,6 +5,54 @@ import { getAuthState, isLoggedIn, clearAuth, apiGetNiftyCompanies, NiftyCompany
 import { chartController } from './chart-ui'
 
 // ============================================================
+// EMI Calculator — shared types (module scope)
+// ============================================================
+
+/** Calculation mode for the EMI view. */
+type EmiMode = 'banker' | 'borrower';
+
+/** One row of the amortization schedule, as returned by the API. */
+interface EMIAmortRow {
+  month: number;
+  openingBalance: number;
+  principalPaid: number;
+  interestPaid: number;
+  totalPaid: number;
+  closingBalance: number;
+}
+
+/** Snapshot of a completed banker-mode EMI calculation. */
+interface EMISnapshot {
+  principal: number;
+  annualRate: number;
+  tenureMonths: number;
+  tenureInput: number;
+  tenureUnit: string;
+  monthlyRatePercent: number;
+  emi: number;
+  totalInterest: number;
+  totalPayment: number;
+  principalPercent: number;
+  interestPercent: number;
+  amortization: EMIAmortRow[];
+}
+
+/** Snapshot of a completed borrower-mode loan-tenure calculation. */
+interface LoanTenureSnapshot {
+  principal: number;
+  annualRate: number;
+  monthlyPayment: number;
+  tenureMonths: number;
+  tenureYears: number;
+  monthlyRatePercent: number;
+  totalInterest: number;
+  totalPayment: number;
+  principalPercent: number;
+  interestPercent: number;
+  amortization: EMIAmortRow[];
+}
+
+// ============================================================
 // TOOL REGISTRY — single source of truth for navigation
 // ============================================================
 type ToolId =
@@ -284,7 +332,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
 
       // ============================================================
       // ------------------------------------------------------------
-      // EVERYTHING BELOW IS EXISTING CONVERTER LOGIC вҖ” UNCHANGED.
+      // EVERYTHING BELOW IS EXISTING CONVERTER LOGIC — UNCHANGED.
       // ------------------------------------------------------------
       // ============================================================
 
@@ -1080,12 +1128,12 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
         discount: 'Discount',
         markup: 'Markup',
         profit_loss: 'Profit / Loss %',
-        percent_to_fraction: 'Percent вҶ’ Fraction',
-        fraction_to_percent: 'Fraction вҶ’ Percent',
-        decimal_to_percent: 'Decimal вҶ’ Percent',
+        percent_to_fraction: 'Percent → Fraction',
+        fraction_to_percent: 'Fraction → Percent',
+        decimal_to_percent: 'Decimal → Percent',
         compound_percent: 'Compound percentage',
         marks_percentage: 'Marks percentage',
-        cgpa_to_percent: 'CGPA вҶ’ Percent',
+        cgpa_to_percent: 'CGPA → Percent',
       };
 
       async function copyToClipboard(text: string): Promise<boolean> {
@@ -1209,16 +1257,16 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           if (!text) return;
           const ok = await copyToClipboard(text);
           if (ok) {
-            flashButtonLabel(pctCopyBtn, 'вң“ Result Copied');
+            flashButtonLabel(pctCopyBtn, '✓ Result Copied');
           } else {
-            flashButtonLabel(pctCopyBtn, 'вҡ Copy failed');
+            flashButtonLabel(pctCopyBtn, '⚠ Copy failed');
           }
         });
 
         pctCopyFullBtn.addEventListener('click', async () => {
           if (!lastCalculation) return;
 
-          const line = 'в”Ғ'.repeat(44);
+          const line = '─'.repeat(44);
           const buf: string[] = [];
           buf.push(line);
           buf.push('  PERCENTAGE CALCULATION');
@@ -1249,9 +1297,9 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
 
           const ok = await copyToClipboard(buf.join('\n'));
           if (ok) {
-            flashButtonLabel(pctCopyFullBtn, 'вң“ Full Copied');
+            flashButtonLabel(pctCopyFullBtn, '✓ Full Copied');
           } else {
-            flashButtonLabel(pctCopyFullBtn, 'вҡ Copy failed');
+            flashButtonLabel(pctCopyFullBtn, '⚠ Copy failed');
           }
         });
 
@@ -1376,7 +1424,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
       // ----------------------------------------------------
 
       function formatINR(amount: number): string {
-        if (!isFinite(amount)) return 'вӮ№0';
+        if (!isFinite(amount)) return '₹0';
         try {
           return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -1385,7 +1433,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
             minimumFractionDigits: 2,
           }).format(amount);
         } catch {
-          return 'вӮ№' + amount.toFixed(2);
+          return '₹' + amount.toFixed(2);
         }
       }
 
@@ -1430,41 +1478,72 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
         const emiCopyBtn = document.getElementById('emi-copy-btn') as HTMLButtonElement;
         const emiDownloadBtn = document.getElementById('emi-download-btn') as HTMLButtonElement;
 
-        interface EMIAmortRow {
-          month: number;
-          openingBalance: number;
-          principalPaid: number;
-          interestPaid: number;
-          totalPaid: number;
-          closingBalance: number;
-        }
-
-        interface EMISnapshot {
-          principal: number;
-          annualRate: number;
-          tenureMonths: number;
-          tenureInput: number;
-          tenureUnit: string;
-          monthlyRatePercent: number;
-          emi: number;
-          totalInterest: number;
-          totalPayment: number;
-          principalPercent: number;
-          interestPercent: number;
-          amortization: EMIAmortRow[];
-        }
-
         let lastEMI: EMISnapshot | null = null;
+        let lastLoanTenure: LoanTenureSnapshot | null = null;
         let amortizationOpen = false;
+
+        // ── EMI view mode: banker (existing) vs borrower (new) ──
+        let emiMode: EmiMode = 'banker';
+
+        const modeButtons = document.querySelectorAll<HTMLButtonElement>('.emi-mode-btn');
+        const tenureWrap = document.getElementById('emi-tenure-wrap') as HTMLDivElement | null;
+        const monthlyPaymentWrap = document.getElementById('emi-monthly-payment-wrap') as HTMLDivElement | null;
+        const monthlyPaymentInput = document.getElementById('emi-monthly-payment') as HTMLInputElement | null;
+        const resultValueLabel = document.getElementById('emi-result-value-label') as HTMLSpanElement | null;
+
+        function setEmiMode(mode: EmiMode): void {
+          emiMode = mode;
+
+          const activeCls = ['bg-white', 'text-teal-700', 'shadow-sm'];
+          const inactiveCls = ['text-gray-600', 'hover:text-teal-700'];
+
+          modeButtons.forEach(btn => {
+            const isActive = btn.dataset.mode === mode;
+            btn.classList.remove(...activeCls, ...inactiveCls);
+            if (isActive) btn.classList.add(...activeCls);
+            else btn.classList.add(...inactiveCls);
+          });
+
+          if (mode === 'banker') {
+            tenureWrap?.classList.remove('hidden');
+            monthlyPaymentWrap?.classList.add('hidden');
+            if (monthlyPaymentInput) monthlyPaymentInput.required = false;
+            if (emiTenure) emiTenure.required = true;
+            if (emiTenureUnit) emiTenureUnit.required = true;
+            if (resultValueLabel) resultValueLabel.textContent = 'Monthly EMI';
+          } else {
+            tenureWrap?.classList.add('hidden');
+            monthlyPaymentWrap?.classList.remove('hidden');
+            if (emiTenure) emiTenure.required = false;
+            if (emiTenureUnit) emiTenureUnit.required = false;
+            if (monthlyPaymentInput) monthlyPaymentInput.required = true;
+            if (resultValueLabel) resultValueLabel.textContent = 'Monthly Payment';
+          }
+
+          // Clear stale results when switching modes.
+          emiResultBox?.classList.add('hidden');
+          emiStatus?.classList.add('hidden');
+          lastEMI = null;
+          lastLoanTenure = null;
+        }
+
+        modeButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const m = (btn.dataset.mode as EmiMode) || 'banker';
+            setEmiMode(m);
+          });
+        });
+
+        setEmiMode('banker');
 
         function setAmortizationOpen(open: boolean) {
           amortizationOpen = open;
           if (open) {
             emiAmortBox.classList.remove('hidden');
-            emiToggleLabel.textContent = 'в–ҫ Amortization Schedule';
+            emiToggleLabel.textContent = '▾ Amortization Schedule';
           } else {
             emiAmortBox.classList.add('hidden');
-            emiToggleLabel.textContent = 'в–ё Amortization Schedule';
+            emiToggleLabel.textContent = '▸ Amortization Schedule';
           }
         }
 
@@ -1503,9 +1582,41 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
         }
 
         emiCopyBtn.addEventListener('click', async () => {
+          // ── Borrower mode: copy loan-tenure summary ──
+          if (lastLoanTenure) {
+            const line = '─'.repeat(52);
+            const buf: string[] = [];
+            buf.push(line);
+            buf.push('  LOAN TENURE CALCULATION');
+            buf.push(line);
+            buf.push('');
+            buf.push('  INPUT');
+            buf.push(`    Loan Amount:      ${formatINR(lastLoanTenure.principal)}`);
+            buf.push(`    Interest Rate:    ${lastLoanTenure.annualRate}% p.a.`);
+            buf.push(`    Monthly Payment:  ${formatINR(lastLoanTenure.monthlyPayment)}`);
+            buf.push(`    Monthly Rate:     ${lastLoanTenure.monthlyRatePercent}%`);
+            buf.push('');
+            buf.push('  RESULT');
+            buf.push(`    Tenure:           ${lastLoanTenure.tenureMonths} months (${lastLoanTenure.tenureYears} years)`);
+            buf.push(`    Total Interest:   ${formatINR(lastLoanTenure.totalInterest)}`);
+            buf.push(`    Total Payment:    ${formatINR(lastLoanTenure.totalPayment)}`);
+            buf.push('');
+            buf.push('  BREAKDOWN');
+            buf.push(`    Principal:        ${lastLoanTenure.principalPercent.toFixed(2)}%`);
+            buf.push(`    Interest:         ${lastLoanTenure.interestPercent.toFixed(2)}%`);
+            buf.push('');
+            buf.push(line);
+
+            const ok = await copyToClipboard(buf.join('\n'));
+            if (ok) flashButtonLabel(emiCopyBtn, '✓ Full Copied');
+            else flashButtonLabel(emiCopyBtn, '⚠ Copy failed');
+            return;
+          }
+
+          // ── Banker mode (existing behavior) ──
           if (!lastEMI) return;
 
-          const line = 'в”Ғ'.repeat(52);
+          const line = '─'.repeat(52);
           const buf: string[] = [];
           buf.push(line);
           buf.push('  LOAN EMI CALCULATION');
@@ -1530,13 +1641,46 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
 
           const ok = await copyToClipboard(buf.join('\n'));
           if (ok) {
-            flashButtonLabel(emiCopyBtn, 'вң“ Full Copied');
+            flashButtonLabel(emiCopyBtn, '✓ Full Copied');
           } else {
-            flashButtonLabel(emiCopyBtn, 'вҡ Copy failed');
+            flashButtonLabel(emiCopyBtn, '⚠ Copy failed');
           }
         });
 
         emiDownloadBtn.addEventListener('click', () => {
+          // ── Borrower mode: download loan-tenure amortization CSV ──
+          if (lastLoanTenure) {
+            const headers = ['Month', 'Opening Balance', 'Principal Paid', 'Interest Paid', 'Total Paid', 'Closing Balance'];
+            const csvRows: string[] = [headers.join(',')];
+
+            lastLoanTenure.amortization.forEach(r => {
+              csvRows.push([
+                r.month,
+                r.openingBalance.toFixed(2),
+                r.principalPaid.toFixed(2),
+                r.interestPaid.toFixed(2),
+                r.totalPaid.toFixed(2),
+                r.closingBalance.toFixed(2),
+              ].join(','));
+            });
+
+            const csv = csvRows.join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `loan-tenure-amortization-${lastLoanTenure.tenureMonths}months.csv`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            flashButtonLabel(emiDownloadBtn, '✓ Downloaded');
+            return;
+          }
+
+          // ── Banker mode (existing behavior) ──
           if (!lastEMI) return;
 
           const headers = ['Month', 'Opening Balance', 'Principal Paid', 'Interest Paid', 'Total Paid', 'Closing Balance'];
@@ -1565,7 +1709,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           URL.revokeObjectURL(url);
           document.body.removeChild(a);
 
-          flashButtonLabel(emiDownloadBtn, 'вң“ Downloaded');
+          flashButtonLabel(emiDownloadBtn, '✓ Downloaded');
         });
 
         emiForm.addEventListener('submit', async (e) => {
@@ -1579,8 +1723,100 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
 
           const principal = parseFloat(emiPrincipal.value);
           const rate = parseFloat(emiRate.value);
-          const tenure = parseFloat(emiTenure.value);
-          const unit = emiTenureUnit.value;
+
+          // ── Branch by mode ──
+          if (emiMode === 'borrower') {
+            const monthlyPayment = monthlyPaymentInput ? parseFloat(monthlyPaymentInput.value) : NaN;
+
+            if (isNaN(principal) || principal <= 0) {
+              emiStatus.textContent = 'Please enter a valid loan amount.';
+              emiStatus.classList.replace('text-gray-500', 'text-red-600');
+              return;
+            }
+            if (isNaN(rate) || rate < 0) {
+              emiStatus.textContent = 'Please enter a valid interest rate.';
+              emiStatus.classList.replace('text-gray-500', 'text-red-600');
+              return;
+            }
+            if (isNaN(monthlyPayment) || monthlyPayment <= 0) {
+              emiStatus.textContent = 'Please enter a valid monthly payment.';
+              emiStatus.classList.replace('text-gray-500', 'text-red-600');
+              return;
+            }
+
+            try {
+              const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+              const apiUrl = isLocal
+                ? 'http://localhost:8080/calculate-loan-tenure'
+                : 'https://utils.api.srilakshmiretail.in/calculate-loan-tenure';
+
+              const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  principal,
+                  annualInterestRate: rate,
+                  monthlyPayment,
+                }),
+              });
+
+              if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(errText || `Server error: ${res.status}`);
+              }
+
+              const data = await res.json();
+
+              // Big number is the monthly payment (echoed)
+              emiResultValue.textContent = formatINR(data.emi);
+              emiResultPrincipal.textContent = formatINR(data.principal);
+              emiResultInterest.textContent = formatINR(data.totalInterest);
+              emiResultTotal.textContent = formatINR(data.totalPayment);
+
+              const pPct = data.breakdown.principalPercent;
+              const iPct = data.breakdown.interestPercent;
+              emiSplitPrincipal.style.width = `${pPct}%`;
+              emiSplitInterest.style.width = `${iPct}%`;
+              emiPctPrincipal.textContent = `${pPct.toFixed(2)}% Principal`;
+              emiPctInterest.textContent = `${iPct.toFixed(2)}% Interest`;
+
+              renderAmortization(data.amortization);
+
+              lastLoanTenure = {
+                principal: data.principal,
+                annualRate: rate,
+                monthlyPayment: data.emi,
+                tenureMonths: data.tenureMonths,
+                tenureYears: data.tenureYears,
+                monthlyRatePercent: data.monthlyRatePercent,
+                totalInterest: data.totalInterest,
+                totalPayment: data.totalPayment,
+                principalPercent: pPct,
+                interestPercent: iPct,
+                amortization: data.amortization,
+              };
+              lastEMI = null;
+
+              emiResultBox.classList.remove('hidden');
+              emiStatus.classList.add('hidden');
+
+              // Update the toggle label to include the computed tenure
+              if (emiToggleCount) {
+                emiToggleCount.textContent = `${data.tenureMonths} months (${data.tenureYears} yrs)`;
+              }
+
+            } catch (err) {
+              console.error('Loan tenure calculation error:', err);
+              emiStatus.textContent = `Error: ${err instanceof Error ? err.message : 'Unknown error occurred'}`;
+              emiStatus.classList.replace('text-gray-500', 'text-red-600');
+              lastLoanTenure = null;
+            }
+            return;
+          }
+
+          // ── Banker mode (existing path, unchanged) ──
+          const tenure = parseFloat(emiTenure?.value ?? '');
+          const unit = emiTenureUnit?.value ?? '';
 
           if (isNaN(principal) || principal <= 0) {
             emiStatus.textContent = 'Please enter a valid loan amount.';
@@ -1650,6 +1886,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
               interestPercent: iPct,
               amortization: data.amortization,
             };
+            lastLoanTenure = null;
 
             emiResultBox.classList.remove('hidden');
             emiStatus.classList.add('hidden');
@@ -2006,7 +2243,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
             frequencyWrap.classList.add('hidden');
           }
 
-          // Days tenure is not supported for compound interest вҖ” hide the option
+          // Days tenure is not supported for compound interest — hide the option
           // and force the select back to "years" if "days" was selected.
           if (mode === 'compound') {
             daysOption.disabled = true;
@@ -2017,7 +2254,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
             daysOption.disabled = false;
           }
 
-          // Clear previous result вҖ” user must re-calculate after switching.
+          // Clear previous result — user must re-calculate after switching.
           resultBox.classList.add('hidden');
           statusMessage.classList.add('hidden');
 
@@ -2035,10 +2272,10 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           stepsOpen = open;
           if (open) {
             stepsBox.classList.remove('hidden');
-            stepsToggleLbl.textContent = 'в–ҫ Calculation Steps';
+            stepsToggleLbl.textContent = '▾ Calculation Steps';
           } else {
             stepsBox.classList.add('hidden');
-            stepsToggleLbl.textContent = 'в–ё Calculation Steps';
+            stepsToggleLbl.textContent = '▸ Calculation Steps';
           }
         }
 
@@ -2046,10 +2283,10 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           yearlyOpen = open;
           if (open) {
             yearlyBox.classList.remove('hidden');
-            yearlyToggleLbl.textContent = 'в–ҫ Yearly Breakdown';
+            yearlyToggleLbl.textContent = '▾ Yearly Breakdown';
           } else {
             yearlyBox.classList.add('hidden');
-            yearlyToggleLbl.textContent = 'в–ё Yearly Breakdown';
+            yearlyToggleLbl.textContent = '▸ Yearly Breakdown';
           }
         }
 
@@ -2060,7 +2297,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
         // Formatting helpers (local to this block)
         // --------------------------------------------------
         function formatINR2(amount: number): string {
-          if (!isFinite(amount)) return 'вӮ№0';
+          if (!isFinite(amount)) return '₹0';
           try {
             return new Intl.NumberFormat('en-IN', {
               style: 'currency',
@@ -2069,7 +2306,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
               minimumFractionDigits: 2,
             }).format(amount);
           } catch {
-            return 'вӮ№' + amount.toFixed(2);
+            return '₹' + amount.toFixed(2);
           }
         }
 
@@ -2103,14 +2340,14 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           const time = parseFloat(timeInput.value);
           const timeUnit = timeUnitInput.value;
 
-          // Client-side sanity checks вҖ” the API will validate authoritatively.
+          // Client-side sanity checks — the API will validate authoritatively.
           if (isNaN(principal) || principal <= 0) {
             statusMessage.textContent = 'Please enter a valid principal amount.';
             statusMessage.classList.replace('text-gray-500', 'text-red-600');
             return;
           }
           if (isNaN(rate) || rate < 0 || rate > 100) {
-            statusMessage.textContent = 'Please enter a valid interest rate (0вҖ“100).';
+            statusMessage.textContent = 'Please enter a valid interest rate (0–100).';
             statusMessage.classList.replace('text-gray-500', 'text-red-600');
             return;
           }
@@ -2243,7 +2480,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
       const scientificForm = document.getElementById('scientific-form') as HTMLFormElement | null;
 
       if (scientificForm) {
-        // в”Җв”Җв”Җ 1. DOM references в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 1. DOM references ───
         const sciOperation = document.getElementById('scientific-operation') as HTMLSelectElement;
 
         const sciAngleWrap = document.getElementById('scientific-angle-wrap') as HTMLDivElement;
@@ -2265,7 +2502,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
         const sciStepsList = document.getElementById('scientific-steps-list') as HTMLOListElement;
         const sciCopyBtn = document.getElementById('scientific-copy-btn') as HTMLButtonElement;
 
-        // в”Җв”Җв”Җ 2. Per-operation config в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 2. Per-operation config ───
         interface SciFieldConfig { label: string; placeholder: string; }
         interface SciOpConfig {
           value1?: SciFieldConfig;         // omitted for pi / e
@@ -2303,7 +2540,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           cosh: { value1: { label: 'Value', placeholder: 'e.g. 0' } },
           tanh: { value1: { label: 'Value', placeholder: 'e.g. 0' } },
           asinh: { value1: { label: 'Value', placeholder: 'e.g. 0' } },
-          acosh: { value1: { label: 'Value (вүҘ 1)', placeholder: 'e.g. 1' } },
+          acosh: { value1: { label: 'Value (≥ 1)', placeholder: 'e.g. 1' } },
           atanh: { value1: { label: 'Value ((-1, 1))', placeholder: 'e.g. 0' } },
 
           // Log / Exp
@@ -2311,7 +2548,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           ln: { value1: { label: 'Number (> 0)', placeholder: 'e.g. 2.718' } },
           log_base: {
             value1: { label: 'Argument (> 0)', placeholder: 'e.g. 1000' },
-            value2: { label: 'Base (> 0, вү  1)', placeholder: 'e.g. 10' },
+            value2: { label: 'Base (> 0, ≠ 1)', placeholder: 'e.g. 10' },
           },
           exp: { value1: { label: 'Exponent', placeholder: 'e.g. 1' } },
 
@@ -2320,7 +2557,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
             value1: { label: 'Base', placeholder: 'e.g. 2' },
             value2: { label: 'Exponent', placeholder: 'e.g. 10' },
           },
-          sqrt: { value1: { label: 'Number (вүҘ 0)', placeholder: 'e.g. 144' } },
+          sqrt: { value1: { label: 'Number (≥ 0)', placeholder: 'e.g. 144' } },
           cbrt: { value1: { label: 'Number', placeholder: 'e.g. 27' } },
           nth_root: {
             value1: { label: 'Number', placeholder: 'e.g. 16' },
@@ -2336,7 +2573,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           sign: { value1: { label: 'Number', placeholder: 'e.g. -5' } },
 
           // Combinatorics
-          factorial: { value1: { label: 'N (non-negative integer, вүӨ 170)', placeholder: 'e.g. 5' } },
+          factorial: { value1: { label: 'N (non-negative integer, ≤ 170)', placeholder: 'e.g. 5' } },
           ncr: {
             value1: { label: 'N (total items)', placeholder: 'e.g. 5' },
             value2: { label: 'R (chosen)', placeholder: 'e.g. 2' },
@@ -2357,7 +2594,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           },
           mod: {
             value1: { label: 'Dividend', placeholder: 'e.g. 10' },
-            value2: { label: 'Divisor (вү  0)', placeholder: 'e.g. 3' },
+            value2: { label: 'Divisor (≠ 0)', placeholder: 'e.g. 3' },
           },
           hypot: {
             value1: { label: 'Side A', placeholder: 'e.g. 3' },
@@ -2365,10 +2602,10 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           },
         };
 
-        // в”Җв”Җв”Җ 3. State в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 3. State ───
         let angleUnit: 'degrees' | 'radians' = 'degrees';
 
-        // в”Җв”Җв”Җ 4. Angle-unit toggle styling в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 4. Angle-unit toggle styling ───
         function renderAngleUnitButtons(): void {
           const activeCls = ['bg-white', 'text-violet-700', 'shadow-sm'];
           const inactiveCls = ['text-gray-600', 'hover:text-violet-700'];
@@ -2394,7 +2631,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           renderAngleUnitButtons();
         });
 
-        // в”Җв”Җв”Җ 5. Dynamic form config в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 5. Dynamic form config ───
         function applyScientificOpConfig(op: string): void {
           const cfg = SCIENTIFIC_OPS[op];
           if (!cfg) return;
@@ -2440,19 +2677,19 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           applyScientificOpConfig(sciOperation.value);
         });
 
-        // в”Җв”Җв”Җ 6. Copy button в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 6. Copy button ───
         sciCopyBtn.addEventListener('click', async () => {
           const text = sciResultFmt.textContent || '';
           if (!text) return;
           const ok = await copyToClipboard(text);
           if (ok) {
-            flashButtonLabel(sciCopyBtn, 'вң“ Copied');
+            flashButtonLabel(sciCopyBtn, '✓ Copied');
           } else {
-            flashButtonLabel(sciCopyBtn, 'вҡ Failed');
+            flashButtonLabel(sciCopyBtn, '⚠ Failed');
           }
         });
 
-        // в”Җв”Җв”Җ 7. Submit handler в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 7. Submit handler ───
         scientificForm.addEventListener('submit', async (e) => {
           e.preventDefault();
 
@@ -2465,7 +2702,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           const op = sciOperation.value;
           const cfg = SCIENTIFIC_OPS[op];
 
-          // Build payload вҖ” omit value2 / angleUnit when not applicable,
+          // Build payload — omit value2 / angleUnit when not applicable,
           // so the backend's *float64 pointer stays nil for 1-arg ops and
           // the "value2 is required" error fires correctly for 2-arg ops.
           const payload: Record<string, unknown> = { operation: op };
@@ -2539,7 +2776,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
           }
         });
 
-        // в”Җв”Җв”Җ 8. Initial state в”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җв”Җ
+        // ─── 8. Initial state ───
         renderAngleUnitButtons();
         applyScientificOpConfig(sciOperation.value); // defaults to 'sin'
       }
@@ -2642,8 +2879,8 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
               const json = await response.json();
 
               // ---- Populate the report card ----
-              repairResultFormat.textContent = json.format ?? 'вҖ”';
-              repairResultLevel.textContent = json.level ?? 'вҖ”';
+              repairResultFormat.textContent = json.format ?? '—';
+              repairResultLevel.textContent = json.level ?? '—';
               repairResultChanged.textContent = json.changed ? 'Yes' : 'No';
 
               repairFixesChips.innerHTML = '';
@@ -2691,7 +2928,7 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
 
               repairStatus.textContent = json.changed
                 ? 'Repair complete! File downloaded.'
-                : 'File was already valid вҖ” downloaded unchanged.';
+                : 'File was already valid — downloaded unchanged.';
               repairStatus.classList.replace('text-gray-500', 'text-green-600');
 
             } else {
@@ -2708,8 +2945,8 @@ if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || 
               document.body.removeChild(a);
 
               // Populate the report card from the X-Repair-* headers.
-              repairResultFormat.textContent = response.headers.get('X-Repair-Format') ?? 'вҖ”';
-              repairResultLevel.textContent = response.headers.get('X-Repair-Level') ?? 'вҖ”';
+              repairResultFormat.textContent = response.headers.get('X-Repair-Format') ?? '—';
+              repairResultLevel.textContent = response.headers.get('X-Repair-Level') ?? '—';
               repairResultChanged.textContent = response.headers.get('X-Repair-Changed') === 'true' ? 'Yes' : 'No';
 
               const applied = response.headers.get('X-Repair-Applied') || '';

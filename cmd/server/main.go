@@ -61,6 +61,9 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
+
+	// ⬅️ NEW: Borrower-centric Loan Tenure Calculator
+	apiMux.HandleFunc("/calculate-loan-tenure", api.HandleLoanTenureCalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
 	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
@@ -92,6 +95,7 @@ func main() {
 	apiMux.HandleFunc("/auth/reset-password", api.RequireAuth(cfg, authHandler.ResetPassword))
 	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
+	// ⬅️ NEW: Borrower-centric Loan Tenure Calculator
 
 	// ⬅️ NEW: NIFTY 50 Market Data Service & Endpoint (Authenticated)
 	niftyStorage := nifty.NewFileStorage("data/nifty50.json")
@@ -137,7 +141,7 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/calculate-bmi         (BMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-age         (Age Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/convert-pdf-size      (PDF Size Converter)")
-
+	fmt.Println(" -> POST http://localhost:8080/calculate-loan-tenure   (Loan Tenure Calculator - Borrower-Centric)")
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
 	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
@@ -162,7 +166,7 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
-
+	
 	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")
 
