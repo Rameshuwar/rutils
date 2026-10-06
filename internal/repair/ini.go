@@ -129,14 +129,15 @@ func (i *iniRepairer) Repair(raw []byte, level Level) ([]byte, Report, error) {
 		lines = out
 	}
 
-	if !report.Changed {
-		return raw, report, nil
-	}
+    if !report.Changed {
+        return raw, report, nil
+    }
 
-	var buf bytes.Buffer
-	buf.WriteString(strings.Join(lines, "\n"))
-	if !strings.HasSuffix(buf.String(), "\n") {
-		buf.WriteByte('\n')
-	}
-	return buf.Bytes(), report, nil
+    var buf bytes.Buffer
+    buf.WriteString(strings.Join(lines, "\n"))
+    if !strings.HasSuffix(buf.String(), "\n") {
+        buf.WriteByte('\n')
+    }
+
+    return buf.Bytes(), report, nil
 }
