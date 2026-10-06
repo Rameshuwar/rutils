@@ -107,6 +107,9 @@ func main() {
 
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
+	// Serve Frontend UI on apiMux root as fallback so port 8080 serves both API and Web UI
+	apiMux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
+
 	// UI Server
 	uiMux := http.NewServeMux()
 	uiMux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))

@@ -32,8 +32,12 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # Copy docs if required by backend swagger
 COPY --from=backend-builder /app/docs ./docs
 
-# Expose the application port
-EXPOSE 8080
+# Copy initial data directory structure
+COPY --from=backend-builder /app/data ./data
+RUN mkdir -p /app/data
+
+# Expose the application ports (3000 for UI, 8080 for API)
+EXPOSE 3000 8080
 
 # Command to run the application
 CMD ["./server"]
