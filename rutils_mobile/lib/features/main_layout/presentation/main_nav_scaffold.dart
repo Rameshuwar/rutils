@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/bouncy_button.dart';
 import '../../calculations/presentation/calculations_hub_screen.dart';
 import '../../conversion/presentation/conversion_hub_screen.dart';
-import '../../markets/presentation/nifty50_screen.dart';
+import '../../markets/presentation/markets_hub_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 
 class MainNavScaffold extends StatefulWidget {
@@ -21,7 +21,7 @@ class _MainNavScaffoldState extends State<MainNavScaffold> with SingleTickerProv
   final List<Widget> _screens = const [
     ConversionHubScreen(),
     CalculationsHubScreen(),
-    Nifty50Screen(),
+    MarketsHubScreen(),
     ProfileScreen(),
   ];
 
@@ -40,7 +40,7 @@ class _MainNavScaffoldState extends State<MainNavScaffold> with SingleTickerProv
     ),
     (
       label: 'Markets',
-      subtitle: 'Live Nifty 50 Constituents & Sectors',
+      subtitle: 'Nifty 50 & INK Technical Charts',
       icon: Icons.trending_up_outlined,
       activeIcon: Icons.trending_up_rounded,
     ),
