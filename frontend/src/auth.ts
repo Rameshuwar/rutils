@@ -41,18 +41,18 @@ export function isLoggedIn(): boolean {
 }
 
 // ─── API base ────────────────────────────────────────────────
-function getApiBase(): string {
+export function getApiBase(): string {
   const isLocal =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
   if (isLocal) {
-    if (window.location.port === '3000') return 'http://localhost:8080';
-    return '';
+    if (window.location.port === '8080') return '';
+    return 'http://localhost:8080';
   }
   return 'https://utils.api.srilakshmiretail.in';
 }
 
-async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
+export async function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -70,7 +70,7 @@ async function apiPost<T>(path: string, body: unknown, token?: string): Promise<
   return data as T;
 }
 
-async function apiGet<T>(path: string, token?: string): Promise<T> {
+export async function apiGet<T>(path: string, token?: string): Promise<T> {
   const headers: HeadersInit = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 

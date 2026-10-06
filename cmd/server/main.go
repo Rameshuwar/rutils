@@ -9,6 +9,7 @@ import (
 	_ "file-converter/docs" // Import swagger docs
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
+	"file-converter/internal/chart"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
 	_ "file-converter/internal/formatters"
 	"file-converter/internal/nifty"
@@ -102,6 +103,16 @@ func main() {
 	niftyService.StartScheduler(context.Background())
 
 	apiMux.HandleFunc("/nifty50/companies", api.RequireAuth(cfg, niftyHandler.GetCompanies))
+
+	// ⬅️ NEW: Technical Chart Service & Endpoints (Authenticated)
+	chartService := chart.NewService("data/nse/data", niftyStorage)
+	chartHandler := api.NewChartHandler(chartService)
+
+	apiMux.HandleFunc("/market/chart/companies", chartHandler.GetCompanies)
+	apiMux.HandleFunc("/market/chart/data", chartHandler.GetChartData)
+	apiMux.HandleFunc("/api/market/chart/companies", chartHandler.GetCompanies)
+	apiMux.HandleFunc("/api/market/chart/data", chartHandler.GetChartData)
+
 	// ── Repair engine ─────────────────────────────────────────
 	apiMux.HandleFunc("/repair", api.HandleRepair)
 
@@ -146,6 +157,8 @@ func main() {
 
 	// ⬅️ NEW: NIFTY 50 Market Data in startup banner
 	fmt.Println(" -> GET  http://localhost:8080/nifty50/companies      (NIFTY 50 Constituents - Authenticated)")
+	fmt.Println(" -> GET  http://localhost:8080/market/chart/companies (Technical Chart Companies - Authenticated)")
+	fmt.Println(" -> GET  http://localhost:8080/market/chart/data      (Technical Chart OHLCV & Indicators - Authenticated)")
 
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")

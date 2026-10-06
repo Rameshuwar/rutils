@@ -239,6 +239,24 @@ build_and_promote() {
                     scp_to_remote "./data/nifty50.json" "${vps_data_dir}/nifty50.json"
                 fi
             fi
+
+            # Initial seed of NSE Technical Chart Market Data if present locally and not on VPS
+            if [[ -d "./data/nse" ]]; then
+                if ! run_remote "test -d ${vps_data_dir}/nse"; then
+                    log_info "Seeding NSE Technical Chart dataset to ${vps_data_dir}/nse..."
+                    local ssh_sync_cmd="ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15"
+                    if [[ -n "$VPS_KEY" && -f "$VPS_KEY" ]]; then
+                        ssh_sync_cmd="$ssh_sync_cmd -i $VPS_KEY"
+                    fi
+                    if [[ -n "$VPS_PASS" ]] && command -v sshpass >/dev/null 2>&1; then
+                        ssh_sync_cmd="sshpass -p \"$VPS_PASS\" $ssh_sync_cmd"
+                    fi
+                    tar -czf - -C ./data nse | eval "$ssh_sync_cmd \"$VPS_USER@$VPS_IP\" 'tar -xzf - -C ${vps_data_dir}'"
+                    log_success "NSE market data seeded to ${vps_data_dir}/nse successfully."
+                else
+                    log_info "Persistent NSE market data already found on VPS at ${vps_data_dir}/nse."
+                fi
+            fi
             
             # Copy config.json to VPS if not already present
             if [[ -f "./config.json" ]]; then
