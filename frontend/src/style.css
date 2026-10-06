@@ -299,3 +299,73 @@
 .chartink-theme-dark .chart-search-item.active {
   background-color: #334155;
 }
+
+/* ------------------------------------------------------------
+   File Repair view — monospace text areas
+   ------------------------------------------------------------
+   Both the paste-input textarea (#repair-text-input) and the
+   repaired-output textarea (#repair-output-text) display raw code,
+   so we lock them to a monospace stack with:
+
+     - consistent tab rendering (tab-size: 2)
+     - preserved whitespace (pre-wrap + word-break for long lines)
+     - subtle inner scroll for tall payloads
+     - softer placeholder colour that matches the amber theme
+   ------------------------------------------------------------ */
+
+#formatters-repair-text-input,
+#formatters-repair-output-text {
+  font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas,
+    "Liberation Mono", Menlo, monospace;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.55;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-height: 22rem; /* ~352px — keeps the form compact on mobile */
+  overflow-y: auto;
+}
+
+#formatters-repair-text-input::placeholder {
+  color: #14dffa; /* amber-700, matches the border theme */
+  opacity: 0.55;
+}
+
+#formatters-repair-text-input:focus,
+#formatters-repair-output-text:focus {
+  outline: none;
+  border-color: #44fad2; /* amber-500 */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+/* The repaired-output textarea is read-only. Give it a faint tint
+   so users intuit that it is not editable, and a slightly stronger
+   border to signal "this is the finished product". */
+#formatters-repair-output-text {
+  background-color: #fffbeb; /* amber-50 */
+  border-color: #f1cd2a;     /* amber-300 */
+  cursor: text;
+}
+
+/* ------------------------------------------------------------
+   Repair view — copy button flash feedback
+   ------------------------------------------------------------
+   formatters.ts toggles the button's own label ("Copy Text" →
+   "✓ Copied") via JS. Here we just soften the transition so the
+   flash feels deliberate rather than jarring.
+   ------------------------------------------------------------ */
+#formatters-repair-copy-btn {
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s,
+    transform 0.1s;
+}
+
+#formatters-repair-copy-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+#formatters-repair-copy-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
+}

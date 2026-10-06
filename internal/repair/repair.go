@@ -93,28 +93,32 @@ type Engine struct{}
 // be copied freely.
 func NewEngine() *Engine { return &Engine{} }
 
-// DetectFormat inspects the filename extension AND the leading bytes to
-// decide which Repairer should handle the input. Magic bytes win over
-// extensions: a file named .txt that starts with `{"` is JSON.
-//
-// Returns ErrUnsupportedFormat if no repairer can claim the input.
 func (e *Engine) DetectFormat(filename string, raw []byte) (string, error) {
 	if len(raw) == 0 {
 		return "", ErrEmptyInput
 	}
 
-	// 1. Magic-byte sniffing — authoritative.
-	if format := sniffFormat(raw); format != "" {
-		if _, ok := lookup(format); ok {
-			return format, nil
-		}
-	}
-
-	// 2. Extension fallback — advisory.
+	// 1. Extension — authoritative when it matches a registered
+	//    repairer. This lets a file named `pasted.ini` or `broken.csv`
+	//    bypass magic-byte sniffing entirely, because the user (or the
+	//    frontend) has already declared the format explicitly.
+	//
+	//    This is important because several valid formats share prefixes
+	//    with JSON (e.g. INI files start with `[section]`, which the
+	//    JSON sniffer would otherwise claim as a `[` array).
 	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
 	if ext != "" {
 		if _, ok := lookup(ext); ok {
 			return ext, nil
+		}
+	}
+
+	// 2. Magic-byte sniffing — fallback for extensionless or
+	//    unrecognised-extension uploads (e.g. an image dropped in
+	//    with no name).
+	if format := sniffFormat(raw); format != "" {
+		if _, ok := lookup(format); ok {
+			return format, nil
 		}
 	}
 
@@ -188,7 +192,20 @@ func sniffFormat(raw []byte) string {
 	trimmed := trimLeadingSpace(raw)
 	if len(trimmed) > 0 {
 		switch trimmed[0] {
-		case '{', '[':
+		case '{':
+			return "json"
+		case '[':
+			// Distinguish JSON array from INI section header.
+			// JSON arrays start with `[` followed by a value or `]`:
+			//   [1,2,3]  ["a","b"]  []  [{"k":1}]  [ true ]
+			// INI sections start with `[` followed by a name and `]`:
+			//   [section]  [server]  [my.section]
+			//
+			// Heuristic: an INI section header contains a `]` on the
+			// SAME line, with no comma or quote between `[` and `]`.
+			if isINISectionHeader(trimmed) {
+				return "ini"
+			}
 			return "json"
 		}
 	}
@@ -205,6 +222,53 @@ func sniffFormat(raw []byte) string {
 	}
 
 	return ""
+}
+
+// isINISectionHeader reports whether the first line of `b` looks like
+// an INI section header — i.e. `[name]` — as opposed to a JSON array.
+//
+// A JSON array's first line never contains an unquoted `]` before a
+// comma or another value: `[1]` is technically valid JSON, but in
+// practice a file whose first line is `[something]` with no commas,
+// no quotes, and no digits-in-brackets is far more likely to be INI.
+func isINISectionHeader(b []byte) bool {
+	// Find the end of the first line.
+	lineEnd := bytes.IndexByte(b, '\n')
+	if lineEnd < 0 {
+		lineEnd = len(b)
+	}
+	firstLine := bytes.TrimSpace(b[:lineEnd])
+
+	// Must start with `[` and end with `]`.
+	if len(firstLine) < 3 {
+		return false
+	}
+	if firstLine[0] != '[' || firstLine[len(firstLine)-1] != ']' {
+		// Not a single-line `[...]` — could be a multi-line JSON array.
+		return false
+	}
+
+	// The inside must not contain a comma (that would make it a JSON
+	// array) or a quote (that would make it a JSON string array).
+	inner := firstLine[1 : len(firstLine)-1]
+	if bytes.ContainsAny(inner, `,"'`) {
+		return false
+	}
+
+	// The inside must look like a section name: letters, digits, dots,
+	// underscores, hyphens, spaces. No JSON-significant punctuation.
+	for _, c := range inner {
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= 'A' && c <= 'Z':
+		case c >= '0' && c <= '9':
+		case c == '.' || c == '_' || c == '-' || c == ' ' || c == '\t':
+		default:
+			return false
+		}
+	}
+
+	return true
 }
 
 // trimBOM removes a leading UTF-8 BOM (EF BB BF) if present.

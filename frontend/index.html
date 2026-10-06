@@ -1177,25 +1177,76 @@
         </div>
         <!-- /SCIENTIFIC CALCULATOR VIEW -->
 
-        <!-- ⬅️ NEW: FILE REPAIR / FORMATTER VIEW -->
+        <!-- ⬅️ NEW: FILE REPAIR / FORMATTER VIEW (with Text + File placeholders) -->
         <div id="repair-view"
           class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
           <header class="bg-amber-600 text-white py-4 px-6 md:py-6 md:px-8">
             <h2 class="text-2xl md:text-3xl font-bold">File Repair</h2>
             <p class="text-amber-100 mt-2 text-sm md:text-base">Fix malformed JSON, CSV, XML, YAML, HTML, TOML, INI, and
-              Markdown files.</p>
+              Markdown — paste text or upload a file.</p>
           </header>
           <div class="p-6 md:p-8 space-y-6">
             <form id="repair-form" class="space-y-6">
 
-              <!-- Format (auto-detected, read-only) + Level -->
+              <!-- ── Input source tab switcher ── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Input Source</label>
+                <div class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+                  <button type="button" id="repair-tab-text" data-mode="text"
+                    class="py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-white text-amber-700 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Paste Text
+                  </button>
+                  <button type="button" id="repair-tab-file" data-mode="file"
+                    class="py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-gray-600 hover:text-amber-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload File
+                  </button>
+                </div>
+              </div>
+
+              <!-- ── Paste Text panel (default visible) ── -->
+              <div id="repair-text-panel">
+                <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                  <label for="repair-text-input" class="block text-sm font-medium text-amber-900 mb-2">
+                    Paste your code / text
+                  </label>
+                  <textarea id="repair-text-input" rows="10"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm resize-y"
+                    placeholder='Paste JSON, CSV, XML, YAML, HTML, TOML, INI, or Markdown here...'></textarea>
+                  <div class="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                    <span id="repair-text-detected" class="text-xs text-gray-500 font-medium">Waiting for input…</span>
+                    <button type="button" id="repair-text-clear"
+                      class="text-xs text-amber-700 hover:text-amber-900 font-semibold underline">
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Upload File panel (hidden by default) ── -->
+              <div id="repair-file-panel" class="hidden">
+                <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-amber-900 mb-2">Upload Malformed File</label>
+                  <input type="file" id="repair-file-input"
+                    accept=".json,.csv,.xml,.yaml,.yml,.html,.htm,.toml,.ini,.md,.markdown,.txt"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer" />
+                </div>
+              </div>
+
+              <!-- ── Detected Format + Level ── -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Detected Format</label>
                   <div id="repair-detection-box"
                     class="w-full bg-gray-100 border border-gray-200 rounded-lg py-2 px-3 flex items-center h-[42px] transition-colors">
-                    <span id="repair-detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected on
-                      upload</span>
+                    <span id="repair-detected-format-text" class="text-sm text-gray-500 font-medium">Auto-detected</span>
                   </div>
                 </div>
                 <div>
@@ -1209,15 +1260,6 @@
                 </div>
               </div>
 
-              <!-- File upload -->
-              <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
-                <label class="block text-sm font-medium text-amber-900 mb-2">Upload Malformed File</label>
-                <input type="file" id="repair-file-input"
-                  accept=".json,.csv,.xml,.yaml,.yml,.html,.htm,.toml,.ini,.md,.markdown,.txt"
-                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
-                  required />
-              </div>
-
               <!-- Describe toggle -->
               <div class="flex items-center gap-3">
                 <input type="checkbox" id="repair-describe" checked
@@ -1228,7 +1270,7 @@
 
               <button type="submit"
                 class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-                Repair &amp; Download
+                Repair &amp; Preview
               </button>
 
               <p id="repair-status-message" class="text-sm text-center hidden"></p>
@@ -1259,16 +1301,48 @@
                   <div id="repair-fixes-chips" class="flex flex-wrap gap-2"></div>
                 </div>
 
-                <div id="repair-warnings-wrap" class="hidden">
+                <div id="repair-warnings-wrap" class="hidden mb-4">
                   <p class="text-xs text-amber-700 font-semibold uppercase tracking-wide mb-2">Warnings</p>
                   <ul id="repair-warnings-list" class="space-y-1 text-sm text-amber-800 list-disc list-inside"></ul>
                 </div>
+
+                <!-- ── Repaired Output: view, copy, download ── -->
+                <div id="repair-output-section" class="pt-4 border-t border-amber-200">
+                  <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+                    <p class="text-xs text-amber-700 font-semibold uppercase tracking-wide">Repaired Output</p>
+                    <span id="repair-output-meta" class="text-xs text-gray-500 font-medium"></span>
+                  </div>
+
+                  <textarea id="repair-output-text" readonly rows="10"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm resize-y whitespace-pre"
+                    placeholder="Repaired output will appear here…"></textarea>
+
+                  <div class="flex flex-col sm:flex-row gap-3 mt-3">
+                    <button type="button" id="repair-copy-btn"
+                      class="flex-1 px-4 py-3 bg-white hover:bg-amber-50 border border-amber-300 text-amber-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span id="repair-copy-btn-label">Copy Text</span>
+                    </button>
+                    <button type="button" id="repair-download-btn"
+                      class="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download File
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
             </form>
           </div>
         </div>
-        <!-- ⬅️ NEW: FORMATTERS VIEW -->
+        <!-- ⬅️ NEW: FORMATTERS VIEW (with Paste Text + Upload File) -->
         <div id="formatters-view" class="tool-view max-w-3xl w-full mx-auto hidden transition-opacity duration-300">
           <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
             <header class="bg-indigo-600 text-white py-4 px-6 md:py-6 md:px-8">
@@ -1294,12 +1368,64 @@
                   Repair <span id="formatters-active-format" class="text-amber-600"></span> file
                 </h3>
                 <p class="text-sm text-gray-500 mb-4">
-                  Upload a malformed file and the server will apply a rules-based repair pipeline.
+                  Paste text or upload a malformed file — the server will apply a rules-based repair pipeline.
                 </p>
 
                 <form id="formatters-repair-form" class="space-y-5">
 
-                  <!-- Level + Describe -->
+                  <!-- ── Input source tab switcher ── -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Input Source</label>
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+                      <button type="button" id="formatters-repair-tab-text" data-mode="text"
+                        class="py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 bg-white text-amber-700 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Paste Text
+                      </button>
+                      <button type="button" id="formatters-repair-tab-file" data-mode="file"
+                        class="py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 text-gray-600 hover:text-amber-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Upload File
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- ── Paste Text panel (default) ── -->
+                  <div id="formatters-repair-text-panel">
+                    <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                      <label for="formatters-repair-text-input" class="block text-sm font-medium text-amber-900 mb-2">
+                        Paste your code / text
+                      </label>
+                      <textarea id="formatters-repair-text-input" rows="10"
+                        class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm resize-y"
+                        placeholder="Paste JSON, CSV, XML, YAML, HTML, TOML, INI, or Markdown here..."></textarea>
+                      <div class="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                        <span id="formatters-repair-text-detected" class="text-xs text-gray-500 font-medium">Waiting for input…</span>
+                        <button type="button" id="formatters-repair-text-clear"
+                          class="text-xs text-amber-700 hover:text-amber-900 font-semibold underline">
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── Upload File panel (hidden by default) ── -->
+                  <div id="formatters-repair-file-panel" class="hidden">
+                    <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                      <label class="block text-sm font-medium text-amber-900 mb-2">Upload malformed file</label>
+                      <input type="file" id="formatters-repair-file"
+                        accept=".json,.csv,.xml,.yaml,.yml,.html,.htm,.toml,.ini,.md,.markdown,.txt"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer" />
+                    </div>
+                  </div>
+
+                  <!-- ── Level + Describe ── -->
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-2">Repair Level</label>
@@ -1319,23 +1445,14 @@
                     </div>
                   </div>
 
-                  <!-- File upload -->
-                  <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
-                    <label class="block text-sm font-medium text-amber-900 mb-2">Upload malformed file</label>
-                    <input type="file" id="formatters-repair-file"
-                      accept=".json,.csv,.xml,.yaml,.yml,.html,.htm,.toml,.ini,.md,.markdown,.txt"
-                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
-                      required />
-                  </div>
-
                   <button type="submit"
                     class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-                    Repair &amp; Download
+                    Repair &amp; Preview
                   </button>
 
                   <p id="formatters-repair-status" class="text-sm text-center hidden"></p>
 
-                  <!-- Report card -->
+                  <!-- ── Report card ── -->
                   <div id="formatters-repair-report"
                     class="hidden mt-4 p-5 bg-amber-50 rounded-lg border border-amber-100 shadow-inner">
                     <span class="text-xs text-amber-600 font-semibold uppercase tracking-wide block mb-3">Repair
@@ -1361,11 +1478,43 @@
                       <div id="formatters-result-fixes" class="flex flex-wrap gap-2"></div>
                     </div>
 
-                    <div id="formatters-result-warnings-wrap" class="hidden">
+                    <div id="formatters-result-warnings-wrap" class="hidden mb-4">
                       <p class="text-xs text-amber-700 font-semibold uppercase tracking-wide mb-2">Warnings</p>
                       <ul id="formatters-result-warnings"
                         class="space-y-1 text-sm text-amber-800 list-disc list-inside"></ul>
                     </div>
+
+                    <!-- ── Repaired Output: view, copy, download ── -->
+                    <div id="formatters-repair-output-section" class="pt-4 border-t border-amber-200">
+                      <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+                        <p class="text-xs text-amber-700 font-semibold uppercase tracking-wide">Repaired Output</p>
+                        <span id="formatters-repair-output-meta" class="text-xs text-gray-500 font-medium"></span>
+                      </div>
+
+                      <textarea id="formatters-repair-output-text" readonly rows="10"
+                        class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm resize-y whitespace-pre"
+                        placeholder="Repaired output will appear here…"></textarea>
+
+                      <div class="flex flex-col sm:flex-row gap-3 mt-3">
+                        <button type="button" id="formatters-repair-copy-btn"
+                          class="flex-1 px-4 py-3 bg-white hover:bg-amber-50 border border-amber-300 text-amber-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <span id="formatters-repair-copy-btn-label">Copy Text</span>
+                        </button>
+                        <button type="button" id="formatters-repair-download-btn"
+                          class="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download File
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
 
                 </form>
