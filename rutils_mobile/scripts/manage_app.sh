@@ -33,7 +33,7 @@ menu() {
     show_header
     echo -e "${BOLD}Select an action:${NC}"
     echo ""
-    echo -e "  ${CYAN}[1]${NC} 🌐 Start Local Web Preview (Browser responsive view on port 8087)"
+    echo -e "  ${CYAN}[1]${NC} 🌐 Rebuild & Start Local Web Preview (Compiles latest web bundle on port 8087)"
     echo -e "  ${CYAN}[2]${NC} 🛑 Stop Local Web Preview"
     echo -e "  ${CYAN}[3]${NC} 📱 Run on Connected Android Device / Emulator"
     echo -e "  ${CYAN}[4]${NC} 💻 Run natively on Linux Desktop"
