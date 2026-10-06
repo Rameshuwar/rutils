@@ -9,7 +9,7 @@ import (
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
-	_ "file-converter/internal/formatters"
+_ "file-converter/internal/formatters"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -62,7 +62,7 @@ func main() {
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
 	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
 	apiMux.HandleFunc("/formats", api.HandleListFormats)
-	apiMux.HandleFunc("/formats/", api.HandleFormatDetail)
+	apiMux.HandleFunc("/formats/", api.HandleFormatDetail)	
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -90,7 +90,6 @@ func main() {
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
 	// ── Repair engine ─────────────────────────────────────────
 	apiMux.HandleFunc("/repair", api.HandleRepair)
-
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// UI Server
@@ -102,6 +101,8 @@ func main() {
 	fmt.Println("==================================================")
 	fmt.Println("Backend API:")
 	fmt.Println(" -> POST http://localhost:8080/convert               (File Converter)")
+	fmt.Println(" -> GET  http://localhost:8080/formats               (List supported conversions)")
+fmt.Println(" -> GET  http://localhost:8080/formats/{type}        (Per-format detail)")
 	fmt.Println(" -> POST http://localhost:8080/convert-measurement   (Measurement Converter)")
 	fmt.Println(" -> POST http://localhost:8080/convert-time          (Time Converter)")
 	fmt.Println(" -> POST http://localhost:8080/convert-railway       (Railway Converter)")
@@ -109,10 +110,10 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/calculate-bmi         (BMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-age         (Age Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/convert-pdf-size      (PDF Size Converter)")
-
+	fmt.Println(" -> POST http://localhost:8080/repair              (Rules-based file repair)")
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
-	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
+
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
@@ -129,7 +130,7 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
-	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+	
 
 	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")

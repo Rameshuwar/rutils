@@ -659,8 +659,8 @@ timeForm.addEventListener('submit', async (e) => {
     timeResultLocal.textContent = `${destDate} ${destTime12}`;
 
     let zoneText = `${data.dest_zone_name} (UTC ${data.dest_offset})`;
-    if (data.is_next_day) zoneText += ' вҖў Next Day';
-    if (data.is_prev_day) zoneText += ' вҖў Previous Day';
+    if (data.is_next_day) zoneText += ' Next Day';
+    if (data.is_prev_day) zoneText += ' Previous Day';
 
     timeResultZone.textContent = zoneText;
 

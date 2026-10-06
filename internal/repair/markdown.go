@@ -41,7 +41,6 @@ func (m *markdownRepairer) Repair(raw []byte, level Level) ([]byte, Report, erro
 	report.AddStage(1)
 	for i, line := range lines {
 		// #Heading → # Heading
-		// #Heading → # Heading
 		if m := reHeadingNoSpace.FindStringSubmatchIndex(line); m != nil {
 			// m[3] is the END of group 1 (the # run). Inserting a
 			// space there gives "# Heading".
