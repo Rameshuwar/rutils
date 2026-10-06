@@ -29,3 +29,10 @@ persona-tests/test-files/dummy.pdf
 # Playwright auto-generated artifacts
 persona-tests/playwright-report/
 persona-tests/test-results/
+
+# NSE Market Data & Large Datasets
+data/nse/
+
+# Local screenshot images
+image.png
+Screenshot*.png
