@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 	"file-converter/internal/api"
 	"file-converter/internal/auth"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
+	_ "file-converter/internal/formatters"
+	"file-converter/internal/nifty"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -58,7 +61,11 @@ func main() {
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
-
+	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
+	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
+	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
+	apiMux.HandleFunc("/formats", api.HandleListFormats)
+	apiMux.HandleFunc("/formats/", api.HandleFormatDetail)
 	// ============================================================
 	// Authentication Service & Endpoints
 	// ============================================================
@@ -85,7 +92,23 @@ func main() {
 	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
 
+	// ⬅️ NEW: NIFTY 50 Market Data Service & Endpoint (Authenticated)
+	niftyStorage := nifty.NewFileStorage("data/nifty50.json")
+	niftyClient := nifty.NewNSEClient()
+	niftyService := nifty.NewService(niftyStorage, niftyClient)
+	niftyHandler := api.NewNiftyHandler(niftyService)
+
+	// Infuse in-process daily cron scheduler (10:00 AM IST with catch-up on boot)
+	niftyService.StartScheduler(context.Background())
+
+	apiMux.HandleFunc("/nifty50/companies", api.RequireAuth(cfg, niftyHandler.GetCompanies))
+	// ── Repair engine ─────────────────────────────────────────
+	apiMux.HandleFunc("/repair", api.HandleRepair)
+
 	apiMux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+
+	// Serve Frontend UI on apiMux root as fallback so port 8080 serves both API and Web UI
+	apiMux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
 
 	// UI Server
 	uiMux := http.NewServeMux()
@@ -106,10 +129,12 @@ func main() {
 
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
-
+	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
-
+	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-scientific      (Scientific Calculator)")
 	// ⬅️ Authentication Endpoints in startup banner
 	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
 	fmt.Println(" -> POST http://localhost:8080/auth/login            (User Login - JWT)")
@@ -119,8 +144,10 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/auth/change-password  (Change Password)")
 	fmt.Println(" -> GET  http://localhost:8080/auth/me               (Current User Profile)")
 
+	// ⬅️ NEW: NIFTY 50 Market Data in startup banner
+	fmt.Println(" -> GET  http://localhost:8080/nifty50/companies      (NIFTY 50 Constituents - Authenticated)")
+
 	// ⬅️ NEW: Loan EMI Calculator in startup banner
-	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
 
 	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner

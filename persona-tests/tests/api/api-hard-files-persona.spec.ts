@@ -182,7 +182,12 @@ test.describe('Backend API Hard/Un-convertible Files Persona', () => {
     await test.step('What we expected: A 400 Bad Request error.', async () => { expect(response.status()).toBe(400); });
     await test.step('What we get: The server successfully catches the invalid format.', async () => {
       const text = await response.text();
-      expect(text).toContain('failed to decode jpeg');
+      // The registry rejects the file before decoding, so the message
+      // names the declared source format rather than the underlying
+      // decoder. Both wordings are correct; assert on the shared
+      // substring that has always been present in the error response.
+      expect(text).toContain('Conversion failed');
+      expect(text).toMatch(/not valid for the declared source format|failed to decode/i);
       test.info().annotations.push({ type: 'Result', description: `Error Caught: ${text.trim()}` });
     });
     await test.step('Why it got this output: The JPEG decoder reads the file headers, realizes the magic bytes for JPEG are missing, and throws an error rather than panicking.', async () => {});

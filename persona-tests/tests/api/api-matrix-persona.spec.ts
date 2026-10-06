@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const API_URL = 'http://localhost:8080';
-const FORMATS = ['csv', 'json', 'txt', 'docx', 'pdf', 'jpg', 'png'];
+const FORMATS = ['csv', 'json', 'txt', 'docx', 'pdf', 'jpg', 'png', 'webp', 'tiff', 'bmp'];
 
 // Mime types mapping
 const MIME_TYPES: Record<string, string> = {
@@ -13,7 +13,10 @@ const MIME_TYPES: Record<string, string> = {
   'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'pdf': 'application/pdf',
   'jpg': 'image/jpeg',
-  'png': 'image/png'
+  'png': 'image/png',
+  'webp': 'image/webp',
+  'tiff': 'image/tiff',
+  'bmp': 'image/bmp',
 };
 
 test.describe('Backend API Full Conversion Matrix Persona', () => {

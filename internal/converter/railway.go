@@ -56,16 +56,16 @@ func ConvertRailwayTime(req RailwayConversionRequest) (*RailwayConversionRespons
 
 		h12 := req.Hour
 		ampm := "AM"
-		
+
 		if h12 >= 12 {
 			ampm = "PM"
 		}
-		
+
 		h12 = h12 % 12
 		if h12 == 0 {
 			h12 = 12
 		}
-		
+
 		res.Hour12 = h12
 		res.AmPm = ampm
 

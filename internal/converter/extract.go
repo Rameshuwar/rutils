@@ -20,9 +20,9 @@ type ExtractRequest struct {
 
 // ExtractResponse is the unified JSON response for /extract-text.
 type ExtractResponse struct {
-	SourceType  string        `json:"sourceType"`         // "pdf" | "image"
+	SourceType  string        `json:"sourceType"` // "pdf" | "image"
 	PageCount   int           `json:"pageCount"`
-	ExtractedAt string        `json:"extractedAt"`        // RFC3339 UTC
+	ExtractedAt string        `json:"extractedAt"` // RFC3339 UTC
 	Language    string        `json:"language"`
 	Text        string        `json:"text"`               // concatenated text
 	Pages       []PageExtract `json:"pages,omitempty"`    // per-page breakdown

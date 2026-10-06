@@ -58,10 +58,18 @@ check_deps() {
 # --- 2. Gather VPS Details ---
 step_vps_credentials() {
     echo -e "\n--- VPS Connection Details ---"
-    prompt "VPS IP address or Hostname" VPS_IP
-    prompt "SSH Username" VPS_USER "root"
-    read -r -p "SSH Key Path (leave blank for default): " VPS_KEY
-    [[ -z "$VPS_KEY" ]] && VPS_KEY="$HOME/.ssh/id_rsa_laxmi_sysinfra"
+    prompt "VPS IP address or Hostname" VPS_IP "148.230.66.115"
+    prompt "SSH Username" VPS_USER "sysInfra"
+    local default_key=""
+    if [[ -f "$HOME/.ssh/laxmi/id_rsa_laxmi_sysinfra" ]]; then
+        default_key="$HOME/.ssh/laxmi/id_rsa_laxmi_sysinfra"
+    elif [[ -f "$HOME/.ssh/id_rsa" ]]; then
+        default_key="$HOME/.ssh/id_rsa"
+    elif [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        default_key="$HOME/.ssh/id_ed25519"
+    fi
+    read -r -p "SSH Key Path (leave blank for default ${default_key:-standard keys}): " VPS_KEY
+    [[ -z "$VPS_KEY" ]] && VPS_KEY="$default_key"
     prompt_password "SSH Password (leave blank if using SSH keys)" VPS_PASS
     
     log_info "Verifying SSH connection to VPS ($VPS_USER@$VPS_IP)..."
@@ -101,7 +109,7 @@ run_remote() {
 scp_to_remote() {
     local local_file="$1"
     local remote_path="$2"
-    local scp_cmd="scp -o StrictHostKeyChecking=accept-new"
+    local scp_cmd="scp -r -o StrictHostKeyChecking=accept-new"
     if [[ -n "$VPS_KEY" && -f "$VPS_KEY" ]]; then
         scp_cmd="$scp_cmd -i $VPS_KEY"
     fi
@@ -165,7 +173,10 @@ build_and_promote() {
         
         if [[ "${BUILD_CHOICE,,}" == "y" ]]; then
             prompt "Enter Docker Image Name" IMAGE_NAME "$base_dir"
-            prompt "Enter Container Port (e.g. 8080 or 3000,8080)" APP_PORT "8080"
+            if [[ "${IMAGE_NAME,,}" == "y" || "${IMAGE_NAME,,}" == "yes" ]]; then
+                IMAGE_NAME="$base_dir"
+            fi
+            prompt "Enter Container Port(s) (e.g. 3000,8080 for UI & API)" APP_PORT "3000,8080"
             local target_tag="${IMAGE_NAME}:latest"
             
             log_info "Building image '${target_tag}' from directory '${dir}'..."
@@ -205,13 +216,47 @@ build_and_promote() {
             if [[ "$ACTION_CHOICE" == "2" ]]; then action_cmd="restart"; fi
             if [[ "$ACTION_CHOICE" == "3" ]]; then action_cmd="stop"; fi
             
+            local vps_app_dir="/apps/rutils"
+            local vps_data_dir="${vps_app_dir}/data"
+            
+            log_info "Setting up persistent storage on VPS at ${vps_data_dir}..."
+            run_remote "mkdir -p ${vps_data_dir}"
+            
+            # Initial seed of users.json: only if it does not already exist on VPS
+            if [[ -f "./data/users.json" ]]; then
+                if ! run_remote "test -f ${vps_data_dir}/users.json"; then
+                    log_info "First deployment detected: seeding initial users.json to ${vps_data_dir}/users.json..."
+                    scp_to_remote "./data/users.json" "${vps_data_dir}/users.json"
+                else
+                    log_info "Persistent users.json found on VPS. Preserving production user data."
+                fi
+            fi
+            
+            # Initial seed of nifty50.json: only if it does not already exist on VPS
+            if [[ -f "./data/nifty50.json" ]]; then
+                if ! run_remote "test -f ${vps_data_dir}/nifty50.json"; then
+                    log_info "Seeding initial nifty50.json to ${vps_data_dir}/nifty50.json..."
+                    scp_to_remote "./data/nifty50.json" "${vps_data_dir}/nifty50.json"
+                fi
+            fi
+            
+            # Copy config.json to VPS if not already present
+            if [[ -f "./config.json" ]]; then
+                if ! run_remote "test -f ${vps_app_dir}/config.json"; then
+                    log_info "Copying initial config.json to ${vps_app_dir}/config.json..."
+                    scp_to_remote "./config.json" "${vps_app_dir}/config.json"
+                else
+                    log_info "Persistent config.json found on VPS. Preserving production configuration."
+                fi
+            fi
+            
             if [[ -f "./manage.sh" ]]; then
                 log_info "Deploying manage.sh to VPS..."
                 scp_to_remote "./manage.sh" "/tmp/manage_${container}.sh"
                 run_remote "chmod +x /tmp/manage_${container}.sh"
                 
-                log_info "Executing '$action_cmd' on VPS..."
-                run_remote "/tmp/manage_${container}.sh $action_cmd $container $port $tag"
+                log_info "Executing '$action_cmd' on VPS with persistent volume mount (${vps_data_dir} -> /app/data)..."
+                run_remote "/tmp/manage_${container}.sh $action_cmd $container $port $tag $vps_app_dir"
                 log_success "Container action '$action_cmd' completed successfully!"
             else
                 log_error "manage.sh not found locally. Skipping container management."

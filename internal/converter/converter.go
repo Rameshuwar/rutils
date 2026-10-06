@@ -422,25 +422,52 @@ func ConvertTXTtoCSV(in io.Reader, out io.Writer) error {
 	return writer.Error()
 }
 
-// ConvertPDFtoDOCX extracts text from PDF and writes it to a DOCX
+/// ConvertPDFtoDOCX extracts text from PDF and writes it to a DOCX.
+//
+// IMPORTANT: This only works for "digital" PDFs that carry a real text
+// layer. Scanned PDFs, image-only PDFs, or PDFs whose ToUnicode table
+// is broken (e.g. PDFs re-encoded through pdftoppm — which is exactly
+// what /convert-pdf-size produces) yield zero extractable text from
+// GetPlainText(). In that case we return a clear error rather than
+// silently producing an empty DOCX.
 func ConvertPDFtoDOCX(in io.ReaderAt, size int64, out io.Writer) error {
 	fpdf, err := pdf.NewReader(in, size)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open pdf: %w", err)
 	}
+
 	b, err := fpdf.GetPlainText()
 	if err != nil {
+		return fmt.Errorf("failed to extract text from pdf: %w", err)
+	}
+
+	textBytes, err := io.ReadAll(b)
+	if err != nil {
 		return err
+	}
+
+	// Guard: an empty text extraction means the DOCX would be blank.
+	// Tell the caller why, so the UI can show a helpful message
+	// instead of "success" followed by an empty download.
+	if len(bytes.TrimSpace(textBytes)) == 0 {
+		return fmt.Errorf(
+			"no extractable text in this PDF — it is likely scanned or " +
+				"image-based. Use /extract-text (which supports OCR) " +
+				"or convert to an image format instead",
+		)
 	}
 
 	doc := docx.NewFile()
 
-	scanner := bufio.NewScanner(b)
+	scanner := bufio.NewScanner(bytes.NewReader(textBytes))
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 	for scanner.Scan() {
 		p := doc.AddParagraph()
 		p.AddText(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("failed to read extracted text: %w", err)
 	}
 
 	tmpFile, err := os.CreateTemp("", "out-*.docx")
@@ -452,19 +479,20 @@ func ConvertPDFtoDOCX(in io.ReaderAt, size int64, out io.Writer) error {
 	defer os.Remove(tmpFilePath)
 
 	if err := doc.Save(tmpFilePath); err != nil {
-		return err
+		return fmt.Errorf("failed to save docx: %w", err)
 	}
 
 	savedFile, err := os.Open(tmpFilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open generated docx: %w", err)
 	}
 	defer savedFile.Close()
 
-	_, err = io.Copy(out, savedFile)
-	return err
+	if _, err := io.Copy(out, savedFile); err != nil {
+		return fmt.Errorf("failed to stream docx to response: %w", err)
+	}
+	return nil
 }
-
 // ConvertPDFtoCSV extracts text from PDF and writes it to a CSV
 func ConvertPDFtoCSV(in io.ReaderAt, size int64, out io.Writer) error {
 	fpdf, err := pdf.NewReader(in, size)

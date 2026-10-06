@@ -20,7 +20,8 @@ FROM alpine:latest
 WORKDIR /app
 
 # Install poppler-utils for PDF to Image conversion
-RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng
+# and tzdata for timezone support in the Go application.
+RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng tzdata
 
 # Copy backend binary
 COPY --from=backend-builder /app/server .
@@ -31,8 +32,12 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # Copy docs if required by backend swagger
 COPY --from=backend-builder /app/docs ./docs
 
-# Expose the application port
-EXPOSE 8080
+# Copy initial data directory structure
+COPY --from=backend-builder /app/data ./data
+RUN mkdir -p /app/data
+
+# Expose the application ports (3000 for UI, 8080 for API)
+EXPOSE 3000 8080
 
 # Command to run the application
 CMD ["./server"]

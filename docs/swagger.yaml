@@ -29,6 +29,21 @@ definitions:
       category:
         type: string
     type: object
+  api.CompoundInterestRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      compoundingFrequency:
+        description: '"yearly" | "half_yearly" | "quarterly" | "monthly" | "daily"'
+        type: string
+      principal:
+        type: number
+      time:
+        type: number
+      timeUnit:
+        description: '"years" | "months"'
+        type: string
+    type: object
   api.EMIRequest:
     properties:
       annualInterestRate:
@@ -81,6 +96,29 @@ definitions:
         type: number
       value3:
         type: number
+    type: object
+  api.ScientificRequest:
+    properties:
+      angleUnit:
+        type: string
+      operation:
+        type: string
+      value1:
+        type: number
+      value2:
+        type: number
+    type: object
+  api.SimpleInterestRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      principal:
+        type: number
+      time:
+        type: number
+      timeUnit:
+        description: '"years" | "months" | "days"'
+        type: string
     type: object
   api.TaxRequest:
     properties:
@@ -233,6 +271,35 @@ definitions:
       totalPaid:
         type: number
     type: object
+  converter.CompoundInterestResponse:
+    properties:
+      annualInterestRate:
+        type: number
+      breakdown:
+        $ref: '#/definitions/converter.InterestBreakdown'
+      compoundingFrequency:
+        type: string
+      compoundsPerYear:
+        type: integer
+      effectiveAnnualRate:
+        type: number
+      interest:
+        type: number
+      principal:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      timeYears:
+        type: number
+      totalAmount:
+        type: number
+      yearlyBreakdown:
+        items:
+          $ref: '#/definitions/converter.YearlyRow'
+        type: array
+    type: object
   converter.EMIBreakdown:
     properties:
       interestPercent:
@@ -286,6 +353,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  converter.InterestBreakdown:
+    properties:
+      interestPercent:
+        type: number
+      principalPercent:
+        type: number
     type: object
   converter.NextBirthday:
     properties:
@@ -348,6 +422,43 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  converter.ScientificResponse:
+    properties:
+      angleUnit:
+        type: string
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      operation:
+        type: string
+      result:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+    type: object
+  converter.SimpleInterestResponse:
+    properties:
+      annualInterestRate:
+        type: number
+      breakdown:
+        $ref: '#/definitions/converter.InterestBreakdown'
+      interest:
+        type: number
+      principal:
+        type: number
+      steps:
+        items:
+          type: string
+        type: array
+      timeYears:
+        type: number
+      totalAmount:
+        type: number
     type: object
   converter.Summary:
     properties:
@@ -468,6 +579,109 @@ definitions:
     - ResolutionNormal
     - ResolutionAmbiguous
     - ResolutionNonExistent
+  converter.YearlyRow:
+    properties:
+      closingBalance:
+        type: number
+      interestEarned:
+        type: number
+      openingBalance:
+        type: number
+      year:
+        type: integer
+    type: object
+  formatters.Category:
+    enum:
+    - image
+    - document
+    - data
+    - spreadsheet
+    - markup
+    type: string
+    x-enum-varnames:
+    - CategoryImage
+    - CategoryDocument
+    - CategoryData
+    - CategorySpreadsheet
+    - CategoryMarkup
+  formatters.ConversionEntry:
+    properties:
+      category:
+        $ref: '#/definitions/formatters.Category'
+      from:
+        type: string
+      to:
+        type: string
+    type: object
+  formatters.FormatDetail:
+    properties:
+      canConvertFrom:
+        items:
+          type: string
+        type: array
+      canConvertTo:
+        items:
+          type: string
+        type: array
+      category:
+        $ref: '#/definitions/formatters.Category'
+      ext:
+        type: string
+      mime:
+        type: string
+      type:
+        type: string
+    type: object
+  formatters.FormatInfo:
+    properties:
+      category:
+        $ref: '#/definitions/formatters.Category'
+      ext:
+        type: string
+      mime:
+        type: string
+      type:
+        type: string
+    type: object
+  formatters.FormatListResponse:
+    properties:
+      conversions:
+        items:
+          $ref: '#/definitions/formatters.ConversionEntry'
+        type: array
+      sources:
+        additionalProperties:
+          $ref: '#/definitions/formatters.FormatInfo'
+        type: object
+    type: object
+  nifty.CompaniesResponse:
+    properties:
+      companies:
+        items:
+          $ref: '#/definitions/nifty.Company'
+        type: array
+      count:
+        type: integer
+      error:
+        type: string
+      success:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+  nifty.Company:
+    properties:
+      company_name:
+        type: string
+      industry:
+        type: string
+      isin:
+        type: string
+      series:
+        type: string
+      symbol:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -774,6 +988,46 @@ paths:
           schema:
             type: string
       summary: BMI Calculator
+  /calculate-compound-interest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the compound interest, total amount, effective annual rate,
+        and (for tenures вүҘ 1 year) a year-by-year growth schedule.
+
+        **Formula:** `A = P Г— (1 + r/n)^(nГ—t)`   and   `CI = A вҲ’ P`
+        where `r` is the annual rate in decimal form, `n` is the number of
+        compounding periods per year, and `t` is the tenure in years.
+
+        **Limits:**
+        - `principal` must be positive and вүӨ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `time` must be positive; tenure must be вүӨ 100 years.
+        - `timeUnit` must be `"years"` or `"months"` (day-based tenure is rejected).
+        - `compoundingFrequency` must be one of `yearly`, `half_yearly`,
+        `quarterly`, `monthly`, `daily` (defaults to `yearly`).
+      parameters:
+      - description: Compound Interest Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CompoundInterestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Compound Interest Result
+          schema:
+            $ref: '#/definitions/converter.CompoundInterestResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Compound Interest Calculator
+      tags:
+      - Calculators
   /calculate-emi:
     post:
       consumes:
@@ -864,6 +1118,89 @@ paths:
       summary: Percentage Calculator
       tags:
       - Percentage Calculator
+  /calculate-scientific:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any scientific / mathematical operation through a single `operation`-discriminated endpoint.
+
+        **Operation groups (`operation` field):**
+        - Constants:      `pi`, `e`
+        - Trigonometric:  `sin`, `cos`, `tan`, `csc`, `sec`, `cot`
+        - Inverse trig:   `asin`, `acos`, `atan`, `atan2` (2-arg)
+        - Hyperbolic:     `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
+        - Log / Exp:      `log`, `ln`, `log_base` (2-arg), `exp`
+        - Powers / Roots: `pow` (2-arg), `sqrt`, `cbrt`, `nth_root` (2-arg)
+        - Rounding:       `abs`, `floor`, `ceil`, `round`, `trunc`, `sign`
+        - Combinatorics:  `factorial`, `ncr` (2-arg), `npr` (2-arg)
+        - Misc:           `gcd` (2-arg), `lcm` (2-arg), `mod` (2-arg), `hypot` (2-arg)
+
+        **Angle unit:** Trig and inverse-trig operations accept an optional
+        `angleUnit` field (`"degrees"` or `"radians"`, default `"radians"`).
+        The same unit governs both the input of `sin/cos/tan/...` and the
+        output of `asin/acos/atan/atan2`. Hyperbolic operations are unaffected.
+
+        **Validation:** Domain violations (e.g. `sqrt(-1)`, `ln(0)`, `asin(2)`,
+        `tan(90°)`) return a 400 error with a descriptive message.
+      parameters:
+      - description: Scientific Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.ScientificRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Scientific Result
+          schema:
+            $ref: '#/definitions/converter.ScientificResponse'
+        "400":
+          description: Bad Request - invalid operation, parameters, or domain error
+          schema:
+            type: string
+      summary: Scientific Calculator
+      tags:
+      - Scientific Calculator
+  /calculate-simple-interest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Calculates the simple interest and total amount for a loan or investment.
+
+        **Formula:** `SI = (P Г— R Г— T) / 100`
+        where `P` is the principal, `R` is the annual rate in percent,
+        and `T` is the tenure expressed in years.
+
+        **Limits:**
+        - `principal` must be positive and вүӨ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `time` must be positive; tenure must be вүӨ 100 years.
+        - `timeUnit` must be `"years"`, `"months"`, or `"days"`.
+      parameters:
+      - description: Simple Interest Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.SimpleInterestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Simple Interest Result
+          schema:
+            $ref: '#/definitions/converter.SimpleInterestResponse'
+        "400":
+          description: Bad Request - invalid input
+          schema:
+            type: string
+      summary: Simple Interest Calculator
+      tags:
+      - Calculators
   /calculate-tax:
     post:
       consumes:
@@ -909,14 +1246,17 @@ paths:
       consumes:
       - multipart/form-data
       description: Converts any supported file type to another supported file type
-        dynamically.
+        dynamically. The set of supported (fromType, toType) pairs is discoverable
+        at GET /formats.
       parameters:
-      - description: Source file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+      - description: Source file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp,
+          tiff, bmp)
         in: formData
         name: fromType
         required: true
         type: string
-      - description: Target file type (e.g. txt, csv, json, pdf, docx, jpg, png)
+      - description: Target file type (e.g. txt, csv, json, pdf, docx, jpg, png, webp,
+          tiff, bmp)
         in: formData
         name: toType
         required: true
@@ -934,7 +1274,11 @@ paths:
           schema:
             type: file
         "400":
-          description: Bad Request or unsupported combination
+          description: Bad Request or unsupported conversion pair
+          schema:
+            type: string
+        "405":
+          description: Method Not Allowed
           schema:
             type: string
       summary: Universal File Converter
@@ -1147,6 +1491,80 @@ paths:
       summary: Extract text from PDF or image
       tags:
       - Text Extraction
+  /formats:
+    get:
+      description: Returns every supported source format plus every directed conversion
+        edge. Intended for the frontend to populate dropdowns at runtime.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Conversion matrix
+          schema:
+            $ref: '#/definitions/formatters.FormatListResponse'
+      summary: List supported file formats
+      tags:
+      - Format Registry
+  /formats/{type}:
+    get:
+      description: Returns the MIME type, extension, category, and reachable conversions
+        for one format (e.g. "jpg"). Path is /formats/{type}.
+      parameters:
+      - description: Format identifier (e.g. jpg, pdf, csv)
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Format detail
+          schema:
+            $ref: '#/definitions/formatters.FormatDetail'
+        "404":
+          description: Unknown format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Describe a single format
+      tags:
+      - Format Registry
+  /nifty50/companies:
+    get:
+      consumes:
+      - application/json
+      description: Returns the latest official 50 NIFTY 50 constituent companies.
+        Requires JWT Authentication.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nifty.CompaniesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: NIFTY 50 data is currently unavailable
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get NIFTY 50 Constituent Companies
+      tags:
+      - markets
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
