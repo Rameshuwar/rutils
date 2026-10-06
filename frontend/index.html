@@ -1578,6 +1578,220 @@
         </div>
         <!-- /NIFTY 50 View -->
 
+        <!-- ============================================================ -->
+        <!-- ⬅️ NEW: Chartink Technical Chart View ("INK CHART")        -->
+        <!-- ============================================================ -->
+        <div id="technical-chart-view" class="tool-view w-full mx-auto space-y-4 hidden transition-opacity duration-300">
+          
+          <!-- Unauthenticated Warning Card -->
+          <div id="chart-unauth-card" class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center max-w-lg mx-auto hidden shadow-md">
+            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-amber-900 mb-1">Authentication Required</h3>
+            <p class="text-xs text-amber-700 mb-4">Please log in to your account to access technical charts and indicators.</p>
+            <button id="chart-unauth-login-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow transition-colors">
+              Sign In to View Charts
+            </button>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="chart-loading-indicator" class="flex flex-col items-center justify-center py-12 hidden">
+            <div class="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p class="text-sm font-medium text-slate-600">Loading Market Data & Indicators...</p>
+          </div>
+
+          <!-- Error Banner -->
+          <div id="chart-error-banner" class="bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-xl p-4 hidden"></div>
+
+          <!-- Main Chart Container Wrapper (Chartink Style) -->
+          <div id="chart-content-area" class="space-y-3">
+            <div id="chartink-wrapper" class="chartink-theme-classic bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden transition-colors duration-200">
+              
+              <!-- ── TOP STRIP 1: CHARTINK CONTROL PANEL ─────────────── -->
+              <div id="chart-top-bar" class="bg-[#2c7a7b] text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs border-b border-teal-800">
+                
+                <!-- Left: INK CHART Box & Search with Autocomplete -->
+                <div class="flex items-center gap-2">
+                  <div class="bg-[#234e52] px-2.5 py-1 rounded font-bold uppercase tracking-wider text-[11px] text-teal-200 border border-teal-600">
+                    INK CHART
+                  </div>
+                  
+                  <div class="relative flex items-center">
+                    <input id="chart-symbol-input" type="text" value="HINDUNILVR"
+                      placeholder="Search 101 Tickers..."
+                      autocomplete="off"
+                      class="chart-control-input font-bold px-3 py-1 rounded-l text-xs w-36 uppercase focus:outline-none focus:ring-2 focus:ring-teal-300" />
+                    
+                    <button id="btn-chart-search" class="bg-[#285e61] hover:bg-[#1d4044] text-white px-3 py-1 rounded-r font-semibold border-l border-teal-700 transition-colors">
+                      Search
+                    </button>
+
+                    <!-- Real-time floating autocomplete dropdown -->
+                    <div id="chart-search-results" class="chart-search-dropdown hidden"></div>
+                  </div>
+
+                  <!-- Quick Select Dropdown -->
+                  <select id="chart-company-select" class="chart-control-select font-medium px-2 py-1 rounded text-xs max-w-[150px] md:max-w-[200px] focus:outline-none">
+                    <option value="HINDUNILVR">Loading 101 Stocks...</option>
+                  </select>
+                </div>
+
+                <!-- Center: Period, Range, Type & UPDATE CHART -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="flex items-center gap-1">
+                    <span class="text-white font-semibold text-xs">Period:</span>
+                    <select id="chart-period-select" class="chart-control-select px-2 py-0.5 rounded text-xs font-semibold focus:outline-none">
+                      <option value="6m" selected>6 Months</option>
+                      <option value="1y">1 Year</option>
+                      <option value="all">All Available</option>
+                    </select>
+                  </div>
+
+                  <div class="flex items-center gap-1">
+                    <span class="text-white font-semibold text-xs">Range:</span>
+                    <span class="bg-[#234e52] px-2 py-0.5 rounded font-bold text-teal-200 text-xs">Daily</span>
+                  </div>
+
+                  <div class="flex items-center gap-1">
+                    <span class="text-white font-semibold text-xs">Type:</span>
+                    <select id="chart-type-select" class="chart-control-select px-2 py-0.5 rounded text-xs font-semibold focus:outline-none">
+                      <option value="candlestick" selected>CandleStick</option>
+                      <option value="line">Line</option>
+                    </select>
+                  </div>
+
+                  <button id="btn-chart-update" class="bg-[#319795] hover:bg-[#285e61] text-white px-3 py-1 rounded font-bold uppercase tracking-wider text-[11px] shadow border border-teal-400 transition-colors">
+                    UPDATE CHART
+                  </button>
+                </div>
+
+                <!-- Right: Theme & Export -->
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1">
+                    <span class="text-white font-semibold text-xs">Theme:</span>
+                    <select id="chart-theme-select" class="chart-control-select px-2 py-0.5 rounded text-xs font-semibold focus:outline-none">
+                      <option value="classic" selected>Default (Classic)</option>
+                      <option value="dark">Modern Dark</option>
+                    </select>
+                  </div>
+
+                  <button id="btn-chart-save-image" class="bg-[#285e61] hover:bg-[#1d4044] text-white px-2.5 py-1 rounded text-[11px] font-semibold border border-teal-600 transition-colors flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Save Image
+                  </button>
+                </div>
+
+              </div>
+
+              <!-- ── TOP STRIP 2: INDICATOR CHECKBOXES ─────────────────────── -->
+              <div id="chart-indicators-bar" class="bg-slate-50 border-b border-slate-200 px-4 py-2 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700">
+                <span class="text-slate-500 text-[11px] font-bold uppercase tracking-wider">Overlays & Indicators:</span>
+                
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input id="chk-ema-5" type="checkbox" checked class="w-3.5 h-3.5 text-purple-600 rounded" />
+                  <span class="text-purple-700 font-semibold flex items-center gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
+                    EMA (5)
+                  </span>
+                </label>
+
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input id="chk-ema-13" type="checkbox" checked class="w-3.5 h-3.5 text-emerald-600 rounded" />
+                  <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                    EMA (13)
+                  </span>
+                </label>
+
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input id="chk-ema-26" type="checkbox" checked class="w-3.5 h-3.5 text-slate-800 rounded" />
+                  <span class="text-slate-800 font-semibold flex items-center gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-800 inline-block"></span>
+                    EMA (26)
+                  </span>
+                </label>
+
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input id="chk-sma-200" type="checkbox" checked class="w-3.5 h-3.5 text-rose-600 rounded" />
+                  <span class="text-rose-700 font-semibold flex items-center gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block"></span>
+                    SMA (200)
+                  </span>
+                </label>
+
+                <label class="flex items-center gap-1.5 cursor-pointer border-l pl-3 border-slate-200">
+                  <input id="chk-volume" type="checkbox" checked class="w-3.5 h-3.5 text-teal-600 rounded" />
+                  <span class="text-teal-700 font-semibold">Volume Bars</span>
+                </label>
+
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input id="chk-rsi" type="checkbox" checked class="w-3.5 h-3.5 text-blue-600 rounded" />
+                  <span class="text-blue-700 font-semibold">RSI (14)</span>
+                </label>
+              </div>
+
+              <!-- ── TOP STRIP 3: LIVE CROSSHAIR STATS BAR ────────────────── -->
+              <div id="chart-stats-bar" class="bg-slate-100 border-b border-slate-250 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-slate-700">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span id="stat-symbol-badge" class="font-bold font-sans text-slate-900 bg-teal-100 text-teal-800 px-2 py-0.5 rounded text-xs border border-teal-300">
+                    HINDUNILVR
+                  </span>
+                  <span>Dt: <b id="stat-dt" class="text-slate-900 font-semibold">-</b></span>
+                  <span>Op: <b id="stat-op" class="text-slate-900 font-semibold">-</b></span>
+                  <span>Hi: <b id="stat-hi" class="text-slate-900 font-semibold">-</b></span>
+                  <span>Lw: <b id="stat-lw" class="text-slate-900 font-semibold">-</b></span>
+                  <span>Cl: <b id="stat-cl" class="text-slate-900 font-semibold">-</b></span>
+                  <span>Ch: <b id="stat-ch" class="text-emerald-600 font-bold">-</b></span>
+                  <span>Vl: <b id="stat-vl" class="text-slate-900 font-semibold">-</b></span>
+                </div>
+
+                <div class="flex items-center gap-3 flex-wrap text-[11px]">
+                  <span class="text-purple-700 font-semibold">EMA(5): <b id="stat-ema5" class="text-slate-900 font-bold">-</b></span>
+                  <span class="text-emerald-700 font-semibold">EMA(13): <b id="stat-ema13" class="text-slate-900 font-bold">-</b></span>
+                  <span class="text-slate-800 font-semibold">EMA(26): <b id="stat-ema26" class="text-slate-900 font-bold">-</b></span>
+                  <span class="text-rose-700 font-semibold">SMA(200): <b id="stat-sma200" class="text-slate-900 font-bold">-</b></span>
+                  <span class="text-blue-700 font-semibold">RSI(14): <b id="stat-rsi" class="text-slate-900 font-bold">-</b></span>
+                </div>
+              </div>
+
+              <!-- ── MAIN CHART CANVAS (Candles + Overlaid EMAs + Volume) ── -->
+              <div id="chart-main-canvas" class="w-full relative bg-white" style="height: 480px;"></div>
+
+              <!-- ── RSI SUB-CHART (Relative Strength Index) ─────────────── -->
+              <div id="chart-rsi-wrapper" class="border-t border-slate-200 bg-slate-50">
+                <div id="chart-rsi-header" class="px-4 py-1 text-[11px] font-bold text-blue-700 flex items-center justify-between border-b border-slate-200">
+                  <span>RSI: Relative Strength Index (14)</span>
+                  <span class="text-slate-500 text-[10px] font-normal">Upper: 70 | Lower: 30</span>
+                </div>
+                <div id="chart-rsi-canvas" class="w-full relative bg-white" style="height: 140px;"></div>
+              </div>
+
+            </div>
+
+            <!-- ── TRADE ADVICE & SIGNAL BANNER (Angel One Smart Strategy) ── -->
+            <div id="chart-advice-banner" class="bg-white rounded-xl shadow border border-slate-200 p-4 flex items-center justify-between flex-wrap gap-3 hidden">
+              <div class="flex items-center gap-3">
+                <span id="advice-badge" class="px-3 py-1 bg-emerald-600 text-white font-bold rounded-lg uppercase tracking-wider text-xs">
+                  BUY
+                </span>
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900">Quantitative Strategy Signal</h4>
+                  <p id="advice-details" class="text-xs text-slate-600">Target: ₹0.00 | 200-SMA Support: ₹0.00</p>
+                </div>
+              </div>
+              <span class="text-[11px] text-slate-400">Synced from Angel One Smart API</span>
+            </div>
+
+          </div>
+
+        </div>
+        <!-- /Chartink Technical Chart View -->
+
       </div>
     </div>
 

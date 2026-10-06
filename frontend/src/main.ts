@@ -2,6 +2,7 @@ import './style.css'
 import { initAuth, openModal } from './auth-ui'
 import { initFormatters, renderFormattersCategory } from './formatters'
 import { getAuthState, isLoggedIn, clearAuth, apiGetNiftyCompanies, NiftyCompany } from './auth'
+import { chartController } from './chart-ui'
 
 // ============================================================
 // TOOL REGISTRY — single source of truth for navigation
@@ -10,7 +11,8 @@ type ToolId =
   | 'file' | 'pdf' | 'measure' | 'time' | 'railway'
   | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest' | 'scientific'
   | 'formatters'
-  | 'nifty50';
+  | 'nifty50'
+  | 'charts';
 
 type CategoryId = 'conversion' | 'calculations' | 'formatters' | 'markets';
 
@@ -42,6 +44,7 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
   ],
   markets: [
     { id: 'nifty50', label: 'NIFTY 50', viewId: 'nifty50-view' },
+    { id: 'charts', label: 'Technical Charts', viewId: 'technical-chart-view' },
   ],
 };
 
@@ -218,6 +221,9 @@ function setTool(toolId: ToolId) {
   if (toolId === 'nifty50') {
     onNiftySelected();
   }
+  if (toolId === 'charts') {
+    onChartsSelected();
+  }
 }
 
 function setCategory(category: CategoryId, preserveTool = true) {
@@ -260,7 +266,13 @@ initAuth();
 const path = window.location.pathname.toLowerCase();
 const hash = window.location.hash.toLowerCase();
 
-if (path === '/nifty50' || hash === '#nifty50' || hash === '#markets') {
+if (path === '/charts' || hash === '#charts' || hash === '#technical-charts' || hash === '#chartink') {
+  setCategory('markets', true);
+  setTool('charts');
+  if (!isLoggedIn()) {
+    openModal('login');
+  }
+} else if (path === '/nifty50' || hash === '#nifty50' || hash === '#markets') {
   setCategory('markets', true);
   if (!isLoggedIn()) {
     openModal('login');
@@ -2822,7 +2834,22 @@ if (path === '/nifty50' || hash === '#nifty50' || hash === '#markets') {
           // Symbol
           const tdSym = document.createElement('td');
           tdSym.className = 'py-3.5 px-4';
-          tdSym.innerHTML = `<span class="font-mono font-bold text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 tracking-wider">${escapeHtml(company.symbol)}</span>`;
+          tdSym.innerHTML = `
+            <div class="inline-flex items-center gap-2">
+              <span class="font-mono font-bold text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 tracking-wider">${escapeHtml(company.symbol)}</span>
+              <button
+                type="button"
+                class="btn-open-stock-chart px-2 py-0.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[11px] font-semibold rounded border border-teal-200 transition-colors inline-flex items-center gap-1 shadow-sm"
+                data-symbol="${escapeHtml(company.symbol)}"
+                title="Open Technical Chart for ${escapeHtml(company.symbol)}"
+              >
+                <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                </svg>
+                Chart
+              </button>
+            </div>
+          `;
           tr.appendChild(tdSym);
 
           // Series
@@ -3058,9 +3085,54 @@ if (path === '/nifty50' || hash === '#nifty50' || hash === '#markets') {
         document.body.removeChild(a);
       });
 
+      // Quick Chart navigation from NIFTY 50 table rows
+      niftyTableBody?.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.btn-open-stock-chart') as HTMLButtonElement | null;
+        if (!btn) return;
+        const sym = btn.dataset.symbol;
+        if (!sym) return;
+        setCategory('markets', true);
+        setTool('charts');
+        onChartsSelected(sym);
+      });
+
+      // Technical Chart handler
+      let chartsInitialized = false;
+      function onChartsSelected(symbolToOpen?: string) {
+        const unauthCard = document.getElementById('chart-unauth-card');
+        const contentArea = document.getElementById('chart-content-area');
+
+        if (!isLoggedIn()) {
+          unauthCard?.classList.remove('hidden');
+          contentArea?.classList.add('hidden');
+          openModal('login');
+          return;
+        }
+
+        unauthCard?.classList.add('hidden');
+        contentArea?.classList.remove('hidden');
+
+        if (!chartsInitialized) {
+          chartsInitialized = true;
+          chartController.init().then(() => {
+            if (symbolToOpen) {
+              chartController.selectCompany(symbolToOpen);
+            }
+          });
+        } else if (symbolToOpen) {
+          chartController.selectCompany(symbolToOpen);
+        } else {
+          chartController.onViewShown();
+        }
+      }
+
+      document.getElementById('chart-unauth-login-btn')?.addEventListener('click', () => openModal('login'));
+
       // React to auth changes across tabs/modals
       window.addEventListener('auth-changed', () => {
-        if (currentTool === 'nifty50' || currentCategory === 'markets') {
+        if (currentTool === 'nifty50') {
           loadNiftyData(true);
+        } else if (currentTool === 'charts') {
+          onChartsSelected();
         }
       });
