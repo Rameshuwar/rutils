@@ -615,7 +615,22 @@
           </header>
           <div class="p-6 md:p-8 space-y-6">
             <form id="emi-form" class="space-y-6">
-
+              <!-- ── Mode toggle: Banker EMI vs Borrower Tenure ── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Calculation Mode</label>
+                <div class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl" role="tablist" aria-label="EMI calculation mode">
+                  <button type="button" id="emi-mode-banker" data-mode="banker"
+                    class="emi-mode-btn py-2.5 rounded-lg text-sm font-semibold transition-colors bg-white text-teal-700 shadow-sm">
+                    Calculate EMI
+                    <span class="block text-[11px] font-normal text-gray-500">I know my tenure</span>
+                  </button>
+                  <button type="button" id="emi-mode-borrower" data-mode="borrower"
+                    class="emi-mode-btn py-2.5 rounded-lg text-sm font-semibold transition-colors text-gray-600 hover:text-teal-700">
+                    Calculate Tenure
+                    <span class="block text-[11px] font-normal text-gray-500">I know my monthly budget</span>
+                  </button>
+                </div>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Loan Amount (₹)</label>
@@ -627,19 +642,33 @@
                   <input type="number" id="emi-rate" step="any" min="0" max="100" required placeholder="e.g. 10.5"
                     class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Tenure</label>
-                  <input type="number" id="emi-tenure" step="any" min="1" required placeholder="e.g. 5"
-                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                               <div id="emi-tenure-wrap" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:col-span-2">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tenure</label>
+                    <input type="number" id="emi-tenure" step="any" min="1" required placeholder="e.g. 5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                    <select id="emi-tenure-unit" required
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                      <option value="" disabled selected>Select unit</option>
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                  <select id="emi-tenure-unit" required
+
+                <!-- Monthly Payment input for borrower mode (hidden by default) -->
+                <div id="emi-monthly-payment-wrap" class="hidden sm:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Monthly Payment you can afford (₹)
+                  </label>
+                  <input type="number" id="emi-monthly-payment" step="any" min="1" placeholder="e.g. 15000"
                     class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    <option value="" disabled selected>Select unit</option>
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
-                  </select>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Enter how much you can comfortably pay each month — we'll calculate how long it will take.
+                  </p>
                 </div>
               </div>
 
@@ -653,8 +682,7 @@
               <div id="emi-result-box" class="hidden mt-4 space-y-6">
 
                 <div class="p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
-                  <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Monthly
-                    EMI</span>
+<span id="emi-result-value-label" class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Monthly EMI</span>
                   <span id="emi-result-value" class="text-4xl font-extrabold text-teal-900 break-all">₹0</span>
                 </div>
 
