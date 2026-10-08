@@ -56,6 +56,53 @@ definitions:
         description: '"months" or "years"'
         type: string
     type: object
+  api.GPARequest:
+    properties:
+      cgpa:
+        description: mode = "cgpa_to_percentage" | "percentage_to_cgpa"
+        type: number
+      completedCredits:
+        type: number
+      courses:
+        description: mode = "semester_gpa"
+        items:
+          $ref: '#/definitions/converter.GPACourse'
+        type: array
+      currentCgpa:
+        description: mode = "target_gpa"
+        type: number
+      grade:
+        description: mode = "grade_to_point"
+        type: string
+      gradingScale:
+        type: string
+      mode:
+        type: string
+      multiplier:
+        type: number
+      percentage:
+        type: number
+      remainingCredits:
+        type: number
+      scale:
+        type: number
+      semesters:
+        description: mode = "cumulative_cgpa"
+        items:
+          $ref: '#/definitions/converter.GPASemester'
+        type: array
+      targetCgpa:
+        type: number
+    type: object
+  api.LoanTenureRequest:
+    properties:
+      annualInterestRate:
+        type: number
+      monthlyPayment:
+        type: number
+      principal:
+        type: number
+    type: object
   api.MeasurementRequest:
     properties:
       category:
@@ -354,11 +401,124 @@ definitions:
           type: string
         type: array
     type: object
+  converter.GPACourse:
+    properties:
+      credits:
+        type: number
+      grade:
+        description: optional; if set, GradePoint is derived
+        type: string
+      gradePoint:
+        type: number
+      name:
+        type: string
+    type: object
+  converter.GPACourseResult:
+    properties:
+      credits:
+        type: number
+      gradePoint:
+        type: number
+      name:
+        type: string
+      weighted:
+        description: credits × gradePoint
+        type: number
+    type: object
+  converter.GPAResponse:
+    properties:
+      breakdown:
+        items:
+          $ref: '#/definitions/converter.GPACourseResult'
+        type: array
+      cgpa:
+        type: number
+      currentCgpa:
+        type: number
+      extra:
+        additionalProperties: true
+        type: object
+      formatted:
+        type: string
+      gpa:
+        type: number
+      gradePoint:
+        type: number
+      mode:
+        type: string
+      multiplier:
+        type: number
+      percentage:
+        type: number
+      requiredGpa:
+        type: number
+      semesters:
+        items:
+          $ref: '#/definitions/converter.GPASemesterResult'
+        type: array
+      steps:
+        items:
+          type: string
+        type: array
+      targetCgpa:
+        type: number
+      totalCredits:
+        type: number
+      totalWeighted:
+        type: number
+    type: object
+  converter.GPASemester:
+    properties:
+      credits:
+        type: number
+      gpa:
+        type: number
+      name:
+        type: string
+    type: object
+  converter.GPASemesterResult:
+    properties:
+      credits:
+        type: number
+      gpa:
+        type: number
+      name:
+        type: string
+      weighted:
+        description: credits × gpa
+        type: number
+    type: object
   converter.InterestBreakdown:
     properties:
       interestPercent:
         type: number
       principalPercent:
+        type: number
+    type: object
+  converter.LoanTenureResponse:
+    properties:
+      amortization:
+        items:
+          $ref: '#/definitions/converter.AmortizationRow'
+        type: array
+      breakdown:
+        $ref: '#/definitions/converter.EMIBreakdown'
+      emi:
+        description: Echoes the input MonthlyPayment
+        type: number
+      monthlyRatePercent:
+        type: number
+      principal:
+        type: number
+      tenureMonths:
+        description: ← the key output
+        type: integer
+      tenureYears:
+        description: ← convenience
+        type: number
+      totalInterest:
+        type: number
+      totalPayment:
         type: number
     type: object
   converter.NextBirthday:
@@ -1068,6 +1228,118 @@ paths:
           schema:
             type: string
       summary: Loan EMI Calculator
+      tags:
+      - Calculators
+  /calculate-gpa:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Performs any GPA or CGPA calculation through a single `mode`-discriminated endpoint.
+
+        **Supported modes (`mode` field):**
+        - `semester_gpa`        (courses[])                            — credit-weighted GPA for one semester
+        - `cumulative_cgpa`     (semesters[])                          — credit-weighted CGPA across semesters
+        - `cgpa_to_percentage`  (cgpa, multiplier?)                    — CGPA → percentage (default 9.5)
+        - `percentage_to_cgpa`  (percentage, multiplier?)              — percentage → CGPA
+        - `grade_to_point`      (grade, gradingScale?)                 — letter grade → numeric grade point
+        - `target_gpa`          (currentCgpa, completedCredits,
+        targetCgpa, remainingCredits, scale?)  — required GPA to reach a target CGPA
+
+        **Mode details:**
+
+        **semester_gpa** — send a `courses` array where each item is:
+        `{"name": "Math", "credits": 4, "gradePoint": 9}`.
+        GPA = Σ(credits × gradePoint) / Σ(credits). The response
+        includes a per-course breakdown and the formula steps.
+
+        **cumulative_cgpa** — send a `semesters` array where each item is:
+        `{"name": "Sem 1", "credits": 20, "gpa": 8.5}`.
+        CGPA = Σ(credits × gpa) / Σ(credits). The response includes
+        a per-semester breakdown.
+
+        **cgpa_to_percentage** — converts a CGPA to a percentage using
+        the supplied `multiplier`. Defaults to 9.5 (CBSE). Common
+        alternatives: 10.0 (VTU/KTU), 7.25 (Mumbai University).
+        The output is capped at 100%.
+
+        **percentage_to_cgpa** — inverse of the above.
+
+        **grade_to_point** — looks up the numeric grade point for a
+        letter grade. Supported scales: `"10"` (default, CBSE/AICTE),
+        `"4"` (US university), `"5"` (European secondary).
+
+        **target_gpa** — solves for the GPA the student must average
+        in their remaining credits to reach a desired overall CGPA:
+        `requiredGPA = (targetCGPA × totalCredits − currentCGPA × completedCredits) / remainingCredits`.
+        The response always carries an `extra.achievable` boolean; if
+        the required GPA exceeds the scale, `extra.warning` explains why.
+
+        **Limits (v1):**
+        - Grade points, GPAs, and CGPAs must be in [0, 10] for modes
+        1–4. Mode 6 accepts a custom `scale` (default 10).
+        - Credits must be positive.
+        - All numeric inputs must be finite (NaN / Inf rejected).
+      parameters:
+      - description: GPA / CGPA Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GPARequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: GPA Result
+          schema:
+            $ref: '#/definitions/converter.GPAResponse'
+        "400":
+          description: Bad Request - invalid mode or parameters
+          schema:
+            type: string
+      summary: GPA / CGPA Calculator
+      tags:
+      - Calculators
+  /calculate-loan-tenure:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Computes how long it will take to repay a loan when the borrower fixes a monthly payment.
+
+        **Use case:** a user has a loan amount and knows only how much they can pay per month — this endpoint tells them how many months/years it will take to repay, and how much interest they will pay in total.
+
+        **Formula (loan amortization solved for N):**
+        `N = -log(1 - (P × r) / EMI) / log(1 + r)`
+        where `r` is the monthly rate (annual / 12 / 100) and `EMI` is the borrower's fixed monthly payment.
+
+        **Rejection rule:** if the monthly payment does not at least cover the monthly interest on the principal (i.e. `EMI ≤ P × r`), the loan would never be repaid, so the endpoint returns a 400 with a helpful suggestion.
+
+        **Limits:**
+        - `principal` must be positive and ≤ 1 trillion.
+        - `annualInterestRate` must be between 0 and 100.
+        - `monthlyPayment` must be positive.
+        - Computed tenure must not exceed 600 months (50 years).
+      parameters:
+      - description: Loan Tenure Calculation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.LoanTenureRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Loan Tenure Result
+          schema:
+            $ref: '#/definitions/converter.LoanTenureResponse'
+        "400":
+          description: Bad Request - invalid input or unrepayable loan
+          schema:
+            type: string
+      summary: Loan Tenure Calculator (Borrower-Centric)
       tags:
       - Calculators
   /calculate-percentage:

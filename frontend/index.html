@@ -1205,6 +1205,206 @@
         </div>
         <!-- /SCIENTIFIC CALCULATOR VIEW -->
 
+        <!-- ⬅️ NEW: GPA / CGPA Calculator View -->
+        <div id="gpa-calculator-view"
+          class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+          <header class="bg-violet-600 text-white py-4 px-6 md:py-6 md:px-8">
+            <h2 class="text-2xl md:text-3xl font-bold">GPA / CGPA Calculator</h2>
+            <p class="text-violet-100 mt-2 text-sm md:text-base">Semester GPA, cumulative CGPA, percentage conversion, and target planner.</p>
+          </header>
+
+          <div class="p-6 md:p-8 space-y-6">
+            <form id="gpa-form" class="space-y-6">
+
+              <!-- ── Mode picker ─────────────────────────────── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Mode</label>
+                <select id="gpa-mode"
+                  class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
+                  <optgroup label="GPA / CGPA">
+                    <option value="semester_gpa" selected>Semester GPA (from courses)</option>
+                    <option value="cumulative_cgpa">Cumulative CGPA (from semesters)</option>
+                  </optgroup>
+                  <optgroup label="Conversion">
+                    <option value="cgpa_to_percentage">CGPA → Percentage</option>
+                    <option value="percentage_to_cgpa">Percentage → CGPA</option>
+                    <option value="grade_to_point">Letter grade → Grade point</option>
+                  </optgroup>
+                  <optgroup label="Planning">
+                    <option value="target_gpa">Target GPA planner</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <!-- ── Mode 1: semester_gpa ─────────────────────── -->
+              <div id="gpa-semester-gpa-section" class="hidden">
+                <div class="bg-violet-50 border border-violet-100 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-violet-900">Courses</label>
+                    <button type="button" id="gpa-add-course"
+                      class="text-xs font-semibold text-violet-700 bg-white border border-violet-200 rounded-md px-3 py-1 hover:bg-violet-100 transition-colors">
+                      + Add Course
+                    </button>
+                  </div>
+                  <div id="gpa-course-list"></div>
+                  <p class="text-xs text-violet-600 mt-2">Each row: optional name, credits (positive), grade point (0–10).</p>
+                </div>
+              </div>
+
+              <!-- ── Mode 2: cumulative_cgpa ───────────────────── -->
+              <div id="gpa-cumulative-cgpa-section" class="hidden">
+                <div class="bg-violet-50 border border-violet-100 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-violet-900">Semesters</label>
+                    <button type="button" id="gpa-add-semester"
+                      class="text-xs font-semibold text-violet-700 bg-white border border-violet-200 rounded-md px-3 py-1 hover:bg-violet-100 transition-colors">
+                      + Add Semester
+                    </button>
+                  </div>
+                  <div id="gpa-semester-list"></div>
+                  <p class="text-xs text-violet-600 mt-2">Each row: optional name, credits (positive), GPA (0–10).</p>
+                </div>
+              </div>
+
+              <!-- ── Mode 3: cgpa_to_percentage ────────────────── -->
+              <div id="gpa-cgpa-to-percentage-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 8.0" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Multiplier (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-multiplier-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 9.5 · VTU 10 · Mumbai 7.25" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 4: percentage_to_cgpa ────────────────── -->
+              <div id="gpa-percentage-to-cgpa-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Percentage</label>
+                    <input type="number" step="any" min="0" max="100" id="gpa-percentage-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 76" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Multiplier (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-percentage-multiplier-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 9.5" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 5: grade_to_point ────────────────────── -->
+              <div id="gpa-grade-to-point-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grade</label>
+                    <input type="text" id="gpa-grade-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. A+, A, A-, B+, O, F" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grading Scale</label>
+                    <select id="gpa-grade-scale"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500">
+                      <option value="10" selected>10-point (CBSE / AICTE)</option>
+                      <option value="4">4-point (US university)</option>
+                      <option value="5">5-point (European)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 6: target_gpa ────────────────────────── -->
+              <div id="gpa-target-gpa-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Current CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-current-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 7.5" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Completed Credits</label>
+                    <input type="number" step="any" min="0" id="gpa-completed-credits-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 60" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Target CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-target-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 8.0" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Remaining Credits</label>
+                    <input type="number" step="any" min="0" id="gpa-remaining-credits-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 40" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Scale (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-scale-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 10 · US universities use 4" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Submit ─────────────────────────────────────── -->
+              <button type="submit"
+                class="w-full px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                Calculate
+              </button>
+
+              <p id="gpa-status-message" class="text-sm text-center hidden"></p>
+
+              <!-- ── Result box ─────────────────────────────────── -->
+              <div id="gpa-result-box"
+                class="hidden mt-4 p-6 bg-violet-50 rounded-lg border border-violet-100 shadow-inner">
+
+                <div class="flex items-center justify-between gap-2 flex-wrap mb-3">
+                  <span class="text-xs text-violet-600 font-semibold uppercase tracking-wide">Result</span>
+                  <button type="button" id="gpa-copy-btn"
+                    class="text-xs font-medium text-violet-700 bg-white border border-violet-200 rounded-md px-2 py-1 hover:bg-violet-100 transition-colors">
+                    <span id="gpa-copy-btn-label">Copy Result</span>
+                  </button>
+                </div>
+
+                <div class="text-center mb-4">
+                  <span id="gpa-result-formatted" class="text-4xl font-extrabold text-violet-900 break-all"></span>
+                </div>
+
+                <div id="gpa-extra-chips" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+
+                <p id="gpa-warning-message"
+                  class="hidden mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3"></p>
+
+                <div>
+                  <button type="button" id="gpa-steps-toggle"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition-colors flex items-center justify-between">
+                    <span id="gpa-steps-toggle-label">▸ Calculation Steps</span>
+                  </button>
+                  <div id="gpa-steps-box" class="hidden mt-3 border border-gray-200 rounded-lg p-4 bg-white">
+                    <ol id="gpa-steps-list"
+                      class="space-y-1 text-sm text-violet-900 font-mono list-decimal list-inside"></ol>
+                  </div>
+                </div>
+
+              </div>
+
+            </form>
+          </div>
+        </div>
+        <!-- /GPA / CGPA Calculator View -->
         <!-- ⬅️ NEW: FILE REPAIR / FORMATTER VIEW (with Text + File placeholders) -->
         <div id="repair-view"
           class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">

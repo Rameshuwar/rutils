@@ -3,6 +3,7 @@ import { initAuth, openModal } from './auth-ui'
 import { initFormatters, renderFormattersCategory } from './formatters'
 import { getAuthState, isLoggedIn, clearAuth, apiGetNiftyCompanies, NiftyCompany } from './auth'
 import { chartController } from './chart-ui'
+import { initGPA } from './gpa-ui'
 
 // ============================================================
 // EMI Calculator — shared types (module scope)
@@ -57,7 +58,7 @@ interface LoanTenureSnapshot {
 // ============================================================
 type ToolId =
   | 'file' | 'pdf' | 'measure' | 'time' | 'railway'
-  | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest' | 'scientific'
+  | 'bmi' | 'age' | 'percentage' | 'emi' | 'tax' | 'interest' | 'scientific' | 'gpa'
   | 'formatters'
   | 'nifty50'
   | 'charts';
@@ -86,6 +87,7 @@ const TOOLS: Record<CategoryId, ToolDef[]> = {
     { id: 'tax', label: 'Tax / GST', viewId: 'tax-calculator-view' },
     { id: 'interest', label: 'SI / CI', viewId: 'interest-calculator-view' },
     { id: 'scientific', label: 'Scientific', viewId: 'scientific-calculator-view' },
+     { id: 'gpa', label: 'CGPA', viewId: 'gpa-calculator-view' },
   ],
   formatters: [
     { id: 'formatters', label: 'Formatter', viewId: 'formatters-view' },
@@ -310,6 +312,9 @@ initFormatters();
 
 // Initialise authentication system
 initAuth();
+
+// Initialise GPA / CGPA calculator
+initGPA();
 
 const path = window.location.pathname.toLowerCase();
 const hash = window.location.hash.toLowerCase();

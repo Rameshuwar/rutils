@@ -65,6 +65,7 @@ func main() {
 	// ⬅️ NEW: Borrower-centric Loan Tenure Calculator
 	apiMux.HandleFunc("/calculate-loan-tenure", api.HandleLoanTenureCalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
+	apiMux.HandleFunc("/calculate-gpa", api.HandleGPACalculate)
 	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
 	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
@@ -145,6 +146,7 @@ func main() {
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
 	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-gpa         (GPA / CGPA Calculator)")
 	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
