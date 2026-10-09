@@ -233,6 +233,118 @@
         </div>
 
         <!-- Measurement Converter View -->
+                 <!-- ============================================================ -->
+        <!-- Image Compress View                                          -->
+        <!-- ============================================================ -->
+        <div id="image-compressor-view"
+          class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+          <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+            <h2 class="text-2xl md:text-3xl font-bold">Image Compressor</h2>
+            <p class="text-teal-100 mt-2 text-sm md:text-base">Shrink JPG, PNG, or WebP files toward a target size or percentage.</p>
+          </header>
+
+          <div class="p-6 md:p-8 space-y-6">
+            <form id="image-compress-form" class="space-y-6">
+
+              <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                <label class="block text-sm font-medium text-indigo-900 mb-2">Upload Image</label>
+                <input type="file" id="image-input" accept=".jpg,.jpeg,.png,.webp,.tiff,.tif,.bmp"
+                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer"
+                  required />
+                <p id="image-detected" class="text-xs text-gray-500 mt-2">Auto-detected on upload</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Conversion Type</label>
+                  <select id="image-conversion-type"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="compress" selected>Compress (shrink)</option>
+                    <option value="expand">Expand (grow)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Data Type</label>
+                  <select id="image-data-type"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="percentage" selected>Percentage (%)</option>
+                    <option value="size">Target Size</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Target Value <span id="image-target-hint" class="text-xs text-gray-400 font-normal">(1–99 for compress)</span>
+                  </label>
+                  <input type="number" id="image-target-value" step="any" min="1" placeholder="e.g. 50" required
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div id="image-sizeunit-wrap" class="hidden">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Size Unit</label>
+                  <select id="image-size-unit"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="KB" selected>KB</option>
+                    <option value="MB">MB</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Output Format</label>
+                  <select id="image-target-format"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="auto" selected>Auto (keep source)</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Max Dimension (px, optional)</label>
+                  <input type="number" id="image-max-dimension" min="0" placeholder="0 = no resize"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+              </div>
+
+              <button type="submit"
+                class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                Compress &amp; Download
+              </button>
+
+              <p id="image-status-message" class="text-sm text-center hidden"></p>
+
+              <div id="image-result-box"
+                class="hidden mt-4 p-5 bg-teal-50 rounded-lg border border-teal-100 shadow-inner space-y-3">
+                <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block">Compression Report</span>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Target</span>
+                    <span id="image-report-target" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Actual</span>
+                    <span id="image-report-actual" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Format</span>
+                    <span id="image-report-format" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Dimensions</span>
+                    <span id="image-report-dims" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+        <!-- /Image Compress View -->
+
         <div id="measure-converter-view"
           class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
           <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">

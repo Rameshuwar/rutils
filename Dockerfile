@@ -21,7 +21,7 @@ WORKDIR /app
 
 # Install poppler-utils for PDF to Image conversion
 # and tzdata for timezone support in the Go application.
-RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng tzdata
+RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-eng tzdata libwebp-tools
 
 # Copy backend binary
 COPY --from=backend-builder /app/server .

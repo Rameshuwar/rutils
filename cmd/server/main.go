@@ -52,7 +52,8 @@ func main() {
 	apiMux.HandleFunc("/calculate-bmi", api.HandleBMICalculate)
 	apiMux.HandleFunc("/calculate-age", api.HandleAgeCalculate)
 	apiMux.HandleFunc("/convert-pdf-size", api.ConvertPDFSize)
-
+	// ⬅️ NEW: Image Compress (JPEG/PNG/WebP quality-ladder compressor)
+	apiMux.HandleFunc("/compress-image", api.CompressImage)
 	// ⬅️ NEW: Text Extraction (PDF + Image, with OCR fallback)
 	apiMux.HandleFunc("/extract-text", api.HandleExtractText)
 
@@ -142,6 +143,7 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/calculate-bmi         (BMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-age         (Age Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/convert-pdf-size      (PDF Size Converter)")
+	fmt.Println(" -> POST http://localhost:8080/compress-image       (Image Compress: JPG/PNG/WebP)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-loan-tenure   (Loan Tenure Calculator - Borrower-Centric)")
 	// ⬅️ NEW: Text Extraction in startup banner
 	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")

@@ -787,6 +787,89 @@ const docTemplate = `{
                 }
             }
         },
+        "/compress-image": {
+            "post": {
+                "description": "Upload an image and re-encode it toward a requested target size or percentage.\n\n**Supported inputs:** JPG, PNG, WEBP, TIFF, BMP.\n\n**Conversion types:**\n- ` + "`" + `compress` + "`" + ` — quality ladder walks down from 95 until the target is met (or the floor is reached).\n- ` + "`" + `expand` + "`" + `   — quality ladder walks up from 80 toward 100. Only ` + "`" + `dataType=percentage` + "`" + ` is allowed.\n\n**Data types:**\n- ` + "`" + `percentage` + "`" + ` — ` + "`" + `targetValue` + "`" + ` is 1–99 for compress, 101–1000 for expand.\n- ` + "`" + `size` + "`" + `       — ` + "`" + `targetValue` + "`" + ` is a size number in ` + "`" + `sizeUnit` + "`" + ` (KB or MB). Compress only.\n\n**Target formats:** ` + "`" + `auto` + "`" + ` keeps the source (TIFF/BMP fall back to JPG), or force ` + "`" + `jpg` + "`" + `, ` + "`" + `png` + "`" + `, or ` + "`" + `webp` + "`" + `.\nWebP encoding requires the ` + "`" + `cwebp` + "`" + ` binary on the server's PATH.\n\n**Limits:** upload ≤ 25 MB, output ≤ 25 MB, size target 1 KB – 20 MB.\n\n**Response headers:**\n- ` + "`" + `X-Compress-Target-Met` + "`" + ` : ` + "`" + `true` + "`" + ` if the target was reached, ` + "`" + `false` + "`" + ` if the smallest achievable size was returned.\n- ` + "`" + `X-Compress-Target-Size` + "`" + `: the requested target in bytes.\n- ` + "`" + `X-Compress-Actual-Size` + "`" + `: the actual output size in bytes.\n- ` + "`" + `X-Compress-Format` + "`" + `     : the output format: ` + "`" + `jpg` + "`" + `, ` + "`" + `png` + "`" + `, or ` + "`" + `webp` + "`" + `.\n- ` + "`" + `X-Compress-Quality` + "`" + `    : the final quality used (1–100), or ` + "`" + `0` + "`" + ` for PNG.\n- ` + "`" + `X-Compress-Dimensions` + "`" + ` : the final output pixel dimensions, e.g. ` + "`" + `1920x1080` + "`" + `.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Image Compressor"
+                ],
+                "summary": "Compress or expand an image",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file (max 25 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "compress or expand",
+                        "name": "conversionType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "percentage or size",
+                        "name": "dataType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Target percentage (1-99 / 101-1000) or size number",
+                        "name": "targetValue",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "KB or MB (only when dataType=size; default KB)",
+                        "name": "sizeUnit",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "auto, jpg, png, or webp (default auto)",
+                        "name": "targetFormat",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cap on the longest edge in pixels (0 = no resize)",
+                        "name": "maxDimension",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compressed image",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters or unsupported format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/convert": {
             "post": {
                 "description": "Converts any supported file type to another supported file type dynamically. The set of supported (fromType, toType) pairs is discoverable at GET /formats.",
