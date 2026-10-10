@@ -30,6 +30,40 @@ show_main_menu() {
     esac
 }
 
+# Add Go bin directories to PATH if not already present
+export PATH="$PATH:$HOME/go/bin:$(go env GOPATH 2>/dev/null)/bin"
+
+# Regenerate Swagger Documentation
+generate_swagger_docs() {
+    echo ""
+    echo "=============================================="
+    echo " 🔄 Updating / Regenerating Swagger Docs...   "
+    echo "=============================================="
+    local swag_cmd=""
+    if command -v swag >/dev/null 2>&1; then
+        swag_cmd="swag"
+    elif [ -x "$HOME/go/bin/swag" ]; then
+        swag_cmd="$HOME/go/bin/swag"
+    elif [ -n "$(go env GOPATH 2>/dev/null)" ] && [ -x "$(go env GOPATH)/bin/swag" ]; then
+        swag_cmd="$(go env GOPATH)/bin/swag"
+    fi
+
+    if [ -n "$swag_cmd" ]; then
+        "$swag_cmd" init -g cmd/server/main.go -o docs
+    else
+        echo "swag binary not found in PATH or ~/go/bin. Running via go run..."
+        go run github.com/swaggo/swag/cmd/swag@v1.16.2 init -g cmd/server/main.go -o docs
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "✅ Swagger docs successfully regenerated in docs/!"
+    else
+        echo "⚠️ Warning: Swagger regeneration returned an error. Using existing docs."
+    fi
+    echo "=============================================="
+    echo ""
+}
+
 # Run Project Menu
 show_run_project_menu() {
     echo ""
@@ -38,14 +72,16 @@ show_run_project_menu() {
     echo "=============================="
     echo "1) to run full project"
     echo "2) backend(swagger)"
-    echo "3) back to main menu"
+    echo "3) regenerate swagger docs only"
+    echo "4) back to main menu"
     echo "=============================="
-    read -p "Enter your choice (1-3): " run_choice
+    read -p "Enter your choice (1-4): " run_choice
 
     case $run_choice in
         1)
             echo ""
             echo "Starting full project (Frontend & Backend)..."
+            generate_swagger_docs
             if [ -f "./dev.sh" ]; then
                 ./dev.sh
             else
@@ -55,12 +91,17 @@ show_run_project_menu() {
         2)
             echo ""
             echo "Starting Backend with Swagger..."
+            generate_swagger_docs
             echo "Backend API and Swagger UI will be available at:"
             echo " 🌐 http://localhost:8080/swagger/"
             echo "Press [Ctrl+C] to stop."
             go run ./cmd/server/main.go
             ;;
         3)
+            generate_swagger_docs
+            show_run_project_menu
+            ;;
+        4)
             echo ""
             show_main_menu
             ;;

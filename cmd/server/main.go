@@ -105,6 +105,12 @@ func main() {
 	}
 
 	emailSender := auth.NewEmailSender(cfg)
+	if emailSender.IsConfigured() {
+		log.Printf("[AUTH] Google SMTP Service is ACTIVE. Sender: <%s>, Host: %s:%s", cfg.SMTPEmail, cfg.SMTPHost, cfg.SMTPPort)
+	} else {
+		log.Printf("[AUTH-WARN] Google SMTP Service is DISABLED (smtp_email or smtp_app_password missing). Running in Development Fallback Mode (temporary passwords will be printed to console).")
+	}
+
 	authService := auth.NewAuthService(userStore, cfg, emailSender)
 	authHandler := api.NewAuthHandler(authService, cfg)
 

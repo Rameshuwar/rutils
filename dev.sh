@@ -32,13 +32,28 @@ echo -e "${CYAN}=================================================="
 echo -e " Starting Local Development Environment"
 echo -e "==================================================${NC}"
 
-# 1. Start Go Backend
-echo -e "${GREEN}[1/2] Starting Go Backend API (port 8080)...${NC}"
+export PATH="$PATH:$HOME/go/bin:$(go env GOPATH 2>/dev/null)/bin"
+
+# 1. Regenerate Swagger Docs
+echo -e "${GREEN}[1/3] Generating latest Swagger documentation...${NC}"
+if command -v swag >/dev/null 2>&1; then
+    swag init -g cmd/server/main.go -o docs
+elif [ -x "$HOME/go/bin/swag" ]; then
+    "$HOME/go/bin/swag" init -g cmd/server/main.go -o docs
+elif [ -n "$(go env GOPATH 2>/dev/null)" ] && [ -x "$(go env GOPATH)/bin/swag" ]; then
+    "$(go env GOPATH)/bin/swag" init -g cmd/server/main.go -o docs
+else
+    go run github.com/swaggo/swag/cmd/swag@v1.16.2 init -g cmd/server/main.go -o docs
+fi
+echo -e "${GREEN}[✓] Swagger documentation updated.${NC}"
+
+# 2. Start Go Backend
+echo -e "${GREEN}[2/3] Starting Go Backend API (port 8080)...${NC}"
 go run ./cmd/server/main.go &
 BACKEND_PID=$!
 
-# 2. Check and start Frontend
-echo -e "${GREEN}[2/2] Preparing Vite Frontend dev server...${NC}"
+# 3. Check and start Frontend
+echo -e "${GREEN}[3/3] Preparing Vite Frontend dev server...${NC}"
 if [ ! -d "frontend/node_modules" ]; then
     echo -e "${YELLOW}[!] node_modules missing in frontend/. Running 'npm install'...${NC}"
     (cd frontend && npm install)

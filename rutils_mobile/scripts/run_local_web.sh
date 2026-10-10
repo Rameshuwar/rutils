@@ -69,25 +69,37 @@ if [ "$LIVE_MODE" = "live" ] || [ "$LIVE_MODE" = "debug" ]; then
     fi
 else
     # Compiled fast Web preview
-    if [ ! -f "$APP_DIR/build/web/index.html" ]; then
-        echo -e "${YELLOW}Compiled web build not found. Building release web bundle now...${NC}"
+    DO_SKIP_BUILD=false
+    if [ "${SKIP_BUILD:-false}" = "true" ] || [[ "$*" == *"--skip-build"* ]]; then
+        DO_SKIP_BUILD=true
+    fi
+
+    if [ "$DO_SKIP_BUILD" = "true" ]; then
+        if [ ! -f "$APP_DIR/build/web/index.html" ]; then
+            echo -e "${YELLOW}Compiled web build not found. Building release web bundle now...${NC}"
+            flutter build web --release --dart-define=API_URL="$API_URL"
+        else
+            echo -e "${CYAN}Using existing web build (--skip-build requested).${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Building fresh release web bundle (ensuring latest code is live)...${NC}"
         flutter build web --release --dart-define=API_URL="$API_URL"
     fi
 
-    echo -e "${GREEN}✓ Launching optimized Web Preview on port $PORT...${NC}"
+    echo -e "${GREEN}✓ Launching optimized Web Preview on port $PORT with no-cache headers...${NC}"
 
     if [ "$DAEMON" = "daemon" ] || [ "$DAEMON" = "true" ] || [ "$DAEMON" = "-d" ]; then
-        nohup python3 -m http.server -d "$APP_DIR/build/web" "$PORT" > "$LOG_FILE" 2>&1 &
+        nohup setsid python3 "$SCRIPT_DIR/serve_web.py" "$PORT" "$APP_DIR/build/web" </dev/null > "$LOG_FILE" 2>&1 &
         SERVER_PID=$!
         disown "$SERVER_PID" 2>/dev/null || true
         echo "$SERVER_PID" > "$PID_FILE"
         sleep 1
         echo -e "${GREEN}✓ Local Web Preview is running in background (PID: $SERVER_PID)${NC}"
         echo -e "${CYAN}${BOLD}👉 Open in browser: http://localhost:$PORT${NC}"
-        echo -e "To stop: ./scripts/stop_local_web.sh"
+        echo -e "To stop: ./scripts/stop_local_web.sh (or ./stop_mobile_web.sh)"
     else
         echo -e "${CYAN}${BOLD}👉 Open in browser: http://localhost:$PORT${NC}"
         echo -e "Press Ctrl+C to stop."
-        python3 -m http.server -d "$APP_DIR/build/web" "$PORT"
+        "$SCRIPT_DIR/serve_web.py" "$PORT" "$APP_DIR/build/web"
     fi
 fi

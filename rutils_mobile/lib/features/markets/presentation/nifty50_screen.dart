@@ -9,7 +9,9 @@ import '../models/nifty_company_model.dart';
 import '../services/nifty_service.dart';
 
 class Nifty50Screen extends StatefulWidget {
-  const Nifty50Screen({super.key});
+  final void Function(String symbol)? onOpenChart;
+
+  const Nifty50Screen({super.key, this.onOpenChart});
 
   @override
   State<Nifty50Screen> createState() => _Nifty50ScreenState();
@@ -300,6 +302,41 @@ class _Nifty50ScreenState extends State<Nifty50Screen> {
                                                     ),
                                                     const SizedBox(width: 8),
                                                     StatusBadge(label: c.series, color: AppTheme.textMuted),
+                                                    const Spacer(),
+                                                    if (widget.onOpenChart != null)
+                                                      BouncyButton(
+                                                        onTap: () => widget.onOpenChart!(c.symbol),
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: const Color(0xFF2C7A7B).withValues(alpha: 0.12),
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            border: Border.all(
+                                                              color: const Color(0xFF2C7A7B).withValues(alpha: 0.4),
+                                                              width: 0.8,
+                                                            ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              const Icon(
+                                                                Icons.candlestick_chart_rounded,
+                                                                size: 13,
+                                                                color: Color(0xFF2C7A7B),
+                                                              ),
+                                                              const SizedBox(width: 4),
+                                                              Text(
+                                                                'Chart',
+                                                                style: GoogleFonts.plusJakartaSans(
+                                                                  fontSize: 11,
+                                                                  fontWeight: FontWeight.w700,
+                                                                  color: const Color(0xFF2C7A7B),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
                                                   ],
                                                 ),
                                                 const SizedBox(height: 3),
