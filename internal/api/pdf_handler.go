@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -150,6 +152,82 @@ func ConvertPDFSize(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 		)
 		return
+	}
+
+	// ----- Ghostscript post-processing pass (compression only) -----
+	//
+	// The quality-ladder rasterizer above produces a best-effort PDF.
+	// Ghostscript then rewrites it with:
+	//   • a cleaner cross-reference table
+	//   • duplicate-object removal
+	//   • font subsetting
+	//   • image resampling at the /ebook preset's target DPI
+	//   • metadata stripping
+	//   • higher-effort Flate stream compression
+	//
+	// Typical additional savings: 10-20% over the first pass.
+	//
+	// The pass is optional. If Ghostscript is not installed (or if the
+	// pass fails for any reason), we silently fall back to the first
+	// pass's output — the user still gets a valid PDF.
+	//
+	// IMPORTANT: We only run Ghostscript on the "compression" path.
+	// The "expand" path deliberately grows the file, and re-compressing
+	// would defeat the purpose.
+	if conversionType == "compression" {
+		var gsBuf bytes.Buffer
+		gsErr := converter.GhostscriptCompressPDF(
+			r.Context(),
+			converter.GhostscriptEbook,
+			bytes.NewReader(result.Output),
+			&gsBuf,
+		)
+
+		if gsErr == nil && gsBuf.Len() > 0 && gsBuf.Len() < len(result.Output) {
+			// Ghostscript produced a smaller file — use it.
+			result.Output = gsBuf.Bytes()
+			result.ActualSize = int64(gsBuf.Len())
+			result.TargetMet = result.ActualSize <= result.TargetSize
+			log.Printf(
+				"[pdf-size] ghostscript pass reduced %d -> %d bytes",
+				result.ActualSize, gsBuf.Len(),
+			)
+		} else if gsErr != nil {
+			// Not fatal — log and continue with the first-pass output.
+			if errors.Is(gsErr, converter.ErrToolNotInstalled) {
+				log.Printf("[pdf-size] ghostscript not installed, skipping post-processing pass")
+			} else {
+				log.Printf("[pdf-size] ghostscript pass failed (non-fatal): %v", gsErr)
+			}
+		}
+	}
+
+	// ----- qpdf linearization pass (structural only) -----
+	//
+	// qpdf rewrites the PDF so the first page's data comes first in
+	// the file, which lets browsers render page 1 before the whole
+	// file has downloaded. It does not change pixels or fonts — the
+	// size delta is typically < 1%.
+	//
+	// Like the Ghostscript pass, this is optional. If qpdf is missing
+	// or the rewrite fails, we keep the current output.
+	var qpdfBuf bytes.Buffer
+	qpdfErr := converter.QpdfLinearize(
+		r.Context(),
+		bytes.NewReader(result.Output),
+		&qpdfBuf,
+	)
+
+	if qpdfErr == nil && qpdfBuf.Len() > 0 {
+		result.Output = qpdfBuf.Bytes()
+		result.ActualSize = int64(qpdfBuf.Len())
+		result.TargetMet = result.ActualSize <= result.TargetSize
+	} else if qpdfErr != nil {
+		if errors.Is(qpdfErr, converter.ErrToolNotInstalled) {
+			log.Printf("[pdf-size] qpdf not installed, skipping linearization pass")
+		} else {
+			log.Printf("[pdf-size] qpdf pass failed (non-fatal): %v", qpdfErr)
+		}
 	}
 
 	// ----- Output filename -----
