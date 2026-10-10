@@ -52,4 +52,6 @@ class ApiConstants {
 
   // Markets
   static const String niftyCompanies = '/nifty50/companies';
+  static const String chartCompanies = '/market/chart/companies';
+  static const String chartData = '/market/chart/data';
 }

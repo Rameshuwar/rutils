@@ -41,8 +41,8 @@ for P in "${PORTS[@]}"; do
     fi
 done
 
-# 3. Kill python http.server serving build/web
-PYS=$(pgrep -f "http.server.*build/web" 2>/dev/null || true)
+# 3. Kill python web server serving build/web
+PYS=$(pgrep -f "build/web" 2>/dev/null || true)
 if [ -n "$PYS" ]; then
     for p in $PYS; do
         kill -9 "$p" 2>/dev/null || true
