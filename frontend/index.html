@@ -233,6 +233,118 @@
         </div>
 
         <!-- Measurement Converter View -->
+                 <!-- ============================================================ -->
+        <!-- Image Compress View                                          -->
+        <!-- ============================================================ -->
+        <div id="image-compressor-view"
+          class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+          <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
+            <h2 class="text-2xl md:text-3xl font-bold">Image Compressor</h2>
+            <p class="text-teal-100 mt-2 text-sm md:text-base">Shrink JPG, PNG, or WebP files toward a target size or percentage.</p>
+          </header>
+
+          <div class="p-6 md:p-8 space-y-6">
+            <form id="image-compress-form" class="space-y-6">
+
+              <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                <label class="block text-sm font-medium text-indigo-900 mb-2">Upload Image</label>
+                <input type="file" id="image-input" accept=".jpg,.jpeg,.png,.webp,.tiff,.tif,.bmp"
+                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer"
+                  required />
+                <p id="image-detected" class="text-xs text-gray-500 mt-2">Auto-detected on upload</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Conversion Type</label>
+                  <select id="image-conversion-type"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="compress" selected>Compress (shrink)</option>
+                    <option value="expand">Expand (grow)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Data Type</label>
+                  <select id="image-data-type"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="percentage" selected>Percentage (%)</option>
+                    <option value="size">Target Size</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Target Value <span id="image-target-hint" class="text-xs text-gray-400 font-normal">(1–99 for compress)</span>
+                  </label>
+                  <input type="number" id="image-target-value" step="any" min="1" placeholder="e.g. 50" required
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div id="image-sizeunit-wrap" class="hidden">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Size Unit</label>
+                  <select id="image-size-unit"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="KB" selected>KB</option>
+                    <option value="MB">MB</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Output Format</label>
+                  <select id="image-target-format"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="auto" selected>Auto (keep source)</option>
+                    <option value="jpg">JPG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Max Dimension (px, optional)</label>
+                  <input type="number" id="image-max-dimension" min="0" placeholder="0 = no resize"
+                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+              </div>
+
+              <button type="submit"
+                class="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                Compress &amp; Download
+              </button>
+
+              <p id="image-status-message" class="text-sm text-center hidden"></p>
+
+              <div id="image-result-box"
+                class="hidden mt-4 p-5 bg-teal-50 rounded-lg border border-teal-100 shadow-inner space-y-3">
+                <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block">Compression Report</span>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Target</span>
+                    <span id="image-report-target" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Actual</span>
+                    <span id="image-report-actual" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Format</span>
+                    <span id="image-report-format" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                  <div class="bg-white border border-teal-100 rounded-lg p-3 text-center">
+                    <span class="text-xs text-gray-500 font-semibold uppercase block mb-1">Dimensions</span>
+                    <span id="image-report-dims" class="text-sm font-bold text-teal-800">—</span>
+                  </div>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+        <!-- /Image Compress View -->
+
         <div id="measure-converter-view"
           class="tool-view max-w-xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
           <header class="bg-teal-600 text-white py-4 px-6 md:py-6 md:px-8">
@@ -615,7 +727,22 @@
           </header>
           <div class="p-6 md:p-8 space-y-6">
             <form id="emi-form" class="space-y-6">
-
+              <!-- ── Mode toggle: Banker EMI vs Borrower Tenure ── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Calculation Mode</label>
+                <div class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl" role="tablist" aria-label="EMI calculation mode">
+                  <button type="button" id="emi-mode-banker" data-mode="banker"
+                    class="emi-mode-btn py-2.5 rounded-lg text-sm font-semibold transition-colors bg-white text-teal-700 shadow-sm">
+                    Calculate EMI
+                    <span class="block text-[11px] font-normal text-gray-500">I know my tenure</span>
+                  </button>
+                  <button type="button" id="emi-mode-borrower" data-mode="borrower"
+                    class="emi-mode-btn py-2.5 rounded-lg text-sm font-semibold transition-colors text-gray-600 hover:text-teal-700">
+                    Calculate Tenure
+                    <span class="block text-[11px] font-normal text-gray-500">I know my monthly budget</span>
+                  </button>
+                </div>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Loan Amount (₹)</label>
@@ -627,19 +754,33 @@
                   <input type="number" id="emi-rate" step="any" min="0" max="100" required placeholder="e.g. 10.5"
                     class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Tenure</label>
-                  <input type="number" id="emi-tenure" step="any" min="1" required placeholder="e.g. 5"
-                    class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                               <div id="emi-tenure-wrap" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:col-span-2">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tenure</label>
+                    <input type="number" id="emi-tenure" step="any" min="1" required placeholder="e.g. 5"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                    <select id="emi-tenure-unit" required
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
+                      <option value="" disabled selected>Select unit</option>
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                  <select id="emi-tenure-unit" required
+
+                <!-- Monthly Payment input for borrower mode (hidden by default) -->
+                <div id="emi-monthly-payment-wrap" class="hidden sm:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Monthly Payment you can afford (₹)
+                  </label>
+                  <input type="number" id="emi-monthly-payment" step="any" min="1" placeholder="e.g. 15000"
                     class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    <option value="" disabled selected>Select unit</option>
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
-                  </select>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Enter how much you can comfortably pay each month — we'll calculate how long it will take.
+                  </p>
                 </div>
               </div>
 
@@ -653,8 +794,7 @@
               <div id="emi-result-box" class="hidden mt-4 space-y-6">
 
                 <div class="p-6 bg-teal-50 rounded-lg border border-teal-100 text-center shadow-inner">
-                  <span class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Monthly
-                    EMI</span>
+<span id="emi-result-value-label" class="text-xs text-teal-600 font-semibold uppercase tracking-wide block mb-2">Monthly EMI</span>
                   <span id="emi-result-value" class="text-4xl font-extrabold text-teal-900 break-all">₹0</span>
                 </div>
 
@@ -1177,6 +1317,206 @@
         </div>
         <!-- /SCIENTIFIC CALCULATOR VIEW -->
 
+        <!-- ⬅️ NEW: GPA / CGPA Calculator View -->
+        <div id="gpa-calculator-view"
+          class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">
+          <header class="bg-violet-600 text-white py-4 px-6 md:py-6 md:px-8">
+            <h2 class="text-2xl md:text-3xl font-bold">GPA / CGPA Calculator</h2>
+            <p class="text-violet-100 mt-2 text-sm md:text-base">Semester GPA, cumulative CGPA, percentage conversion, and target planner.</p>
+          </header>
+
+          <div class="p-6 md:p-8 space-y-6">
+            <form id="gpa-form" class="space-y-6">
+
+              <!-- ── Mode picker ─────────────────────────────── -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Mode</label>
+                <select id="gpa-mode"
+                  class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
+                  <optgroup label="GPA / CGPA">
+                    <option value="semester_gpa" selected>Semester GPA (from courses)</option>
+                    <option value="cumulative_cgpa">Cumulative CGPA (from semesters)</option>
+                  </optgroup>
+                  <optgroup label="Conversion">
+                    <option value="cgpa_to_percentage">CGPA → Percentage</option>
+                    <option value="percentage_to_cgpa">Percentage → CGPA</option>
+                    <option value="grade_to_point">Letter grade → Grade point</option>
+                  </optgroup>
+                  <optgroup label="Planning">
+                    <option value="target_gpa">Target GPA planner</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <!-- ── Mode 1: semester_gpa ─────────────────────── -->
+              <div id="gpa-semester-gpa-section" class="hidden">
+                <div class="bg-violet-50 border border-violet-100 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-violet-900">Courses</label>
+                    <button type="button" id="gpa-add-course"
+                      class="text-xs font-semibold text-violet-700 bg-white border border-violet-200 rounded-md px-3 py-1 hover:bg-violet-100 transition-colors">
+                      + Add Course
+                    </button>
+                  </div>
+                  <div id="gpa-course-list"></div>
+                  <p class="text-xs text-violet-600 mt-2">Each row: optional name, credits (positive), grade point (0–10).</p>
+                </div>
+              </div>
+
+              <!-- ── Mode 2: cumulative_cgpa ───────────────────── -->
+              <div id="gpa-cumulative-cgpa-section" class="hidden">
+                <div class="bg-violet-50 border border-violet-100 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-violet-900">Semesters</label>
+                    <button type="button" id="gpa-add-semester"
+                      class="text-xs font-semibold text-violet-700 bg-white border border-violet-200 rounded-md px-3 py-1 hover:bg-violet-100 transition-colors">
+                      + Add Semester
+                    </button>
+                  </div>
+                  <div id="gpa-semester-list"></div>
+                  <p class="text-xs text-violet-600 mt-2">Each row: optional name, credits (positive), GPA (0–10).</p>
+                </div>
+              </div>
+
+              <!-- ── Mode 3: cgpa_to_percentage ────────────────── -->
+              <div id="gpa-cgpa-to-percentage-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 8.0" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Multiplier (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-multiplier-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 9.5 · VTU 10 · Mumbai 7.25" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 4: percentage_to_cgpa ────────────────── -->
+              <div id="gpa-percentage-to-cgpa-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Percentage</label>
+                    <input type="number" step="any" min="0" max="100" id="gpa-percentage-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 76" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Multiplier (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-percentage-multiplier-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 9.5" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 5: grade_to_point ────────────────────── -->
+              <div id="gpa-grade-to-point-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grade</label>
+                    <input type="text" id="gpa-grade-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. A+, A, A-, B+, O, F" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grading Scale</label>
+                    <select id="gpa-grade-scale"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500">
+                      <option value="10" selected>10-point (CBSE / AICTE)</option>
+                      <option value="4">4-point (US university)</option>
+                      <option value="5">5-point (European)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Mode 6: target_gpa ────────────────────────── -->
+              <div id="gpa-target-gpa-section" class="hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Current CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-current-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 7.5" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Completed Credits</label>
+                    <input type="number" step="any" min="0" id="gpa-completed-credits-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 60" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Target CGPA</label>
+                    <input type="number" step="any" min="0" max="10" id="gpa-target-cgpa-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 8.0" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Remaining Credits</label>
+                    <input type="number" step="any" min="0" id="gpa-remaining-credits-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="e.g. 40" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Scale (optional)</label>
+                    <input type="number" step="any" min="0" id="gpa-scale-input"
+                      class="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 h-[42px] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      placeholder="Default 10 · US universities use 4" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── Submit ─────────────────────────────────────── -->
+              <button type="submit"
+                class="w-full px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors shadow-sm">
+                Calculate
+              </button>
+
+              <p id="gpa-status-message" class="text-sm text-center hidden"></p>
+
+              <!-- ── Result box ─────────────────────────────────── -->
+              <div id="gpa-result-box"
+                class="hidden mt-4 p-6 bg-violet-50 rounded-lg border border-violet-100 shadow-inner">
+
+                <div class="flex items-center justify-between gap-2 flex-wrap mb-3">
+                  <span class="text-xs text-violet-600 font-semibold uppercase tracking-wide">Result</span>
+                  <button type="button" id="gpa-copy-btn"
+                    class="text-xs font-medium text-violet-700 bg-white border border-violet-200 rounded-md px-2 py-1 hover:bg-violet-100 transition-colors">
+                    <span id="gpa-copy-btn-label">Copy Result</span>
+                  </button>
+                </div>
+
+                <div class="text-center mb-4">
+                  <span id="gpa-result-formatted" class="text-4xl font-extrabold text-violet-900 break-all"></span>
+                </div>
+
+                <div id="gpa-extra-chips" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+
+                <p id="gpa-warning-message"
+                  class="hidden mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3"></p>
+
+                <div>
+                  <button type="button" id="gpa-steps-toggle"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-medium text-gray-700 transition-colors flex items-center justify-between">
+                    <span id="gpa-steps-toggle-label">▸ Calculation Steps</span>
+                  </button>
+                  <div id="gpa-steps-box" class="hidden mt-3 border border-gray-200 rounded-lg p-4 bg-white">
+                    <ol id="gpa-steps-list"
+                      class="space-y-1 text-sm text-violet-900 font-mono list-decimal list-inside"></ol>
+                  </div>
+                </div>
+
+              </div>
+
+            </form>
+          </div>
+        </div>
+        <!-- /GPA / CGPA Calculator View -->
         <!-- ⬅️ NEW: FILE REPAIR / FORMATTER VIEW (with Text + File placeholders) -->
         <div id="repair-view"
           class="tool-view max-w-2xl w-full mx-auto bg-white shadow-xl rounded-2xl overflow-hidden hidden transition-opacity duration-300">

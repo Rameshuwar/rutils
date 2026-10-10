@@ -547,6 +547,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/calculate-gpa": {
+            "post": {
+                "description": "Performs any GPA or CGPA calculation through a single ` + "`" + `mode` + "`" + `-discriminated endpoint.\n\n**Supported modes (` + "`" + `mode` + "`" + ` field):**\n- ` + "`" + `semester_gpa` + "`" + `        (courses[])                            — credit-weighted GPA for one semester\n- ` + "`" + `cumulative_cgpa` + "`" + `     (semesters[])                          — credit-weighted CGPA across semesters\n- ` + "`" + `cgpa_to_percentage` + "`" + `  (cgpa, multiplier?)                    — CGPA → percentage (default 9.5)\n- ` + "`" + `percentage_to_cgpa` + "`" + `  (percentage, multiplier?)              — percentage → CGPA\n- ` + "`" + `grade_to_point` + "`" + `      (grade, gradingScale?)                 — letter grade → numeric grade point\n- ` + "`" + `target_gpa` + "`" + `          (currentCgpa, completedCredits,\ntargetCgpa, remainingCredits, scale?)  — required GPA to reach a target CGPA\n\n**Mode details:**\n\n**semester_gpa** — send a ` + "`" + `courses` + "`" + ` array where each item is:\n` + "`" + `{\"name\": \"Math\", \"credits\": 4, \"gradePoint\": 9}` + "`" + `.\nGPA = Σ(credits × gradePoint) / Σ(credits). The response\nincludes a per-course breakdown and the formula steps.\n\n**cumulative_cgpa** — send a ` + "`" + `semesters` + "`" + ` array where each item is:\n` + "`" + `{\"name\": \"Sem 1\", \"credits\": 20, \"gpa\": 8.5}` + "`" + `.\nCGPA = Σ(credits × gpa) / Σ(credits). The response includes\na per-semester breakdown.\n\n**cgpa_to_percentage** — converts a CGPA to a percentage using\nthe supplied ` + "`" + `multiplier` + "`" + `. Defaults to 9.5 (CBSE). Common\nalternatives: 10.0 (VTU/KTU), 7.25 (Mumbai University).\nThe output is capped at 100%.\n\n**percentage_to_cgpa** — inverse of the above.\n\n**grade_to_point** — looks up the numeric grade point for a\nletter grade. Supported scales: ` + "`" + `\"10\"` + "`" + ` (default, CBSE/AICTE),\n` + "`" + `\"4\"` + "`" + ` (US university), ` + "`" + `\"5\"` + "`" + ` (European secondary).\n\n**target_gpa** — solves for the GPA the student must average\nin their remaining credits to reach a desired overall CGPA:\n` + "`" + `requiredGPA = (targetCGPA × totalCredits − currentCGPA × completedCredits) / remainingCredits` + "`" + `.\nThe response always carries an ` + "`" + `extra.achievable` + "`" + ` boolean; if\nthe required GPA exceeds the scale, ` + "`" + `extra.warning` + "`" + ` explains why.\n\n**Limits (v1):**\n- Grade points, GPAs, and CGPAs must be in [0, 10] for modes\n1–4. Mode 6 accepts a custom ` + "`" + `scale` + "`" + ` (default 10).\n- Credits must be positive.\n- All numeric inputs must be finite (NaN / Inf rejected).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "GPA / CGPA Calculator",
+                "parameters": [
+                    {
+                        "description": "GPA / CGPA Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GPARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GPA Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.GPAResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid mode or parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/calculate-loan-tenure": {
+            "post": {
+                "description": "Computes how long it will take to repay a loan when the borrower fixes a monthly payment.\n\n**Use case:** a user has a loan amount and knows only how much they can pay per month — this endpoint tells them how many months/years it will take to repay, and how much interest they will pay in total.\n\n**Formula (loan amortization solved for N):**\n` + "`" + `N = -log(1 - (P × r) / EMI) / log(1 + r)` + "`" + `\nwhere ` + "`" + `r` + "`" + ` is the monthly rate (annual / 12 / 100) and ` + "`" + `EMI` + "`" + ` is the borrower's fixed monthly payment.\n\n**Rejection rule:** if the monthly payment does not at least cover the monthly interest on the principal (i.e. ` + "`" + `EMI ≤ P × r` + "`" + `), the loan would never be repaid, so the endpoint returns a 400 with a helpful suggestion.\n\n**Limits:**\n- ` + "`" + `principal` + "`" + ` must be positive and ≤ 1 trillion.\n- ` + "`" + `annualInterestRate` + "`" + ` must be between 0 and 100.\n- ` + "`" + `monthlyPayment` + "`" + ` must be positive.\n- Computed tenure must not exceed 600 months (50 years).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Calculators"
+                ],
+                "summary": "Loan Tenure Calculator (Borrower-Centric)",
+                "parameters": [
+                    {
+                        "description": "Loan Tenure Calculation Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.LoanTenureRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Loan Tenure Result",
+                        "schema": {
+                            "$ref": "#/definitions/converter.LoanTenureResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid input or unrepayable loan",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/calculate-percentage": {
             "post": {
                 "description": "Performs any percentage operation (X% of Y, what %, change, increase, decrease,\n\n**Supported operations (` + "`" + `operation` + "`" + ` field):**\n- ` + "`" + `percent_of` + "`" + `              (value1 = percent, value2 = number)\n- ` + "`" + `what_percent` + "`" + `            (value1 = part, value2 = whole)\n- ` + "`" + `percent_change` + "`" + `          (value1 = old, value2 = new)\n- ` + "`" + `percent_increase` + "`" + `        (value1 = number, value2 = percent)\n- ` + "`" + `percent_decrease` + "`" + `        (value1 = number, value2 = percent)\n- ` + "`" + `reverse_percent` + "`" + `         (value1 = final, value2 = percent)\n- ` + "`" + `is_percent_of_what` + "`" + `      (value1 = part, value2 = percent)\n- ` + "`" + `percent_difference` + "`" + `      (value1 = a, value2 = b)\n- ` + "`" + `add_percent_points` + "`" + `      (value1 = p1%, value2 = p2%)\n- ` + "`" + `subtract_percent_points` + "`" + ` (value1 = p1%, value2 = p2%)\n- ` + "`" + `discount` + "`" + `                (value1 = price, value2 = discount%)\n- ` + "`" + `markup` + "`" + `                  (value1 = cost, value2 = markup%)\n- ` + "`" + `profit_loss` + "`" + `             (value1 = cost, value2 = selling)\n- ` + "`" + `percent_to_fraction` + "`" + `     (value1 = percent)\n- ` + "`" + `fraction_to_percent` + "`" + `     (value1 = numerator, value2 = denominator)\n- ` + "`" + `decimal_to_percent` + "`" + `      (value1 = decimal)\n- ` + "`" + `compound_percent` + "`" + `        (value1 = base, value2 = percent, value3 = periods)\n- ` + "`" + `marks_percentage` + "`" + `        (value1 = obtained, value2 = total)\n- ` + "`" + `cgpa_to_percent` + "`" + `         (value1 = cgpa; uses CBSE factor 9.5)",
@@ -700,6 +780,89 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request - invalid mode or parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/compress-image": {
+            "post": {
+                "description": "Upload an image and re-encode it toward a requested target size or percentage.\n\n**Supported inputs:** JPG, PNG, WEBP, TIFF, BMP.\n\n**Conversion types:**\n- ` + "`" + `compress` + "`" + ` — quality ladder walks down from 95 until the target is met (or the floor is reached).\n- ` + "`" + `expand` + "`" + `   — quality ladder walks up from 80 toward 100. Only ` + "`" + `dataType=percentage` + "`" + ` is allowed.\n\n**Data types:**\n- ` + "`" + `percentage` + "`" + ` — ` + "`" + `targetValue` + "`" + ` is 1–99 for compress, 101–1000 for expand.\n- ` + "`" + `size` + "`" + `       — ` + "`" + `targetValue` + "`" + ` is a size number in ` + "`" + `sizeUnit` + "`" + ` (KB or MB). Compress only.\n\n**Target formats:** ` + "`" + `auto` + "`" + ` keeps the source (TIFF/BMP fall back to JPG), or force ` + "`" + `jpg` + "`" + `, ` + "`" + `png` + "`" + `, or ` + "`" + `webp` + "`" + `.\nWebP encoding requires the ` + "`" + `cwebp` + "`" + ` binary on the server's PATH.\n\n**Limits:** upload ≤ 25 MB, output ≤ 25 MB, size target 1 KB – 20 MB.\n\n**Response headers:**\n- ` + "`" + `X-Compress-Target-Met` + "`" + ` : ` + "`" + `true` + "`" + ` if the target was reached, ` + "`" + `false` + "`" + ` if the smallest achievable size was returned.\n- ` + "`" + `X-Compress-Target-Size` + "`" + `: the requested target in bytes.\n- ` + "`" + `X-Compress-Actual-Size` + "`" + `: the actual output size in bytes.\n- ` + "`" + `X-Compress-Format` + "`" + `     : the output format: ` + "`" + `jpg` + "`" + `, ` + "`" + `png` + "`" + `, or ` + "`" + `webp` + "`" + `.\n- ` + "`" + `X-Compress-Quality` + "`" + `    : the final quality used (1–100), or ` + "`" + `0` + "`" + ` for PNG.\n- ` + "`" + `X-Compress-Dimensions` + "`" + ` : the final output pixel dimensions, e.g. ` + "`" + `1920x1080` + "`" + `.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Image Compressor"
+                ],
+                "summary": "Compress or expand an image",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file (max 25 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "compress or expand",
+                        "name": "conversionType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "percentage or size",
+                        "name": "dataType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Target percentage (1-99 / 101-1000) or size number",
+                        "name": "targetValue",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "KB or MB (only when dataType=size; default KB)",
+                        "name": "sizeUnit",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "auto, jpg, png, or webp (default auto)",
+                        "name": "targetFormat",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cap on the longest edge in pixels (0 = no resize)",
+                        "name": "maxDimension",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compressed image",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters or unsupported format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "string"
                         }
@@ -1231,6 +1394,75 @@ const docTemplate = `{
                 }
             }
         },
+        "api.GPARequest": {
+            "type": "object",
+            "properties": {
+                "cgpa": {
+                    "description": "mode = \"cgpa_to_percentage\" | \"percentage_to_cgpa\"",
+                    "type": "number"
+                },
+                "completedCredits": {
+                    "type": "number"
+                },
+                "courses": {
+                    "description": "mode = \"semester_gpa\"",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.GPACourse"
+                    }
+                },
+                "currentCgpa": {
+                    "description": "mode = \"target_gpa\"",
+                    "type": "number"
+                },
+                "grade": {
+                    "description": "mode = \"grade_to_point\"",
+                    "type": "string"
+                },
+                "gradingScale": {
+                    "type": "string"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "multiplier": {
+                    "type": "number"
+                },
+                "percentage": {
+                    "type": "number"
+                },
+                "remainingCredits": {
+                    "type": "number"
+                },
+                "scale": {
+                    "type": "number"
+                },
+                "semesters": {
+                    "description": "mode = \"cumulative_cgpa\"",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.GPASemester"
+                    }
+                },
+                "targetCgpa": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.LoanTenureRequest": {
+            "type": "object",
+            "properties": {
+                "annualInterestRate": {
+                    "type": "number"
+                },
+                "monthlyPayment": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                }
+            }
+        },
         "api.MeasurementRequest": {
             "type": "object",
             "properties": {
@@ -1675,6 +1907,137 @@ const docTemplate = `{
                 }
             }
         },
+        "converter.GPACourse": {
+            "type": "object",
+            "properties": {
+                "credits": {
+                    "type": "number"
+                },
+                "grade": {
+                    "description": "optional; if set, GradePoint is derived",
+                    "type": "string"
+                },
+                "gradePoint": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "converter.GPACourseResult": {
+            "type": "object",
+            "properties": {
+                "credits": {
+                    "type": "number"
+                },
+                "gradePoint": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "weighted": {
+                    "description": "credits × gradePoint",
+                    "type": "number"
+                }
+            }
+        },
+        "converter.GPAResponse": {
+            "type": "object",
+            "properties": {
+                "breakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.GPACourseResult"
+                    }
+                },
+                "cgpa": {
+                    "type": "number"
+                },
+                "currentCgpa": {
+                    "type": "number"
+                },
+                "extra": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "formatted": {
+                    "type": "string"
+                },
+                "gpa": {
+                    "type": "number"
+                },
+                "gradePoint": {
+                    "type": "number"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "multiplier": {
+                    "type": "number"
+                },
+                "percentage": {
+                    "type": "number"
+                },
+                "requiredGpa": {
+                    "type": "number"
+                },
+                "semesters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.GPASemesterResult"
+                    }
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "targetCgpa": {
+                    "type": "number"
+                },
+                "totalCredits": {
+                    "type": "number"
+                },
+                "totalWeighted": {
+                    "type": "number"
+                }
+            }
+        },
+        "converter.GPASemester": {
+            "type": "object",
+            "properties": {
+                "credits": {
+                    "type": "number"
+                },
+                "gpa": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "converter.GPASemesterResult": {
+            "type": "object",
+            "properties": {
+                "credits": {
+                    "type": "number"
+                },
+                "gpa": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "weighted": {
+                    "description": "credits × gpa",
+                    "type": "number"
+                }
+            }
+        },
         "converter.InterestBreakdown": {
             "type": "object",
             "properties": {
@@ -1682,6 +2045,44 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "principalPercent": {
+                    "type": "number"
+                }
+            }
+        },
+        "converter.LoanTenureResponse": {
+            "type": "object",
+            "properties": {
+                "amortization": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/converter.AmortizationRow"
+                    }
+                },
+                "breakdown": {
+                    "$ref": "#/definitions/converter.EMIBreakdown"
+                },
+                "emi": {
+                    "description": "Echoes the input MonthlyPayment",
+                    "type": "number"
+                },
+                "monthlyRatePercent": {
+                    "type": "number"
+                },
+                "principal": {
+                    "type": "number"
+                },
+                "tenureMonths": {
+                    "description": "← the key output",
+                    "type": "integer"
+                },
+                "tenureYears": {
+                    "description": "← convenience",
+                    "type": "number"
+                },
+                "totalInterest": {
+                    "type": "number"
+                },
+                "totalPayment": {
                     "type": "number"
                 }
             }

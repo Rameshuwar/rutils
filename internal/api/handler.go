@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,7 +10,6 @@ import (
 
 	"file-converter/internal/formatters"
 )
-
 // HandleConvert is the universal HTTP handler for file conversions.
 // It delegates to the format registry (internal/formatters) instead of
 // a hardcoded switch, so any registered (fromType, toType) pair is
@@ -25,6 +26,7 @@ import (
 // @Success 200 {file} file "The converted file"
 // @Failure 400 {string} string "Bad Request or unsupported conversion pair"
 // @Failure 405 {string} string "Method Not Allowed"
+// @Failure 504 {string} string "Gateway Timeout — conversion exceeded its time budget"
 // @Router /convert [post]
 func HandleConvert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -62,6 +64,21 @@ func HandleConvert(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Derive a per-request context with the formatter's time budget.
+	//
+	// The parent is r.Context(), which the net/http server cancels the
+	// moment the client disconnects. Chaining our timeout on top means
+	// the conversion is aborted either when the client gives up OR
+	// when the budget expires, whichever happens first.
+	//
+	// For formatters whose Convert closure forwards this context into
+	// a subprocess (LibreOffice, Ghostscript, pdftocairo), the child
+	// process is killed when the context is cancelled — no orphaned
+	// soffice processes burning CPU after a client disconnect.
+	budget := formatter.EffectiveTimeout()
+	ctx, cancel := context.WithTimeout(r.Context(), budget)
+	defer cancel()
+
 	// Write the response headers up front so the client always sees
 	// the correct MIME and filename, even if the conversion later fails.
 	w.Header().Set("Content-Type", formatter.OutputMIME)
@@ -70,16 +87,47 @@ func HandleConvert(w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("attachment; filename=\"converted%s\"", formatter.OutputExt),
 	)
 
-	if err := formatter.Convert(r.Context(), file, w); err != nil {
-		// Undo the success headers and replace with an error.
-		w.Header().Del("Content-Disposition")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		http.Error(w, fmt.Sprintf("Conversion failed: %v", err), http.StatusBadRequest)
-		log.Printf("Conversion error (%s→%s): %v", fromType, toType, err)
+	// Run the conversion.
+	err = formatter.Convert(ctx, file, w)
+	if err == nil {
 		return
 	}
-}
 
+	// ---- Error handling ----
+	//
+	// Because the response body may already contain partial output
+	// from a conversion that failed mid-write, we cannot change the
+	// status code once bytes have been sent. Instead, we detect the
+	// timeout case explicitly and log; the client will see a truncated
+	// response.
+	//
+	// For conversions that fail before writing any bytes, we can still
+	// send a proper error. The conversion functions in this codebase
+	// buffer their output (via fpdf.Output, bytes.Buffer, etc.) before
+	// touching the response writer, so partial-output failures are
+	// rare but not impossible.
+	if errors.Is(err, context.DeadlineExceeded) {
+		w.Header().Del("Content-Disposition")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		http.Error(
+			w,
+			fmt.Sprintf("Conversion timed out after %s. Try a smaller file or a less expensive target format.", budget),
+			http.StatusGatewayTimeout,
+		)
+		log.Printf("Conversion timeout (%s→%s, budget=%s)", fromType, toType, budget)
+		return
+	}
+	if errors.Is(err, context.Canceled) {
+		// Client went away. There is nobody to send an error to.
+		log.Printf("Conversion cancelled by client (%s→%s)", fromType, toType)
+		return
+	}
+
+	w.Header().Del("Content-Disposition")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	http.Error(w, fmt.Sprintf("Conversion failed: %v", err), http.StatusBadRequest)
+	log.Printf("Conversion error (%s→%s): %v", fromType, toType, err)
+}
 // EnableCORS adds CORS headers to allow cross-origin requests
 func EnableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

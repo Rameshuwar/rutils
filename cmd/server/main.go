@@ -30,17 +30,35 @@ func main() {
 	// ============================================================
 	// Startup environment checks (non-fatal)
 	// ============================================================
-	// /extract-text relies on external binaries at runtime:
-	//   - tesseract  → OCR for images and scanned PDFs
-	//   - pdftoppm   → PDF→image rendering (poppler-utils)
-	// We do NOT fail fast — the rest of the service works fine
-	// without them. We just warn the operator once at boot.
+	//
+	// The conversion engine shells out to a set of external binaries.
+	// Some are essential to specific endpoints; others are optional
+	// optimizations that the code silently skips when unavailable.
+	//
+	// We do NOT fail fast. Every endpoint falls back gracefully when
+	// a tool is missing:
+	//
+	//   - /extract-text  falls back to no-OCR for images and scanned PDFs
+	//   - /convert       falls back to native Go converters for office
+	//                    document pairs (loses formatting but still works)
+	//   - /convert-pdf-size  falls back to the quality-ladder rasterizer
+	//   - /compress-image    falls back to Go stdlib jpeg/png encoders
+	//
+	// We log two consolidated warnings so the operator can see at a
+	// glance which optimizations are unavailable on this host.
 	if missing := converter.CheckExtractDependencies(); len(missing) > 0 {
 		log.Printf(
 			"[WARN] /extract-text missing runtime dependencies: %v — image and scanned-PDF extraction will be unavailable.",
 			missing,
 		)
 	}
+	if missing := converter.CheckBridgeDependencies(); len(missing) > 0 {
+		log.Printf(
+			"[WARN] Conversion toolchain incomplete: missing %v — affected conversions will fall back to lower-fidelity implementations.",
+			missing,
+		)
+	}
+	
 
 	// API Server
 	apiMux := http.NewServeMux()
@@ -52,7 +70,8 @@ func main() {
 	apiMux.HandleFunc("/calculate-bmi", api.HandleBMICalculate)
 	apiMux.HandleFunc("/calculate-age", api.HandleAgeCalculate)
 	apiMux.HandleFunc("/convert-pdf-size", api.ConvertPDFSize)
-
+	// ⬅️ NEW: Image Compress (JPEG/PNG/WebP quality-ladder compressor)
+	apiMux.HandleFunc("/compress-image", api.CompressImage)
 	// ⬅️ NEW: Text Extraction (PDF + Image, with OCR fallback)
 	apiMux.HandleFunc("/extract-text", api.HandleExtractText)
 
@@ -61,7 +80,11 @@ func main() {
 
 	// ⬅️ NEW: Loan EMI Calculator
 	apiMux.HandleFunc("/calculate-emi", api.HandleEMICalculate)
+
+	// ⬅️ NEW: Borrower-centric Loan Tenure Calculator
+	apiMux.HandleFunc("/calculate-loan-tenure", api.HandleLoanTenureCalculate)
 	apiMux.HandleFunc("/calculate-tax", api.HandleTaxCalculate)
+	apiMux.HandleFunc("/calculate-gpa", api.HandleGPACalculate)
 	apiMux.HandleFunc("/calculate-simple-interest", api.HandleSimpleInterestCalculate)
 	apiMux.HandleFunc("/calculate-compound-interest", api.HandleCompoundInterestCalculate)
 	apiMux.HandleFunc("/calculate-scientific", api.HandleScientificCalculate)
@@ -98,6 +121,7 @@ func main() {
 	apiMux.HandleFunc("/auth/reset-password", api.RequireAuth(cfg, authHandler.ResetPassword))
 	apiMux.HandleFunc("/auth/change-password", api.RequireAuth(cfg, authHandler.ChangePassword))
 	apiMux.HandleFunc("/auth/me", api.RequireAuth(cfg, authHandler.Me))
+	// ⬅️ NEW: Borrower-centric Loan Tenure Calculator
 
 	// ⬅️ NEW: NIFTY 50 Market Data Service & Endpoint (Authenticated)
 	niftyStorage := nifty.NewFileStorage("data/nifty50.json")
@@ -135,24 +159,36 @@ func main() {
 	fmt.Println(" Utility Microservice Starting...")
 	fmt.Println("==================================================")
 	fmt.Println("Backend API:")
-	fmt.Println(" -> POST http://localhost:8080/convert               (File Converter)")
+	fmt.Println(" -> POST http://localhost:8080/convert               (Universal File Converter)")
+	fmt.Println("     - Native:    txt ↔ csv ↔ json, image ↔ image")
+	fmt.Println("     - LibreOffice: docx, pptx, rtf, odt, ods, odp, html → pdf")
+	fmt.Println("     - LibreOffice: docx → txt/json, pdf → docx")
+	fmt.Println("     - Lossless:  jpg, png, webp, tiff, bmp → pdf")
+	fmt.Println(" -> POST http://localhost:8080/convert-pdf-size      (PDF Compress / Expand)")
+	fmt.Println("     - Quality-ladder rasterizer")
+	fmt.Println("     - Ghostscript /ebook post-pass (10-20% extra reduction)")
+	fmt.Println("     - qpdf linearization for web streaming")
+	fmt.Println(" -> POST http://localhost:8080/compress-image        (Image Compress: JPG/PNG/WebP)")
+	fmt.Println("     - mozjpeg for JPEG (15-25% smaller than stdlib)")
+	fmt.Println("     - pngquant + oxipng for PNG (40-70% smaller)")
+	fmt.Println("     - cwebp for WebP")
+	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
+	fmt.Println(" -> POST http://localhost:8080/repair                (Rules-based file repair)")
 	fmt.Println(" -> POST http://localhost:8080/convert-measurement   (Measurement Converter)")
-	fmt.Println(" -> POST http://localhost:8080/convert-time          (Time Converter)")
-	fmt.Println(" -> POST http://localhost:8080/convert-railway       (Railway Converter)")
-	fmt.Println(" -> POST http://localhost:8080/convert-numeral       (Numeral Converter)")
+	fmt.Println(" -> POST http://localhost:8080/convert-time          (Time Zone Converter)")
+	fmt.Println(" -> POST http://localhost:8080/convert-railway       (Railway Time Converter)")
+	fmt.Println(" -> POST http://localhost:8080/convert-numeral       (Numeral System Converter)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-bmi         (BMI Calculator)")
 	fmt.Println(" -> POST http://localhost:8080/calculate-age         (Age Calculator)")
-	fmt.Println(" -> POST http://localhost:8080/convert-pdf-size      (PDF Size Converter)")
-
-	// ⬅️ NEW: Text Extraction in startup banner
-	fmt.Println(" -> POST http://localhost:8080/extract-text          (Text Extraction: PDF + Image OCR)")
-	fmt.Println(" -> POST http://localhost:8080/repair               (Rules-based file repair)")
-	// ⬅️ NEW: Percentage Calculator in startup banner
 	fmt.Println(" -> POST http://localhost:8080/calculate-percentage  (Percentage Calculator)")
-	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest Calculator)")
-	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest Calculator)")
-	fmt.Println(" -> POST http://localhost:8080/calculate-scientific      (Scientific Calculator)")
-	// ⬅️ Authentication Endpoints in startup banner
+	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-loan-tenure (Loan Tenure Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-simple-interest   (Simple Interest)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-compound-interest (Compound Interest)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-gpa         (GPA / CGPA Calculator)")
+	fmt.Println(" -> POST http://localhost:8080/calculate-scientific  (Scientific Calculator)")
+	fmt.Println("Authentication:")
 	fmt.Println(" -> POST http://localhost:8080/auth/register         (User Registration)")
 	fmt.Println(" -> POST http://localhost:8080/auth/login            (User Login - JWT)")
 	fmt.Println(" -> POST http://localhost:8080/auth/logout           (User Logout)")
@@ -160,24 +196,17 @@ func main() {
 	fmt.Println(" -> POST http://localhost:8080/auth/reset-password   (Forced Password Reset)")
 	fmt.Println(" -> POST http://localhost:8080/auth/change-password  (Change Password)")
 	fmt.Println(" -> GET  http://localhost:8080/auth/me               (Current User Profile)")
-
-	// ⬅️ NEW: NIFTY 50 Market Data in startup banner
-	fmt.Println(" -> GET  http://localhost:8080/nifty50/companies      (NIFTY 50 Constituents - Authenticated)")
-	fmt.Println(" -> GET  http://localhost:8080/market/chart/companies (Technical Chart Companies - Authenticated)")
-	fmt.Println(" -> GET  http://localhost:8080/market/chart/data      (Technical Chart OHLCV & Indicators - Authenticated)")
-
-	// ⬅️ NEW: Loan EMI Calculator in startup banner
-	fmt.Println(" -> POST http://localhost:8080/calculate-emi         (Loan EMI Calculator)")
-
-	// ⬅️ NEW: Tax / VAT / GST Calculator in startup banner
-	fmt.Println(" -> POST http://localhost:8080/calculate-tax         (Tax / VAT / GST Calculator)")
-
+	fmt.Println("Markets (Authenticated):")
+	fmt.Println(" -> GET  http://localhost:8080/nifty50/companies      (NIFTY 50 Constituents)")
+	fmt.Println(" -> GET  http://localhost:8080/market/chart/companies (Technical Chart Companies)")
+	fmt.Println(" -> GET  http://localhost:8080/market/chart/data      (Technical Chart OHLCV & Indicators)")
+	fmt.Println("Documentation:")
 	fmt.Println(" -> GET  http://localhost:8080/swagger/doc.json       (Swagger JSON)")
-	fmt.Println(" -> GET  http://localhost:8080/swagger/              (Swagger UI)")
+	fmt.Println(" -> GET  http://localhost:8080/swagger/               (Swagger UI)")
+	fmt.Println(" -> GET  http://localhost:8080/formats                (Conversion Registry)")
 	fmt.Println("Frontend UI:")
 	fmt.Println(" -> GET  http://localhost:3000/")
 	fmt.Println("==================================================")
-
 	// Start API server in background
 	go func() {
 		if err := http.ListenAndServe(":8080", api.EnableCORS(apiMux)); err != nil {
