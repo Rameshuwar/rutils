@@ -921,6 +921,12 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout — conversion exceeded its time budget",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }

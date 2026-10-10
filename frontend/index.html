@@ -2070,6 +2070,165 @@
         <!-- ============================================================ -->
         <!-- ⬅️ NEW: Chartink Technical Chart View ("INK CHART")        -->
         <!-- ============================================================ -->
+        <!-- ============================================================ -->
+        <!-- ⬅️ NEW: Company Intelligence View                          -->
+        <!-- ============================================================ -->
+        <div id="company-intelligence-view"
+          class="tool-view w-full mx-auto hidden pb-12">
+
+          <style>
+            .ci-hero{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 45%,#0f172a 100%)}
+            .ci-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+            .ci-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+            .ci-section-title::after{content:'';flex:1;height:1px;background:#f1f5f9}
+            .ci-tab-btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;outline:none;transition:all .15s}
+            .ci-tab-btn.active{background:#4f46e5;color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.35)}
+            .ci-tab-btn.inactive{background:#f1f5f9;color:#64748b}
+            .ci-tab-btn.inactive:hover{background:#e2e8f0;color:#374151}
+            .ci-tbl{width:100%;border-collapse:collapse;font-size:13px}
+            .ci-tbl th{padding:10px 14px;text-align:right;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;background:#f8fafc;white-space:nowrap}
+            .ci-tbl th:first-child{text-align:left;border-radius:8px 0 0 8px}
+            .ci-tbl th:last-child{border-radius:0 8px 8px 0}
+            .ci-tbl td{padding:11px 14px;text-align:right;border-top:1px solid #f1f5f9;color:#374151;white-space:nowrap;transition:background .12s}
+            .ci-tbl td:first-child{text-align:left;font-weight:600;color:#111827}
+            .ci-tbl tr:hover td{background:#f8fafc}
+            .ci-news-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #f8fafc}
+            .ci-news-item:last-child{border-bottom:none;padding-bottom:0}
+            .ci-pulse-dot{width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;position:relative;margin-right:6px}
+            .ci-pulse-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid #10b981;animation:cipulse 1.8s infinite;opacity:.5}
+            @keyframes cipulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.7);opacity:0}}
+            .ci-kpi-card{border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
+            .ci-kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+            .ci-chart-bar{border-radius:4px 4px 0 0;min-height:3px;flex:1;transition:height .6s cubic-bezier(.4,0,.2,1)}
+            .ci-skeleton{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:cishimmer 1.3s infinite;border-radius:6px}
+            @keyframes cishimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+          </style>
+
+          <!-- Back Button -->
+          <div class="mb-4">
+            <button onclick="closeCompanyIntelligence()"
+              class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-900 bg-white border border-indigo-100 hover:bg-indigo-50 px-4 py-2 rounded-xl shadow-sm transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+              Back to NIFTY 50
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div id="ci-loading" class="hidden py-24 text-center">
+            <div class="inline-flex flex-col items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg">
+                <svg class="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              </div>
+              <p class="text-base font-semibold text-gray-700">Fetching Intelligence Data…</p>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div id="ci-error" class="hidden py-12 text-center bg-red-50 rounded-2xl border border-red-100">
+            <p id="ci-error-msg" class="text-sm font-medium text-red-600 px-6"></p>
+          </div>
+
+          <!-- Main Content -->
+          <div id="ci-content" class="hidden space-y-6">
+
+            <!-- ── Hero ── -->
+            <div class="ci-hero rounded-2xl shadow-2xl overflow-hidden">
+              <div class="relative p-6 md:p-8">
+                <div class="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-indigo-600/20 pointer-events-none"></div>
+                <div class="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-violet-600/20 pointer-events-none"></div>
+                <div class="relative z-10">
+                  <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                      <div class="flex items-center gap-2 mb-2.5">
+                        <span class="ci-pulse-dot"></span>
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Live Intelligence</span>
+                      </div>
+                      <h1 id="ci-company-name" class="text-3xl md:text-4xl font-black text-white tracking-tight">—</h1>
+                      <div class="flex flex-wrap gap-2 mt-3">
+                        <span id="ci-symbol" class="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/20 font-mono tracking-wider"></span>
+                        <span id="ci-industry" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/25 text-indigo-200 border border-indigo-400/25"></span>
+                      </div>
+                    </div>
+                    <div class="bg-white/8 border border-white/12 rounded-xl px-4 py-3 shrink-0">
+                      <p class="text-xs text-slate-400 mb-0.5">Data Refreshed</p>
+                      <p id="ci-updated-at" class="text-sm font-bold text-white"></p>
+                    </div>
+                  </div>
+                  <!-- KPI Cards injected here -->
+                  <div id="ci-kpi-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Two-Column Body ── -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+              <!-- Left: Overview + Financials -->
+              <div class="lg:col-span-3 space-y-6">
+
+                <!-- Company Overview -->
+                <div class="ci-card p-6">
+                  <p class="ci-section-title">
+                    <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                    Company Overview
+                  </p>
+                  <div id="ci-profile-desc" class="text-gray-600 text-sm leading-7"></div>
+                </div>
+
+                <!-- Financial Performance -->
+                <div class="ci-card p-6">
+                  <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+                    <p class="ci-section-title mb-0" style="flex:1">
+                      <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+                      Financial Performance
+                    </p>
+                    <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                      <button id="ci-tab-quarterly" class="ci-tab-btn active" onclick="ciSwitchTab('quarterly')">Quarterly</button>
+                      <button id="ci-tab-annual" class="ci-tab-btn inactive" onclick="ciSwitchTab('annual')">Annual</button>
+                    </div>
+                  </div>
+                  <div id="ci-bar-chart" class="mb-5"></div>
+                  <div class="overflow-x-auto" id="ci-fin-table-wrap"></div>
+                </div>
+
+              </div>
+
+              <!-- Right: Calendar + News + Disclaimer -->
+              <div class="lg:col-span-2 space-y-6">
+
+                <!-- Results Calendar -->
+                <div class="ci-card p-6">
+                  <p class="ci-section-title">
+                    <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+                    Results Calendar
+                  </p>
+                  <div id="ci-calendar" class="space-y-3"></div>
+                </div>
+
+                <!-- News Feed -->
+                <div class="ci-card p-6">
+                  <p class="ci-section-title">
+                    <svg class="w-3.5 h-3.5 text-violet-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/><path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z"/></svg>
+                    News & Announcements
+                  </p>
+                  <div id="ci-news"></div>
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="rounded-xl bg-amber-50 border border-amber-100 p-4 flex gap-3">
+                  <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                  <p id="ci-disclaimer" class="text-xs text-amber-700 leading-relaxed"></p>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <div id="technical-chart-view" class="tool-view w-full mx-auto space-y-4 hidden transition-opacity duration-300">
           
           <!-- Unauthenticated Warning Card -->

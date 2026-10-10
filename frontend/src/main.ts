@@ -4,6 +4,7 @@ import { initFormatters, renderFormattersCategory } from './formatters'
 import { getAuthState, isLoggedIn, clearAuth, apiGetNiftyCompanies, NiftyCompany } from './auth'
 import { chartController } from './chart-ui'
 import { initGPA } from './gpa-ui'
+import { openCompanyIntelligence } from './intelligence-ui'
 
 // ============================================================
 // EMI Calculator — shared types (module scope)
@@ -2985,8 +2986,11 @@ function renderNiftyTable(companies: NiftyCompany[]) {
     tr.appendChild(tdIdx);
 
     const tdName = document.createElement('td');
-    tdName.className = 'py-3.5 px-4 font-semibold text-gray-900';
-    tdName.innerHTML = `<span class="group-hover:text-indigo-900 transition-colors">${escapeHtml(company.company_name)}</span>`;
+    tdName.className = 'py-3.5 px-4 font-semibold text-gray-900 cursor-pointer hover:bg-indigo-100 transition-colors rounded';
+    tdName.innerHTML = `<span class="group-hover:text-indigo-900 transition-colors underline decoration-indigo-300 underline-offset-2">${escapeHtml(company.company_name)}</span>`;
+    tdName.addEventListener('click', () => {
+      openCompanyIntelligence(company.symbol);
+    });
     tr.appendChild(tdName);
 
     const tdInd = document.createElement('td');

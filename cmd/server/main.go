@@ -12,6 +12,7 @@ import (
 	"file-converter/internal/chart"
 	"file-converter/internal/converter" // NEW: for CheckExtractDependencies()
 	_ "file-converter/internal/formatters"
+	"file-converter/internal/intelligence"
 	"file-converter/internal/nifty"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -132,7 +133,17 @@ func main() {
 	// Infuse in-process daily cron scheduler (10:00 AM IST with catch-up on boot)
 	niftyService.StartScheduler(context.Background())
 
+	// ⬅️ NEW: Company Intelligence Service
+	intelligenceStorage := intelligence.NewFileStorage("data/company-intelligence")
+	intelligenceFetcher := intelligence.NewDefaultFetcher()
+	intelligenceService := intelligence.NewService(intelligenceStorage, intelligenceFetcher, niftyService)
+	intelligenceHandler := api.NewIntelligenceHandler(intelligenceService)
+	
+	// Start intelligence scheduler
+	intelligenceService.StartScheduler(context.Background())
+
 	apiMux.HandleFunc("/nifty50/companies", api.RequireAuth(cfg, niftyHandler.GetCompanies))
+	apiMux.HandleFunc("/nifty50/companies/", api.RequireAuth(cfg, intelligenceHandler.ServeHTTP))
 
 	// ⬅️ NEW: Technical Chart Service & Endpoints (Authenticated)
 	chartService := chart.NewService("data/nse/data", niftyStorage)

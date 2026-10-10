@@ -40,3 +40,7 @@ Screenshot*.png
 
 # Ignore local configuration files with sensitive data
 config.json
+
+
+#DATA
+data/company-intelligence/
