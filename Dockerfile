@@ -54,17 +54,18 @@ RUN apk add --no-cache \
     qpdf \
     poppler-utils \
     # --- Image tools ---
-    img2pdf \
-    mozjpeg \
+    py3-img2pdf \
+    libjpeg-turbo-utils \
+    jpegoptim \
     pngquant \
     oxipng \
     libwebp-tools \
     imagemagick \
     imagemagick-pdf \
     imagemagick-jpeg \
-    imagemagick-png \
     imagemagick-webp \
     imagemagick-tiff \
+    imagemagick-svg \
     # --- OCR ---
     tesseract-ocr \
     tesseract-ocr-data-eng \
@@ -74,7 +75,6 @@ RUN apk add --no-cache \
     tesseract-ocr-data-spa \
     # --- Fonts: MS metric-compatible ---
     font-carlito \
-    font-caladea \
     font-liberation \
     font-dejavu \
     font-noto \
