@@ -36,3 +36,7 @@ data/nse/
 # Local screenshot images
 image.png
 Screenshot*.png
+
+
+# Ignore local configuration files with sensitive data
+config.json
