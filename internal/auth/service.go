@@ -15,6 +15,7 @@ var (
 	ErrInvalidEmail             = errors.New("invalid email address format")
 	ErrCurrentPasswordInvalid   = errors.New("current password does not match")
 	ErrTemporaryPasswordExpired = errors.New("temporary password has expired, please request a new one")
+	ErrPasswordResetPending     = errors.New("a password reset was requested. Please log in using the temporary password sent to your email")
 )
 
 // AuthService encapsulates authentication logic
@@ -110,12 +111,24 @@ func (s *AuthService) Login(req LoginRequest) (*LoginResponse, error) {
 		}, nil
 	}
 
-	// 2. Check permanent password
+	// 2. If a temporary password has been issued or password reset is required,
+	// the old permanent password cannot be used to log in.
+	if user.TempPasswordHash != "" || user.MustResetPassword {
+		if user.TempPasswordExpiry != nil && time.Now().After(*user.TempPasswordExpiry) {
+			return nil, ErrTemporaryPasswordExpired
+		}
+		if ComparePassword(user.PasswordHash, req.Password) {
+			return nil, ErrPasswordResetPending
+		}
+		return nil, ErrInvalidCredentials
+	}
+
+	// 3. Check permanent password
 	if !ComparePassword(user.PasswordHash, req.Password) {
 		return nil, ErrInvalidCredentials
 	}
 
-	token, err := GenerateToken(s.cfg, user.ID, user.Email, user.MustResetPassword)
+	token, err := GenerateToken(s.cfg, user.ID, user.Email, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate authentication token: %w", err)
 	}
@@ -123,7 +136,7 @@ func (s *AuthService) Login(req LoginRequest) (*LoginResponse, error) {
 	return &LoginResponse{
 		Token:             token,
 		User:              user.ToResponse(),
-		MustResetPassword: user.MustResetPassword,
+		MustResetPassword: false,
 		Message:           "Login successful",
 	}, nil
 }
@@ -155,7 +168,7 @@ func (s *AuthService) ForgotPassword(req ForgotPasswordRequest) error {
 		return fmt.Errorf("failed to update user with temporary password: %w", err)
 	}
 
-	if err := s.emailSender.SendTemporaryPassword(user.Email, tempPassword); err != nil {
+	if err := s.emailSender.SendTemporaryPassword(user.Email, user.Name, tempPassword); err != nil {
 		return fmt.Errorf("failed to deliver temporary password email: %w", err)
 	}
 
@@ -237,7 +250,7 @@ func (s *AuthService) ChangePassword(userID string, req ChangePasswordRequest) e
 	}
 
 	// Send confirmation email
-	_ = s.emailSender.SendPasswordChangedNotification(user.Email)
+	_ = s.emailSender.SendPasswordChangedNotification(user.Email, user.Name)
 
 	return nil
 }

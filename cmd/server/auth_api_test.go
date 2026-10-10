@@ -267,6 +267,17 @@ func TestAuthEndToEnd(t *testing.T) {
 		t.Fatalf("expected user to have TempPasswordHash set")
 	}
 
+	// 11b. Verify that logging in with the old permanent password is BLOCKED after forgot password
+	{
+		resp, body := postJSON(t, ts.URL+"/auth/login", "", auth.LoginRequest{
+			Email:    "bob@example.com",
+			Password: "BrandNewMasterpiece!2026",
+		})
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("expected 401 when logging in with old password after forgot-password, got %d. body=%v", resp.StatusCode, body)
+		}
+	}
+
 	// 12. Test login with temporary password
 	// Since the dev email sender logs to stdout, we can verify that the user can login with their temp password
 	// In order to get the exact raw temp password in our test, let's set a known valid temp password

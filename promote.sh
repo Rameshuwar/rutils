@@ -258,13 +258,22 @@ build_and_promote() {
                 fi
             fi
             
-            # Copy config.json to VPS if not already present
+            # Copy / Sync config.json to VPS
             if [[ -f "./config.json" ]]; then
                 if ! run_remote "test -f ${vps_app_dir}/config.json"; then
-                    log_info "Copying initial config.json to ${vps_app_dir}/config.json..."
+                    log_info "Initial deployment: Copying local config.json to ${vps_app_dir}/config.json on VPS..."
                     scp_to_remote "./config.json" "${vps_app_dir}/config.json"
+                    log_success "config.json deployed to VPS successfully."
                 else
-                    log_info "Persistent config.json found on VPS. Preserving production configuration."
+                    log_info "Persistent config.json found on VPS at ${vps_app_dir}/config.json."
+                    prompt "Do you want to update/overwrite the VPS config.json with your local config.json (including SMTP credentials)? (y/n)" SYNC_CONFIG "y"
+                    if [[ "${SYNC_CONFIG,,}" == "y" || "${SYNC_CONFIG,,}" == "yes" ]]; then
+                        log_info "Uploading latest local config.json to ${vps_app_dir}/config.json..."
+                        scp_to_remote "./config.json" "${vps_app_dir}/config.json"
+                        log_success "VPS config.json updated successfully."
+                    else
+                        log_info "Preserving existing config.json on VPS."
+                    fi
                 fi
             fi
             

@@ -39,6 +39,7 @@ Configuration is stored in `config.json` at the project root. Never commit real 
 | `smtp_app_password` | string | 16-character Google App Password | `""` (Dev Fallback active) |
 | `smtp_host` | string | SMTP server hostname | `"smtp.gmail.com"` |
 | `smtp_port` | string | SMTP server port with STARTTLS | `"587"` |
+| `smtp_sender_name` | string | Friendly display sender name | `"Rutils Team"` |
 | `jwt_secret` | string | Secret key used to sign and verify JWT tokens | `"rutils-utility-jwt-secret-change-in-production-2026"` |
 | `jwt_expiration_hours`| int | Lifetime of generated JWT tokens | `24` |
 | `data_dir` | string | Directory containing JSON storage files | `"data"` |
